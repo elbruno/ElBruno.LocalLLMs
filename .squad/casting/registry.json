@@ -1,0 +1,36 @@
+{
+  "agents": {
+    "morpheus": {
+      "persistent_name": "Morpheus",
+      "universe": "The Matrix",
+      "role": "Lead",
+      "created_at": "2026-03-17T23:45:00Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "trinity": {
+      "persistent_name": "Trinity",
+      "universe": "The Matrix",
+      "role": "Core Dev",
+      "created_at": "2026-03-17T23:45:00Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "tank": {
+      "persistent_name": "Tank",
+      "universe": "The Matrix",
+      "role": "Tester",
+      "created_at": "2026-03-17T23:45:00Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "switch": {
+      "persistent_name": "Switch",
+      "universe": "The Matrix",
+      "role": "DevOps",
+      "created_at": "2026-03-17T23:45:00Z",
+      "legacy_named": false,
+      "status": "active"
+    }
+  }
+}
