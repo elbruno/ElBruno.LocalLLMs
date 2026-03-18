@@ -290,6 +290,48 @@
 
 ---
 
+### Decision 19: Rewrite Squad Workflows for C# Project
+
+**Date:** 2026-03-18  
+**Author:** Switch (DevOps/Packaging)  
+**Status:** Implemented
+
+**Context:** Eight GitHub Actions workflows were scaffolded from a Node.js Squad template but applied to `ElBruno.LocalLLMs`, which is a C# .NET 8/10 project. All workflows were failing because they referenced:
+- `actions/setup-node@v4`
+- `node --test test/*.test.js`
+- `node -e "console.log(require('./package.json').version)"`
+- Non-existent `docs/build.js` script
+
+The project structure is:
+- Solution: `ElBruno.LocalLLMs.slnx`
+- Main project: `src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj`
+- Tests: `tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj`
+- Version: `<Version>0.1.0</Version>` in `.csproj`
+- CHANGELOG format: `## [0.1.0] - 2026-03-18`
+
+**Decision:** Rewrote all 8 workflows to be C#-native:
+
+1. **squad-release.yml** — .NET setup (8.0.x + 10.0.x), `dotnet restore/build/test`, version extraction via `grep` from `.csproj`
+2. **squad-main-guard.yml** — Allowed `.squad/` and `.ai-team/` on main (worktree-local strategy); blocked templates and proposal dirs
+3. **publish.yml** — Conditional NuGet push (checks `NUGET_API_KEY` secret), always uploads artifact
+4. **squad-ci.yml** — .NET restore/build/test for PR/dev branches
+5. **squad-preview.yml** — .NET tests, version extraction, CHANGELOG validation; validates `.squad/` not tracked on preview
+6. **squad-promote.yml** — dev → preview → main promotion with .NET version reads via `grep`
+7. **squad-insider-release.yml** — Insider builds with `0.1.0-insider+SHA` format, NuGet install in release notes
+8. **squad-docs.yml** — Validates `docs/` exists, lists `.md` files (no build system yet)
+
+**Rationale:** All workflows now valid for C# project. Consistent patterns across all 8 workflows. Release flow unblocked. NuGet publishing resilient to missing credentials.
+
+**Consequences:** 
+- ✅ All workflows now valid for C# project
+- ✅ squad-release.yml can tag releases on push to main
+- ✅ Consistent .NET patterns in all workflows
+- 📝 Maintenance: Update .NET versions across all workflows when .NET 11+ released
+
+**Implementation:** Commits f351e71 and 141716c; all 8 workflow files rewritten.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
