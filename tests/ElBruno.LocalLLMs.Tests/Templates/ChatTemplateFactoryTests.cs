@@ -85,22 +85,22 @@ public class ChatTemplateFactoryTests
     }
 
     [Fact]
-    public void Create_DeepSeek_FallsThroughToChatML()
+    public void Create_DeepSeek_ReturnsDeepSeekFormatter()
     {
         var formatter = ChatTemplateFactory.Create(ChatTemplateFormat.DeepSeek);
         var result = FormatSimple(formatter);
 
-        Assert.Contains("<|im_start|>", result);
-        Assert.Contains("<|im_end|>", result);
+        Assert.Contains("<｜begin▁of▁sentence｜>", result);
+        Assert.Contains("<｜user｜>", result);
     }
 
     [Fact]
-    public void Create_Gemma_FallsThroughToChatML()
+    public void Create_Gemma_ReturnsGemmaFormatter()
     {
         var formatter = ChatTemplateFactory.Create(ChatTemplateFormat.Gemma);
         var result = FormatSimple(formatter);
 
-        Assert.Contains("<|im_start|>", result);
+        Assert.Contains("<start_of_turn>", result);
     }
 
     [Fact]

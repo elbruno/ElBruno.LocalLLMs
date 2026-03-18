@@ -12,8 +12,8 @@ internal static class ChatTemplateFactory
         ChatTemplateFormat.Llama3 => new Llama3Formatter(),
         ChatTemplateFormat.Qwen => new QwenFormatter(),
         ChatTemplateFormat.Mistral => new MistralFormatter(),
-        ChatTemplateFormat.DeepSeek => new ChatMLFormatter(), // DeepSeek uses ChatML-style
-        ChatTemplateFormat.Gemma => new ChatMLFormatter(),    // Gemma fallback to ChatML
+        ChatTemplateFormat.DeepSeek => new DeepSeekFormatter(),
+        ChatTemplateFormat.Gemma => new GemmaFormatter(),
         ChatTemplateFormat.Custom => new ChatMLFormatter(),   // Custom fallback to ChatML
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, $"Unsupported chat template format: {format}")
     };
