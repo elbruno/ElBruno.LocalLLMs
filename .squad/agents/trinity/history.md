@@ -47,3 +47,9 @@
 - CI workflows (squad-preview, squad-release, squad-promote) updated to reference `docs/CHANGELOG.md` instead of root `CHANGELOG.md`
 - Cross-references in getting-started.md, supported-models.md, and publishing.md updated after file moves
 - Key docs paths: docs/samples.md, docs/benchmarks.md, docs/onnx-conversion.md, docs/CONTRIBUTING.md, docs/CHANGELOG.md
+
+### 2026-03-18: Llama-3.2-3B ONNX repo + README badges
+- Dozer converted Llama-3.2-3B-Instruct to ONNX; updated KnownModels.cs to point at `elbruno/Llama-3.2-3B-Instruct-onnx` with `RequiredFiles = ["*"]` and `HasNativeOnnx = true`
+- Updated ONNX status from 🔄 Convert → ✅ Native in both README.md model table and docs/supported-models.md
+- Expanded README badge block to 8 badges matching ElBruno.VibeVoiceTTS style: NuGet, NuGet Downloads, Build Status, MIT License, HuggingFace, .NET 8/10, GitHub Stars, Twitter Follow
+- Beware: `git add -A` can pick up a local `cache_dir/` with multi-GB model blobs — always stage specific files instead
