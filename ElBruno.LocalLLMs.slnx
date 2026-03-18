@@ -14,5 +14,6 @@
     <Project Path="samples/StreamingChat/StreamingChat.csproj" />
     <Project Path="samples/MultiModelChat/MultiModelChat.csproj" />
     <Project Path="samples/DependencyInjection/DependencyInjection.csproj" />
+    <Project Path="samples/ConsoleAppDemo/ConsoleAppDemo.csproj" />
   </Folder>
 </Solution>
