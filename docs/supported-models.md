@@ -16,7 +16,7 @@ ElBruno.LocalLLMs supports **29 LLMs** across 5 tiers. This guide details each m
 | ⚪ Tiny | StableLM-2-1.6B-Chat | 1.6B | stabilityai/stablelm-2-zephyr-1_6b | 🔄 Convert | ChatML | 3–4 GB | ⚡⚡⚡ |
 | 🟢 Small | Phi-3.5-mini-instruct | 3.8B | microsoft/Phi-3.5-mini-instruct-onnx | ✅ Native | Phi3 | 6–8 GB | ⚡⚡ |
 | 🟢 Small | Qwen2.5-3B-Instruct | 3B | Qwen/Qwen2.5-3B-Instruct | ✅ Native | Qwen | 6–8 GB | ⚡⚡ |
-| 🟢 Small | Llama-3.2-3B-Instruct | 3B | meta-llama/Llama-3.2-3B-Instruct | 🔄 Convert | Llama3 | 6–8 GB | ⚡⚡ |
+| 🟢 Small | Llama-3.2-3B-Instruct | 3B | elbruno/Llama-3.2-3B-Instruct-onnx | ✅ Native | Llama3 | 6–8 GB | ⚡⚡ |
 | 🟢 Small | Gemma-2-2B-IT | 2.6B | elbruno/Gemma-2-2B-IT-onnx | ✅ Native | ChatML | 6 GB | ⚡⚡ |
 | 🟡 Medium | Qwen2.5-7B-Instruct | 7B | Qwen/Qwen2.5-7B-Instruct | ✅ Native | Qwen | 8–12 GB | ⚡ |
 | 🟡 Medium | Llama-3.1-8B-Instruct | 8B | meta-llama/Llama-3.1-8B-Instruct | ✅ Native | Llama3 | 8–12 GB | ⚡ |

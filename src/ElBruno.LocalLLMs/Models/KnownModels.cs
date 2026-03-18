@@ -123,12 +123,12 @@ public static class KnownModels
     {
         Id = "llama-3.2-3b-instruct",
         DisplayName = "Llama-3.2-3B-Instruct",
-        HuggingFaceRepoId = "meta-llama/Llama-3.2-3B-Instruct",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/Llama-3.2-3B-Instruct-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Llama3,
         Tier = ModelTier.Small,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
     /// <summary>Gemma 2 2B IT — Google's improved tiny model.</summary>
