@@ -16,6 +16,7 @@
 | Trinity | Core Dev | `.squad/agents/trinity/charter.md` | 🔧 Active |
 | Tank | Tester | `.squad/agents/tank/charter.md` | 🧪 Active |
 | Switch | DevOps | `.squad/agents/switch/charter.md` | ⚙️ Active |
+| Dozer | ML Engineer | `.squad/agents/dozer/charter.md` | 🔬 Active |
 | Scribe | Session Logger | `.squad/agents/scribe/charter.md` | 📋 Active |
 | Ralph | Work Monitor | — | 🔄 Monitor |
 

@@ -31,3 +31,13 @@
 - Config class needed for non-CPU providers: `ClearProviders()` → `AppendProvider("cuda"/"dml")` → `SetProviderOption(provider, "device_id", id)` → `new Model(config)`
 - Lazy init pattern with SemaphoreSlim for thread-safe model loading on first CompleteAsync call
 - ChatOptions from MEAI maps: MaxOutputTokens→MaxLength, Temperature, TopP, TopK, FrequencyPenalty→RepetitionPenalty
+
+### 2026-03-18: Comprehensive docs overhaul
+- README now shows all 23 models in a tier-organized table with ONNX status (✅ Native vs 🔄 Convert)
+- CONTRIBUTING.md and CHANGELOG.md moved from repo root to docs/ per Bruno's directive (only README.md + LICENSE at root)
+- Created docs/samples.md — walkthroughs for all 4 samples (HelloChat, StreamingChat, MultiModelChat, DependencyInjection) with code snippets and expected output
+- Created docs/benchmarks.md — guide for ChatTemplateBenchmarks and ModelDefinitionBenchmarks (BenchmarkDotNet, `[MemoryDiagnoser]`)
+- Created docs/onnx-conversion.md — conversion pipeline docs covering prerequisites, INT4/INT8/none quantization, troubleshooting, disk space planning
+- CI workflows (squad-preview, squad-release, squad-promote) updated to reference `docs/CHANGELOG.md` instead of root `CHANGELOG.md`
+- Cross-references in getting-started.md, supported-models.md, and publishing.md updated after file moves
+- Key docs paths: docs/samples.md, docs/benchmarks.md, docs/onnx-conversion.md, docs/CONTRIBUTING.md, docs/CHANGELOG.md

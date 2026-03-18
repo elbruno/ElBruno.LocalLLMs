@@ -12,7 +12,7 @@ How to decide who handles what.
 | Code review | Morpheus 🏗️ | Review PRs, check quality, enforce patterns |
 | Testing | Tank 🧪 | Unit tests, integration tests, model validation |
 | NuGet packaging & CI/CD | Switch ⚙️ | Package publishing, GitHub Actions, build scripts |
-| Model conversion (HF→ONNX) | Switch ⚙️ | Python scripts, ONNX export, model validation |
+| Model conversion (HF→ONNX) | Dozer 🔬 | ONNX GenAI builder, quantization, HF upload |
 | Scope & priorities | Morpheus 🏗️ | What to build next, trade-offs, decisions |
 | Session logging | Scribe 📋 | Automatic — never needs routing |
 
