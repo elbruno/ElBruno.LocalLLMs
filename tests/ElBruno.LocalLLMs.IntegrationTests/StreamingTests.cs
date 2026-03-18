@@ -16,7 +16,7 @@ public class StreamingTests : IAsyncDisposable
     // Basic streaming
     // ──────────────────────────────────────────────
 
-    [Fact]
+    [SkippableFact]
     public async Task GetStreamingResponseAsync_SimpleQuestion_YieldsTokens()
     {
         SkipIfNotEnabled();
@@ -39,7 +39,7 @@ public class StreamingTests : IAsyncDisposable
         Assert.True(tokens.Count > 1, "Streaming should yield multiple tokens");
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task GetStreamingResponseAsync_WithSystemMessage_YieldsTokens()
     {
         SkipIfNotEnabled();
@@ -66,7 +66,7 @@ public class StreamingTests : IAsyncDisposable
     // Concatenated output matches expected content
     // ──────────────────────────────────────────────
 
-    [Fact]
+    [SkippableFact]
     public async Task GetStreamingResponseAsync_ConcatenatedTokens_FormValidResponse()
     {
         SkipIfNotEnabled();
@@ -89,7 +89,7 @@ public class StreamingTests : IAsyncDisposable
     // Cancellation during streaming
     // ──────────────────────────────────────────────
 
-    [Fact]
+    [SkippableFact]
     public async Task GetStreamingResponseAsync_CancellationDuringStream_Stops()
     {
         SkipIfNotEnabled();
@@ -124,7 +124,7 @@ public class StreamingTests : IAsyncDisposable
     // Streaming with custom options
     // ──────────────────────────────────────────────
 
-    [Fact]
+    [SkippableFact]
     public async Task GetStreamingResponseAsync_LowTemperature_YieldsTokens()
     {
         SkipIfNotEnabled();
@@ -158,10 +158,8 @@ public class StreamingTests : IAsyncDisposable
     private static void SkipIfNotEnabled()
     {
         var enabled = Environment.GetEnvironmentVariable("RUN_INTEGRATION_TESTS");
-        if (!string.Equals(enabled, "true", StringComparison.OrdinalIgnoreCase))
-        {
-            throw new SkipException("Integration tests disabled. Set RUN_INTEGRATION_TESTS=true to enable.");
-        }
+        Skip.IfNot(string.Equals(enabled, "true", StringComparison.OrdinalIgnoreCase),
+            "Integration tests disabled. Set RUN_INTEGRATION_TESTS=true to enable.");
     }
 
     public async ValueTask DisposeAsync()

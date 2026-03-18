@@ -15,7 +15,7 @@ public class ModelDownloadTests : IAsyncDisposable
     // Auto-download on first use
     // ──────────────────────────────────────────────
 
-    [Fact]
+    [SkippableFact]
     public async Task CreateAsync_EnsureModelDownloaded_DownloadsModel()
     {
         SkipIfNotEnabled();
@@ -51,7 +51,7 @@ public class ModelDownloadTests : IAsyncDisposable
     // Progress reporting
     // ──────────────────────────────────────────────
 
-    [Fact]
+    [SkippableFact]
     public async Task CreateAsync_WithProgress_ReportsProgress()
     {
         SkipIfNotEnabled();
@@ -88,7 +88,7 @@ public class ModelDownloadTests : IAsyncDisposable
     // Download disabled — throws if not cached
     // ──────────────────────────────────────────────
 
-    [Fact]
+    [SkippableFact]
     public async Task CreateAsync_DownloadDisabledAndNotCached_Throws()
     {
         SkipIfNotEnabled();
@@ -124,7 +124,7 @@ public class ModelDownloadTests : IAsyncDisposable
     // Cancellation during download
     // ──────────────────────────────────────────────
 
-    [Fact]
+    [SkippableFact]
     public async Task CreateAsync_CancellationDuringDownload_Throws()
     {
         SkipIfNotEnabled();
@@ -160,7 +160,7 @@ public class ModelDownloadTests : IAsyncDisposable
     // Local model path — skip download entirely
     // ──────────────────────────────────────────────
 
-    [Fact]
+    [SkippableFact]
     public void ModelPath_Set_SkipsDownload()
     {
         SkipIfNotEnabled();
@@ -184,10 +184,8 @@ public class ModelDownloadTests : IAsyncDisposable
     private static void SkipIfNotEnabled()
     {
         var enabled = Environment.GetEnvironmentVariable("RUN_INTEGRATION_TESTS");
-        if (!string.Equals(enabled, "true", StringComparison.OrdinalIgnoreCase))
-        {
-            throw new SkipException("Integration tests disabled. Set RUN_INTEGRATION_TESTS=true to enable.");
-        }
+        Skip.IfNot(string.Equals(enabled, "true", StringComparison.OrdinalIgnoreCase),
+            "Integration tests disabled. Set RUN_INTEGRATION_TESTS=true to enable.");
     }
 
     public async ValueTask DisposeAsync()

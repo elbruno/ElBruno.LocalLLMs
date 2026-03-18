@@ -17,7 +17,7 @@ public class ChatCompletionTests : IAsyncDisposable
     // Basic completion
     // ──────────────────────────────────────────────
 
-    [Fact]
+    [SkippableFact]
     public async Task GetResponseAsync_SimpleQuestion_ReturnsResponse()
     {
         SkipIfNotEnabled();
@@ -33,7 +33,7 @@ public class ChatCompletionTests : IAsyncDisposable
         Assert.False(string.IsNullOrWhiteSpace(response.Text));
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task GetResponseAsync_WithSystemMessage_ReturnsResponse()
     {
         SkipIfNotEnabled();
@@ -54,7 +54,7 @@ public class ChatCompletionTests : IAsyncDisposable
     // Multi-turn conversation
     // ──────────────────────────────────────────────
 
-    [Fact]
+    [SkippableFact]
     public async Task GetResponseAsync_MultiTurn_MaintainsContext()
     {
         SkipIfNotEnabled();
@@ -82,7 +82,7 @@ public class ChatCompletionTests : IAsyncDisposable
     // Custom options
     // ──────────────────────────────────────────────
 
-    [Fact]
+    [SkippableFact]
     public async Task GetResponseAsync_WithCustomOptions_ReturnsResponse()
     {
         SkipIfNotEnabled();
@@ -107,7 +107,7 @@ public class ChatCompletionTests : IAsyncDisposable
     // Cancellation
     // ──────────────────────────────────────────────
 
-    [Fact]
+    [SkippableFact]
     public async Task GetResponseAsync_CancellationRequested_Throws()
     {
         SkipIfNotEnabled();
@@ -129,7 +129,7 @@ public class ChatCompletionTests : IAsyncDisposable
     // Metadata
     // ──────────────────────────────────────────────
 
-    [Fact]
+    [SkippableFact]
     public async Task Metadata_IsPopulated()
     {
         SkipIfNotEnabled();
@@ -144,7 +144,7 @@ public class ChatCompletionTests : IAsyncDisposable
     // Edge cases
     // ──────────────────────────────────────────────
 
-    [Fact]
+    [SkippableFact]
     public async Task GetResponseAsync_EmptyUserMessage_DoesNotThrow()
     {
         SkipIfNotEnabled();
@@ -165,10 +165,8 @@ public class ChatCompletionTests : IAsyncDisposable
     private static void SkipIfNotEnabled()
     {
         var enabled = Environment.GetEnvironmentVariable("RUN_INTEGRATION_TESTS");
-        if (!string.Equals(enabled, "true", StringComparison.OrdinalIgnoreCase))
-        {
-            throw new SkipException("Integration tests disabled. Set RUN_INTEGRATION_TESTS=true to enable.");
-        }
+        Skip.IfNot(string.Equals(enabled, "true", StringComparison.OrdinalIgnoreCase),
+            "Integration tests disabled. Set RUN_INTEGRATION_TESTS=true to enable.");
     }
 
     public async ValueTask DisposeAsync()
@@ -178,12 +176,4 @@ public class ChatCompletionTests : IAsyncDisposable
             await _client.DisposeAsync();
         }
     }
-}
-
-/// <summary>
-/// Custom exception for skipping tests when integration environment is not available.
-/// </summary>
-public class SkipException : Exception
-{
-    public SkipException(string message) : base(message) { }
 }

@@ -7,6 +7,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
     <PackageReference Include="xunit" Version="2.9.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageReference Include="Xunit.SkippableFact" Version="1.5.23" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\ElBruno.LocalLLMs\ElBruno.LocalLLMs.csproj" />
