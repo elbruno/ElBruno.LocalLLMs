@@ -79,16 +79,16 @@ public class MyService(IChatClient chatClient) { ... }
 | ⚪ Tiny | SmolLM2-1.7B-Instruct | 1.7B | ✅ Native | `smollm2-1.7b-instruct` |
 | ⚪ Tiny | Qwen2.5-0.5B-Instruct | 0.5B | ✅ Native | `qwen2.5-0.5b-instruct` |
 | ⚪ Tiny | Qwen2.5-1.5B-Instruct | 1.5B | ✅ Native | `qwen2.5-1.5b-instruct` |
-| ⚪ Tiny | Gemma-2B-IT | 2B | 🔄 Convert | `gemma-2b-it` |
+| ⚪ Tiny | Gemma-2B-IT | 2B | ✅ Native | `gemma-2b-it` |
 | ⚪ Tiny | StableLM-2-1.6B-Chat | 1.6B | 🔄 Convert | `stablelm-2-1.6b-chat` |
 | 🟢 Small | Phi-3.5 mini instruct | 3.8B | ✅ Native | `phi-3.5-mini-instruct` |
 | 🟢 Small | Qwen2.5-3B-Instruct | 3B | ✅ Native | `qwen2.5-3b-instruct` |
 | 🟢 Small | Llama-3.2-3B-Instruct | 3B | 🔄 Convert | `llama-3.2-3b-instruct` |
-| 🟢 Small | Gemma-2-2B-IT | 2B | 🔄 Convert | `gemma-2-2b-it` |
+| 🟢 Small | Gemma-2-2B-IT | 2B | ✅ Native | `gemma-2-2b-it` |
 | 🟡 Medium | Qwen2.5-7B-Instruct | 7B | ✅ Native | `qwen2.5-7b-instruct` |
 | 🟡 Medium | Llama-3.1-8B-Instruct | 8B | ✅ Native | `llama-3.1-8b-instruct` |
 | 🟡 Medium | Mistral-7B-Instruct-v0.3 | 7B | ✅ Native | `mistral-7b-instruct-v0.3` |
-| 🟡 Medium | Gemma-2-9B-IT | 9B | 🔄 Convert | `gemma-2-9b-it` |
+| 🟡 Medium | Gemma-2-9B-IT | 9B | ✅ Native | `gemma-2-9b-it` |
 | 🟡 Medium | Phi-4 | 14B | ✅ Native | `phi-4` |
 | 🟡 Medium | DeepSeek-R1-Distill-Qwen-14B | 14B | ✅ Native | `deepseek-r1-distill-qwen-14b` |
 | 🟡 Medium | Mistral-Small-24B-Instruct | 24B | ✅ Native | `mistral-small-24b-instruct` |

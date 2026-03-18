@@ -16,6 +16,12 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-03-18: Gemma ONNX conversions and Llama gating
+- Gemma v1 (2B) and v2 (2B, 9B) architectures are confirmed supported by ONNX Runtime GenAI builder — conversions succeeded cleanly
+- Meta Llama 3.2 and 3.3 have separate license gates from Llama 3.1 — each requires its own HuggingFace access request
+- Llama-3.2-3B access is "awaiting review"; Llama-3.3-70B needs a request at https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct
+- Three new elbruno ONNX repos: Gemma-2B-IT-onnx, Gemma-2-2B-IT-onnx, Gemma-2-9B-IT-onnx
+
 ### 2026-03-17: Samples implemented and README fixed for MEAI 10.4.0
 - MEAI 10.4.0 uses `GetResponseAsync`/`GetStreamingResponseAsync` (NOT `CompleteAsync`/`CompleteStreamingAsync`)
 - Returns `ChatResponse` with `.Text` property (NOT `ChatCompletion` with `.Message.Text`)

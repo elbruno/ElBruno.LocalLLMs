@@ -67,12 +67,12 @@ public static class KnownModels
     {
         Id = "gemma-2b-it",
         DisplayName = "Gemma-2B-IT",
-        HuggingFaceRepoId = "google/gemma-2b-it",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/Gemma-2B-IT-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Gemma,
         Tier = ModelTier.Tiny,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
     /// <summary>StableLM 2 Zephyr 1.6B — Stability AI's compact chat model.</summary>
@@ -136,12 +136,12 @@ public static class KnownModels
     {
         Id = "gemma-2-2b-it",
         DisplayName = "Gemma-2-2B-IT",
-        HuggingFaceRepoId = "google/gemma-2-2b-it",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/Gemma-2-2B-IT-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Gemma,
         Tier = ModelTier.Small,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
     // ────────────────────────────────────────────────────────
@@ -192,12 +192,12 @@ public static class KnownModels
     {
         Id = "gemma-2-9b-it",
         DisplayName = "Gemma-2-9B-IT",
-        HuggingFaceRepoId = "google/gemma-2-9b-it",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/Gemma-2-9B-IT-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Gemma,
         Tier = ModelTier.Medium,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
     /// <summary>Phi-4 — Microsoft's medium-sized production model.</summary>
