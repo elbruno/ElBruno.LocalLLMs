@@ -122,7 +122,7 @@ public class LocalChatClientTests : IAsyncDisposable
     }
 
     [Fact]
-    public void Metadata_ModelId_MatchesOptions()
+    public void Metadata_DefaultModelId_MatchesOptions()
     {
         var downloader = Substitute.For<IModelDownloader>();
         var options = new LocalLLMsOptions { Model = KnownModels.Phi4 };
@@ -142,6 +142,16 @@ public class LocalChatClientTests : IAsyncDisposable
         Assert.Equal(new Uri("https://github.com/elbruno/ElBruno.LocalLLMs"), client.Metadata.ProviderUri);
     }
 
+    [Fact]
+    public void Metadata_DefaultModelId_MatchesDefaultModel()
+    {
+        var downloader = Substitute.For<IModelDownloader>();
+        var client = new LocalChatClient(new LocalLLMsOptions(), downloader);
+        _disposables.Add(client);
+
+        Assert.Equal(KnownModels.Phi35MiniInstruct.Id, client.Metadata.DefaultModelId);
+    }
+
     // ──────────────────────────────────────────────
     // GetService
     // ──────────────────────────────────────────────
@@ -153,7 +163,19 @@ public class LocalChatClientTests : IAsyncDisposable
         var client = new LocalChatClient(new LocalLLMsOptions(), downloader);
         _disposables.Add(client);
 
-        var service = client.GetService<IChatClient>();
+        var service = client.GetService(typeof(IChatClient));
+
+        Assert.Same(client, service);
+    }
+
+    [Fact]
+    public void GetService_LocalChatClient_ReturnsSelf()
+    {
+        var downloader = Substitute.For<IModelDownloader>();
+        var client = new LocalChatClient(new LocalLLMsOptions(), downloader);
+        _disposables.Add(client);
+
+        var service = client.GetService(typeof(LocalChatClient));
 
         Assert.Same(client, service);
     }
@@ -165,17 +187,29 @@ public class LocalChatClientTests : IAsyncDisposable
         var client = new LocalChatClient(new LocalLLMsOptions(), downloader);
         _disposables.Add(client);
 
-        var service = client.GetService<IModelDownloader>();
+        var service = client.GetService(typeof(IModelDownloader));
+
+        Assert.Null(service);
+    }
+
+    [Fact]
+    public void GetService_WithServiceKey_ReturnsNull()
+    {
+        var downloader = Substitute.For<IModelDownloader>();
+        var client = new LocalChatClient(new LocalLLMsOptions(), downloader);
+        _disposables.Add(client);
+
+        var service = client.GetService(typeof(IChatClient), "some-key");
 
         Assert.Null(service);
     }
 
     // ──────────────────────────────────────────────
-    // Argument validation — CompleteAsync
+    // Argument validation — GetResponseAsync
     // ──────────────────────────────────────────────
 
     [Fact]
-    public async Task CompleteAsync_NullMessages_ThrowsArgumentNullException()
+    public async Task GetResponseAsync_NullMessages_ThrowsArgumentNullException()
     {
         var downloader = Substitute.For<IModelDownloader>();
         downloader.EnsureModelAsync(
@@ -193,7 +227,7 @@ public class LocalChatClientTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task CompleteStreamingAsync_NullMessages_ThrowsArgumentNullException()
+    public async Task GetStreamingResponseAsync_NullMessages_ThrowsArgumentNullException()
     {
         var downloader = Substitute.For<IModelDownloader>();
         var client = new LocalChatClient(new LocalLLMsOptions(), downloader);
@@ -232,7 +266,7 @@ public class LocalChatClientTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task CompleteAsync_AfterDispose_ThrowsObjectDisposedException()
+    public async Task GetResponseAsync_AfterDispose_ThrowsObjectDisposedException()
     {
         var downloader = Substitute.For<IModelDownloader>();
         var client = new LocalChatClient(new LocalLLMsOptions(), downloader);
@@ -243,7 +277,7 @@ public class LocalChatClientTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task CompleteStreamingAsync_AfterDispose_ThrowsObjectDisposedException()
+    public async Task GetStreamingResponseAsync_AfterDispose_ThrowsObjectDisposedException()
     {
         var downloader = Substitute.For<IModelDownloader>();
         var client = new LocalChatClient(new LocalLLMsOptions(), downloader);

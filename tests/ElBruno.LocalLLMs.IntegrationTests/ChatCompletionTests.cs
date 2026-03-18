@@ -18,7 +18,7 @@ public class ChatCompletionTests : IAsyncDisposable
     // ──────────────────────────────────────────────
 
     [Fact]
-    public async Task CompleteAsync_SimpleQuestion_ReturnsResponse()
+    public async Task GetResponseAsync_SimpleQuestion_ReturnsResponse()
     {
         SkipIfNotEnabled();
 
@@ -29,12 +29,12 @@ public class ChatCompletionTests : IAsyncDisposable
         ]);
 
         Assert.NotNull(response);
-        Assert.NotNull(response.Messages);
+        Assert.NotEmpty(response.Messages);
         Assert.False(string.IsNullOrWhiteSpace(response.Text));
     }
 
     [Fact]
-    public async Task CompleteAsync_WithSystemMessage_ReturnsResponse()
+    public async Task GetResponseAsync_WithSystemMessage_ReturnsResponse()
     {
         SkipIfNotEnabled();
 
@@ -55,7 +55,7 @@ public class ChatCompletionTests : IAsyncDisposable
     // ──────────────────────────────────────────────
 
     [Fact]
-    public async Task CompleteAsync_MultiTurn_MaintainsContext()
+    public async Task GetResponseAsync_MultiTurn_MaintainsContext()
     {
         SkipIfNotEnabled();
 
@@ -70,13 +70,12 @@ public class ChatCompletionTests : IAsyncDisposable
         var response1 = await _client.GetResponseAsync(messages);
         Assert.NotNull(response1);
 
-        // Add assistant response and follow-up
         messages.Add(new ChatMessage(ChatRole.Assistant, response1.Text ?? ""));
         messages.Add(new ChatMessage(ChatRole.User, "What is my name?"));
 
         var response2 = await _client.GetResponseAsync(messages);
         Assert.NotNull(response2);
-        Assert.Contains("Alice", response2.Text!, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Alice", response2.Text ?? "", StringComparison.OrdinalIgnoreCase);
     }
 
     // ──────────────────────────────────────────────
@@ -84,7 +83,7 @@ public class ChatCompletionTests : IAsyncDisposable
     // ──────────────────────────────────────────────
 
     [Fact]
-    public async Task CompleteAsync_WithCustomOptions_ReturnsResponse()
+    public async Task GetResponseAsync_WithCustomOptions_ReturnsResponse()
     {
         SkipIfNotEnabled();
 
@@ -109,14 +108,14 @@ public class ChatCompletionTests : IAsyncDisposable
     // ──────────────────────────────────────────────
 
     [Fact]
-    public async Task CompleteAsync_CancellationRequested_ThrowsOrReturnsPartial()
+    public async Task GetResponseAsync_CancellationRequested_Throws()
     {
         SkipIfNotEnabled();
 
         _client = await LocalChatClient.CreateAsync();
 
         using var cts = new CancellationTokenSource();
-        cts.Cancel(); // Cancel immediately
+        cts.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
         {
@@ -138,6 +137,7 @@ public class ChatCompletionTests : IAsyncDisposable
         _client = await LocalChatClient.CreateAsync();
 
         Assert.NotNull(_client.Metadata);
+        Assert.Equal("elbruno-local-llms", _client.Metadata.ProviderName);
     }
 
     // ──────────────────────────────────────────────
@@ -145,7 +145,7 @@ public class ChatCompletionTests : IAsyncDisposable
     // ──────────────────────────────────────────────
 
     [Fact]
-    public async Task CompleteAsync_EmptyUserMessage_DoesNotThrow()
+    public async Task GetResponseAsync_EmptyUserMessage_DoesNotThrow()
     {
         SkipIfNotEnabled();
 

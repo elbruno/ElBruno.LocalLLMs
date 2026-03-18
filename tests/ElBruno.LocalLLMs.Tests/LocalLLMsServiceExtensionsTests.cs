@@ -25,6 +25,17 @@ public class LocalLLMsServiceExtensionsTests
     }
 
     [Fact]
+    public void AddLocalLLMs_Default_RegistersIModelDownloader()
+    {
+        var services = new ServiceCollection();
+
+        services.AddLocalLLMs();
+
+        var descriptor = services.FirstOrDefault(s => s.ServiceType == typeof(IModelDownloader));
+        Assert.NotNull(descriptor);
+    }
+
+    [Fact]
     public void AddLocalLLMs_Default_ReturnsSameCollection()
     {
         var services = new ServiceCollection();
