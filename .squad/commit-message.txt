@@ -1,0 +1,22 @@
+.squad: Gemma architecture support confirmed + decision merged
+
+Add orchestration logs:
+- 2026-03-18T15-dozer-gemma-conversion.md: 3 Gemma models converted, 2 Llama models gated
+- 2026-03-18T15-morpheus-blocked-models.md: Comprehensive blocked models reference
+
+Add session log:
+- 2026-03-18T15-gemma-conversion-session.md: Full session recap with action items
+
+Merge decision:
+- Decision 25: Gemma architecture support confirmed (v1 and v2 supported by builder v0.12.1)
+- Key finding: Gemma-2B-IT, Gemma-2-2B-IT, Gemma-2-9B-IT all convert successfully to INT4
+
+Cleanup:
+- Remove merged decision from inbox/
+
+Session stats:
+- 3 of 5 models converted (Gemma success, Llama gated)
+- Running total: 15 of 21 models converted (71%)
+- No blockers for Trinity integration phase
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>

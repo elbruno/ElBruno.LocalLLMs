@@ -48,6 +48,19 @@
 - Upload speeds to HuggingFace: ~300-400 MB/s for large files.
 - Disk cleanup after each upload is essential — the 24B model alone was 16 GB on disk plus cache.
 
+### 2025-03-18 — Gemma & Llama Batch Conversion
+
+**Converted 3 of 5 models successfully.**
+
+- **Gemma architecture IS SUPPORTED** by builder v0.12.1 — this was previously unknown. All three Gemma models (v1 2B, v2 2B, v2 9B) converted cleanly.
+- **Gemma-2B-IT** (google/gemma-2b-it): 3.5 GB INT4. Gemma v1 architecture. Uploaded to elbruno/Gemma-2B-IT-onnx.
+- **Gemma-2-2B-IT** (google/gemma-2-2b-it): 3.8 GB INT4. Gemma 2 architecture. Uploaded to elbruno/Gemma-2-2B-IT-onnx.
+- **Gemma-2-9B-IT** (google/gemma-2-9b-it): 9.0 GB INT4. Largest Gemma so far. Uploaded to elbruno/Gemma-2-9B-IT-onnx.
+- **Gemma uses 256K vocab** (256000 tokens), making embed_tokens weights large even for small models.
+- **Llama-3.2-3B-Instruct is STILL GATED** — access request is "awaiting review" from Meta. Separately gated from Llama 3.1.
+- **Llama-3.3-70B-Instruct is STILL GATED** — "not in the authorized list." Needs a separate access request from Llama 3.1/3.2.
+- Conversion times: Gemma-2B ~2 min, Gemma-2-2B ~3 min, Gemma-2-9B ~8 min.
+
 ### 2025-07-15 — Large Tier Batch Conversion
 
 **Converted 2 of 6 Large tier models successfully.**

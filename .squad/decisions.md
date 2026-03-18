@@ -500,6 +500,42 @@ Push to main → squad-release.yml (creates GitHub Release) → release event tr
 
 ---
 
+### Decision 25: Gemma Architecture Support Confirmed
+
+**Date:** 2026-03-18  
+**Author:** Dozer (ML/ONNX Conversion Engineer)  
+**Status:** Implemented
+
+**Scope:** Conversion of 5 target models: Gemma-2B-IT, Gemma-2-2B-IT, Gemma-2-9B-IT, Llama-3.2-3B-Instruct, Llama-3.3-70B-Instruct
+
+**Outcome:**
+- ✅ 3 succeeded: Gemma-2B-IT, Gemma-2-2B-IT, Gemma-2-9B-IT
+- ❌ 2 blocked: Llama-3.2-3B (awaiting Meta review), Llama-3.3-70B (not authorized yet)
+
+**Model Sizes (INT4):**
+| Model | Size | HuggingFace Repo |
+|-------|------|------------------|
+| Gemma-2B-IT | 3.5 GB | elbruno/Gemma-2B-IT-onnx |
+| Gemma-2-2B-IT | 3.8 GB | elbruno/Gemma-2-2B-IT-onnx |
+| Gemma-2-9B-IT | 9.0 GB | elbruno/Gemma-2-9B-IT-onnx |
+
+**Key Discovery:** Gemma architecture (both v1 and v2) is **FULLY SUPPORTED** by `onnxruntime_genai` builder v0.12.1. This was previously unknown. Both Gemma v1 (2B) and Gemma v2 (2B, 9B) convert cleanly to ONNX GenAI INT4 CPU format without warnings or errors.
+
+**Architecture Support Matrix Update:**
+| Architecture | Status | Models Tested |
+|-------------|--------|---------------|
+| Gemma v1 | ✅ Supported | Gemma-2B-IT |
+| Gemma v2 | ✅ Supported | Gemma-2-2B-IT, Gemma-2-9B-IT |
+
+**Technical Notes:**
+- Gemma uses 256K vocab (256000 tokens), resulting in large embed_tokens weights even for small params
+- Conversion times: Gemma-2B ~2 min, Gemma-2-2B ~3 min, Gemma-2-9B ~8 min
+- INT4 quantization successful on all three; no memory issues
+
+**Next:** Trinity to update KnownModels.cs with 3 Gemma entries; update README model table; run full test suite; commit validation.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
