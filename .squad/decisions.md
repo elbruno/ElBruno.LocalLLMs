@@ -134,6 +134,129 @@
 
 ---
 
+### Decision 10: Package Versions Updated from Architecture Doc
+
+**Date:** 2026-03-17  
+**Author:** Switch (DevOps)  
+**Status:** Active
+
+**Context:** The architecture doc specified specific package versions that were outdated by the time of implementation. NuGet packages had newer stable releases.
+
+**Decision:** Updated all package versions to latest stable:
+
+| Package | Architecture Doc | Actual Used |
+|---------|-----------------|-------------|
+| Microsoft.Extensions.AI.Abstractions | 10.3.0 | 10.4.0 |
+| Microsoft.Extensions.DependencyInjection.Abstractions | 10.0.3 | 10.0.5 |
+| Microsoft.ML.OnnxRuntimeGenAI | 0.6.* | 0.8.3 |
+| ElBruno.HuggingFace.Downloader | 0.5.0 | 0.6.0 |
+| xunit | 2.* | 2.9.0 |
+| NSubstitute | 5.* | 5.3.0 |
+
+**Consequences:** MEAI 10.4.0 introduced breaking API changes (method renames, type renames). All source code updated accordingly. OnnxRuntimeGenAI 0.8.3 changed the token retrieval API. Generator wrapper updated. Pinned exact versions to avoid NuGet resolution warnings with TreatWarningsAsErrors.
+
+**Impact:** All projects in the solution. Any future code must use the new API names (`GetResponseAsync`, `ChatResponse`, etc.).
+
+---
+
+### Decision 11: NSubstitute over Moq for Mocking
+
+**Date:** 2026-03-17  
+**Author:** Tank (Tester/QA)  
+**Status:** Active
+
+**Context:** Architecture doc Section 9 says "xUnit + Moq (or NSubstitute)".
+
+**Decision:** Use NSubstitute. Already in the .csproj from Switch's scaffolding.
+
+**Rationale:** NSubstitute has cleaner syntax, no `Setup()`/`Verify()` ceremony. Fits the project's "minimal noise" philosophy. The internal `LocalChatClient(options, downloader)` constructor enables clean injection of mocked `IModelDownloader`.
+
+---
+
+### Decision 12: Exact String Tests for Chat Templates
+
+**Date:** 2026-03-17  
+**Author:** Tank (Tester/QA)  
+**Status:** Active
+
+**Context:** Chat template output is the most critical correctness surface — wrong tokens = broken model inference.
+
+**Decision:** All five template formatters (ChatML, Phi3, Llama3, Qwen, Mistral) have tests asserting exact output strings for system+user, user-only, multi-turn, and edge cases. Additionally, negative assertions verify no cross-contamination of template tokens.
+
+**Rationale:** Fuzzy "contains" assertions miss subtle bugs (wrong newline counts, missing end tokens). Exact string equality catches regressions immediately.
+
+---
+
+### Decision 13: Integration Tests Gated by Environment Variable
+
+**Date:** 2026-03-17  
+**Author:** Tank (Tester/QA)  
+**Status:** Active
+
+**Context:** Integration tests require real model downloads (GB-scale) and GPU/CPU inference time.
+
+**Decision:** All integration tests use `[Trait("Category", "Integration")]` AND check `RUN_INTEGRATION_TESTS=true` env var at runtime. Tests use `[SkippableFact]` with `Skip.If()` for graceful skipping when disabled.
+
+**Rationale:** CI unit test jobs should never accidentally trigger multi-GB downloads. Dual gating (xUnit trait + runtime env check) provides defense in depth. xUnit's `SkippableFact` ensures tests skip cleanly without errors.
+
+---
+
+### Decision 14: MEAI v10 API Names as Canonical
+
+**Date:** 2026-03-17  
+**Author:** Tank (Tester/QA)  
+**Status:** Active
+
+**Context:** MEAI v10.4.0 renamed the core IChatClient methods: `CompleteAsync` → `GetResponseAsync`, `ChatCompletion` → `ChatResponse`, etc.
+
+**Decision:** All tests and samples use the v10 API names. Architecture doc examples (which used old names) are treated as aspirational, not literal.
+
+**Rationale:** Tests must compile and pass against the actual code. The source was updated to v10 API by Trinity. This is now the canonical API surface for the library.
+
+---
+
+### Decision 15: Lazy Model Initialization with SemaphoreSlim
+
+**Date:** 2026-03-17  
+**Author:** Trinity (Core Dev)  
+**Status:** Active
+
+**Context:** Model download + ONNX load is expensive. Should it happen in constructor or on first use?
+
+**Decision:** Lazy initialization on first `GetResponseAsync`/`GetResponseAsyncStreaming` call, with `SemaphoreSlim` for thread safety. Async factory `CreateAsync()` eagerly initializes.
+
+**Rationale:** Constructor stays sync and fast. Lazy init means DI registration doesn't block startup. SemaphoreSlim ensures only one thread does the download/load even under concurrent access.
+
+---
+
+### Decision 16: TokenizerStream for Streaming
+
+**Date:** 2026-03-17  
+**Author:** Trinity (Core Dev)  
+**Status:** Active
+
+**Context:** For streaming, we can either accumulate tokens and decode the full list each time, or use `TokenizerStream` for incremental decoding.
+
+**Decision:** Use `Tokenizer.CreateStream()` + `TokenizerStream.Decode(tokenId)` for per-token incremental decoding.
+
+**Rationale:** More efficient — avoids re-decoding the full sequence on every token. The GenAI API provides this specifically for streaming use cases.
+
+---
+
+### Decision 17: Config-based Provider Selection
+
+**Date:** 2026-03-17  
+**Author:** Trinity (Core Dev)  
+**Status:** Active
+
+**Context:** `new Model(path)` defaults to CPU. GPU needs provider configuration.
+
+**Decision:** For CPU, use `new Model(path)` directly. For CUDA/DirectML, use `Config` class to configure providers before model creation.
+
+**Rationale:** Cleanest API path — CPU is the common case and stays simple. GPU configuration is explicit and extensible.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
