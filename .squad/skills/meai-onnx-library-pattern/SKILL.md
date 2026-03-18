@@ -52,4 +52,4 @@ Root/
 
 - `elbruno/elbruno.localembeddings` — IEmbeddingGenerator
 - `elbruno/ElBruno.QwenTTS` — ITtsPipeline (custom interface)
-- `elbruno/ElBruno.LocalLLMs` — IChatClient (designed, not yet built)
+- `elbruno/ElBruno.LocalLLMs` — IChatClient (core library implemented)

@@ -15,3 +15,19 @@
 ## Learnings
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
+
+### 2026-03-17: Samples implemented and README fixed for MEAI 10.4.0
+- MEAI 10.4.0 uses `GetResponseAsync`/`GetStreamingResponseAsync` (NOT `CompleteAsync`/`CompleteStreamingAsync`)
+- Returns `ChatResponse` with `.Text` property (NOT `ChatCompletion` with `.Message.Text`)
+- Streaming returns `ChatResponseUpdate` with `.Text`
+- DI sample csproj already had `Microsoft.NET.Sdk.Web` — no change needed
+- All 4 samples (HelloChat, StreamingChat, MultiModelChat, DependencyInjection) now have real implementations
+- Full solution builds clean (8 projects, 0 warnings)
+
+### 2026-03-17: Core library implementation complete
+- Implemented all 21 .cs files across Models/, Download/, Execution/, Templates/, and root
+- ElBruno.HuggingFace.Downloader API: `HuggingFaceDownloader` class, `DownloadRequest` with `RepoId`/`LocalDirectory`/`RequiredFiles`/`OptionalFiles`/`Progress`, `DownloadFilesAsync()` method, `AreFilesAvailable()` for cache checks
+- Microsoft.ML.OnnxRuntimeGenAI API: `Model(path)` → `Tokenizer(model)` → `GeneratorParams(model)` with `SetSearchOption()` → `Generator(model, params)` with `AppendTokenSequences()` / `GenerateNextToken()` / `GetNextTokens()` loop. `TokenizerStream` for incremental decoding.
+- Config class needed for non-CPU providers: `ClearProviders()` → `AppendProvider("cuda"/"dml")` → `SetProviderOption(provider, "device_id", id)` → `new Model(config)`
+- Lazy init pattern with SemaphoreSlim for thread-safe model loading on first CompleteAsync call
+- ChatOptions from MEAI maps: MaxOutputTokens→MaxLength, Temperature, TopP, TopK, FrequencyPenalty→RepetitionPenalty
