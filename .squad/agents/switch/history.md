@@ -8,6 +8,10 @@
 - **Target models:** Phi-3.5-mini, Qwen2.5-3B, Llama-3.2-3B (small); Qwen2.5-7B, Phi-4 (medium)
 - **Created:** 2026-03-17
 
+## Architecture Status
+
+**2026-03-17:** Morpheus completed full solution architecture. Blueprint in `docs/architecture.md`. 9 decisions merged to `.squad/decisions.md`. Build infra (csproj, Directory.Build.props) and CI/CD scripting depend on architecture choices (net8.0, net10.0, ONNX GenAI). Switch can now proceed with solution scaffolding.
+
 ## Learnings
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->

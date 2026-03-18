@@ -8,6 +8,10 @@
 - **Target models:** Phi-3.5-mini, Qwen2.5-3B, Llama-3.2-3B (small); Qwen2.5-7B, Phi-4 (medium)
 - **Created:** 2026-03-17
 
+## Architecture Status
+
+**2026-03-17:** Morpheus completed full solution architecture. Blueprint in `docs/architecture.md`. 9 decisions merged to `.squad/decisions.md`. Tank should write unit test stubs mapping to interfaces defined in architecture (IModelDefinition, IChatTemplateFormatter, etc.).
+
 ## Learnings
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
