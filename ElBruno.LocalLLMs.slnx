@@ -6,6 +6,9 @@
     <Project Path="tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj" />
     <Project Path="tests/ElBruno.LocalLLMs.IntegrationTests/ElBruno.LocalLLMs.IntegrationTests.csproj" />
   </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/ElBruno.LocalLLMs.Benchmarks/ElBruno.LocalLLMs.Benchmarks.csproj" />
+  </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/HelloChat/HelloChat.csproj" />
     <Project Path="samples/StreamingChat/StreamingChat.csproj" />

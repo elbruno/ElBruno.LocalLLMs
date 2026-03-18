@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="ElBruno.LocalLLMs.Tests" />
+    <InternalsVisibleTo Include="ElBruno.LocalLLMs.Benchmarks" />
   </ItemGroup>
 
   <ItemGroup>
