@@ -410,7 +410,7 @@ START: Choosing a model?
 
 - 📚 [Getting Started Guide](getting-started.md) — detailed setup and examples
 - 🏗️ [Architecture](architecture.md) — internal design
-- 📝 [Contributing](../CONTRIBUTING.md) — add a new model
+- 📝 [Contributing](CONTRIBUTING.md) — add a new model
 - 🐍 [ONNX Conversion Scripts](../scripts/) — convert models manually
 - 🤗 [HuggingFace Hub](https://huggingface.co/models) — browse all models
 

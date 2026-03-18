@@ -41,11 +41,11 @@ jobs:
       - name: Validate version consistency
         run: |
           VERSION=$(grep -oP '(?<=<Version>).*(?=</Version>)' src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj)
-          if ! grep -q "## \[$VERSION\]" CHANGELOG.md 2>/dev/null; then
-            echo "::error::Version $VERSION not found in CHANGELOG.md — update CHANGELOG.md before release"
+          if ! grep -q "## \[$VERSION\]" docs/CHANGELOG.md 2>/dev/null; then
+            echo "::error::Version $VERSION not found in docs/CHANGELOG.md — update docs/CHANGELOG.md before release"
             exit 1
           fi
-          echo "✅ Version $VERSION validated in CHANGELOG.md"
+          echo "✅ Version $VERSION validated in docs/CHANGELOG.md"
 
       - name: Check no .ai-team/ or .squad/ files are tracked
         run: |

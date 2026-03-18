@@ -526,6 +526,6 @@ var options = new LocalLLMsOptions
 - 📖 Read the [Architecture](architecture.md) guide for internal design details
 - 🎯 Check [Supported Models](supported-models.md) for the full list and specifications
 - 🔧 See [samples/](../samples/) for runnable examples
-- 📝 Read [CONTRIBUTING.md](../CONTRIBUTING.md) to add a new model
+- 📝 Read [CONTRIBUTING.md](CONTRIBUTING.md) to add a new model
 
 Happy chatting! 🚀

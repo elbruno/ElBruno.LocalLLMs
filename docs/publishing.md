@@ -54,7 +54,7 @@ This guide covers how the `ElBruno.LocalLLMs` NuGet package is published using *
 The automated flow:
 
 1. Update `<Version>` in `src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj`
-2. Update `CHANGELOG.md` with a `## [X.Y.Z]` entry
+2. Update `docs/CHANGELOG.md` with a `## [X.Y.Z]` entry
 3. Push to `main`
 4. `squad-release.yml` automatically creates a GitHub Release with tag `vX.Y.Z`
 5. The release event triggers `publish.yml` → package is built and pushed to NuGet.org
