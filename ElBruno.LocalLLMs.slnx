@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj" />
+    <Project Path="tests/ElBruno.LocalLLMs.IntegrationTests/ElBruno.LocalLLMs.IntegrationTests.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/HelloChat/HelloChat.csproj" />
+    <Project Path="samples/StreamingChat/StreamingChat.csproj" />
+    <Project Path="samples/MultiModelChat/MultiModelChat.csproj" />
+    <Project Path="samples/DependencyInjection/DependencyInjection.csproj" />
+  </Folder>
+</Solution>

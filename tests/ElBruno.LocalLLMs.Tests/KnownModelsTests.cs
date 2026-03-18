@@ -1,0 +1,206 @@
+using ElBruno.LocalLLMs;
+
+namespace ElBruno.LocalLLMs.Tests;
+
+/// <summary>
+/// Tests for <see cref="KnownModels"/> — the pre-defined model registry.
+/// </summary>
+public class KnownModelsTests
+{
+    // ──────────────────────────────────────────────
+    // All collection
+    // ──────────────────────────────────────────────
+
+    [Fact]
+    public void All_IsNotNull()
+    {
+        Assert.NotNull(KnownModels.All);
+    }
+
+    [Fact]
+    public void All_IsNotEmpty()
+    {
+        Assert.NotEmpty(KnownModels.All);
+    }
+
+    [Fact]
+    public void All_ContainsPhi35MiniInstruct()
+    {
+        Assert.Contains(KnownModels.All, m => m.Id == "phi-3.5-mini-instruct");
+    }
+
+    [Fact]
+    public void All_ContainsPhi4()
+    {
+        Assert.Contains(KnownModels.All, m => m.Id == "phi-4");
+    }
+
+    [Fact]
+    public void All_ContainsQwen25_05BInstruct()
+    {
+        Assert.Contains(KnownModels.All, m => m.Id == "qwen2.5-0.5b-instruct");
+    }
+
+    [Fact]
+    public void All_HasAtLeastThreeModels()
+    {
+        Assert.True(KnownModels.All.Count >= 3);
+    }
+
+    [Fact]
+    public void All_AllModelsHaveUniqueIds()
+    {
+        var ids = KnownModels.All.Select(m => m.Id).ToList();
+        Assert.Equal(ids.Count, ids.Distinct().Count());
+    }
+
+    [Fact]
+    public void All_AllModelsHaveNonEmptyIds()
+    {
+        Assert.All(KnownModels.All, model =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(model.Id));
+        });
+    }
+
+    [Fact]
+    public void All_AllModelsHaveDisplayNames()
+    {
+        Assert.All(KnownModels.All, model =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(model.DisplayName));
+        });
+    }
+
+    [Fact]
+    public void All_AllModelsHaveHuggingFaceRepoIds()
+    {
+        Assert.All(KnownModels.All, model =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(model.HuggingFaceRepoId));
+        });
+    }
+
+    [Fact]
+    public void All_AllModelsHaveRequiredFiles()
+    {
+        Assert.All(KnownModels.All, model =>
+        {
+            Assert.NotNull(model.RequiredFiles);
+            Assert.NotEmpty(model.RequiredFiles);
+        });
+    }
+
+    [Fact]
+    public void All_IsReadOnly()
+    {
+        // IReadOnlyList — cannot add/remove at compile time.
+        // Runtime check: collection should not be mutable.
+        var list = KnownModels.All;
+        Assert.IsAssignableFrom<IReadOnlyList<ModelDefinition>>(list);
+    }
+
+    // ──────────────────────────────────────────────
+    // FindById
+    // ──────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("phi-3.5-mini-instruct")]
+    [InlineData("phi-4")]
+    [InlineData("qwen2.5-0.5b-instruct")]
+    public void FindById_KnownId_ReturnsModel(string modelId)
+    {
+        var model = KnownModels.FindById(modelId);
+
+        Assert.NotNull(model);
+        Assert.Equal(modelId, model!.Id);
+    }
+
+    [Theory]
+    [InlineData("nonexistent-model")]
+    [InlineData("")]
+    public void FindById_UnknownId_ReturnsNull(string modelId)
+    {
+        var model = KnownModels.FindById(modelId);
+
+        Assert.Null(model);
+    }
+
+    [Fact]
+    public void FindById_IsCaseInsensitive()
+    {
+        var model = KnownModels.FindById("PHI-3.5-MINI-INSTRUCT");
+
+        Assert.NotNull(model);
+        Assert.Equal("phi-3.5-mini-instruct", model!.Id);
+    }
+
+    [Fact]
+    public void FindById_AllModelsAreDiscoverable()
+    {
+        foreach (var expected in KnownModels.All)
+        {
+            var found = KnownModels.FindById(expected.Id);
+            Assert.NotNull(found);
+            Assert.Equal(expected.Id, found!.Id);
+        }
+    }
+
+    // ──────────────────────────────────────────────
+    // Specific model property checks
+    // ──────────────────────────────────────────────
+
+    [Fact]
+    public void Phi35MiniInstruct_HasCorrectProperties()
+    {
+        var model = KnownModels.Phi35MiniInstruct;
+
+        Assert.Equal("phi-3.5-mini-instruct", model.Id);
+        Assert.Equal("Phi-3.5 mini instruct", model.DisplayName);
+        Assert.Equal("microsoft/Phi-3.5-mini-instruct-onnx", model.HuggingFaceRepoId);
+        Assert.Equal(OnnxModelType.GenAI, model.ModelType);
+        Assert.Equal(ChatTemplateFormat.Phi3, model.ChatTemplate);
+        Assert.Equal(ModelTier.Small, model.Tier);
+        Assert.True(model.HasNativeOnnx);
+    }
+
+    [Fact]
+    public void Phi4_HasCorrectProperties()
+    {
+        var model = KnownModels.Phi4;
+
+        Assert.Equal("phi-4", model.Id);
+        Assert.Equal("Phi-4", model.DisplayName);
+        Assert.Equal("microsoft/phi-4-onnx", model.HuggingFaceRepoId);
+        Assert.Equal(OnnxModelType.GenAI, model.ModelType);
+        Assert.Equal(ChatTemplateFormat.Phi3, model.ChatTemplate);
+        Assert.Equal(ModelTier.Medium, model.Tier);
+        Assert.True(model.HasNativeOnnx);
+    }
+
+    [Fact]
+    public void Qwen25_05BInstruct_HasCorrectProperties()
+    {
+        var model = KnownModels.Qwen25_05BInstruct;
+
+        Assert.Equal("qwen2.5-0.5b-instruct", model.Id);
+        Assert.Equal("Qwen2.5-0.5B-Instruct", model.DisplayName);
+        Assert.Equal("Qwen/Qwen2.5-0.5B-Instruct", model.HuggingFaceRepoId);
+        Assert.Equal(OnnxModelType.GenAI, model.ModelType);
+        Assert.Equal(ChatTemplateFormat.Qwen, model.ChatTemplate);
+        Assert.Equal(ModelTier.Tiny, model.Tier);
+        Assert.False(model.HasNativeOnnx);
+    }
+
+    // ──────────────────────────────────────────────
+    // Static field references
+    // ──────────────────────────────────────────────
+
+    [Fact]
+    public void StaticFields_AreSameInstancesAsInAll()
+    {
+        Assert.Contains(KnownModels.Phi35MiniInstruct, KnownModels.All);
+        Assert.Contains(KnownModels.Phi4, KnownModels.All);
+        Assert.Contains(KnownModels.Qwen25_05BInstruct, KnownModels.All);
+    }
+}

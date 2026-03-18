@@ -47,7 +47,7 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
         Metadata = new ChatClientMetadata(
             providerName: "elbruno-local-llms",
             providerUri: new Uri("https://github.com/elbruno/ElBruno.LocalLLMs"),
-            modelId: options.Model.Id);
+            defaultModelId: options.Model.Id);
     }
 
     // --- Async Factory ---
@@ -76,21 +76,24 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
 
     // --- IChatClient Implementation ---
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Metadata describing this chat client provider and model.
+    /// </summary>
     public ChatClientMetadata Metadata { get; }
 
     /// <inheritdoc />
-    public async Task<ChatCompletion> CompleteAsync(
-        IList<ChatMessage> chatMessages,
+    public async Task<ChatResponse> GetResponseAsync(
+        IEnumerable<ChatMessage> messages,
         ChatOptions? options = null,
         CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        ArgumentNullException.ThrowIfNull(chatMessages);
+        ArgumentNullException.ThrowIfNull(messages);
 
         await EnsureInitializedAsync(progress: null, cancellationToken).ConfigureAwait(false);
 
-        var prompt = _formatter.FormatMessages(chatMessages);
+        var messageList = messages as IList<ChatMessage> ?? messages.ToList();
+        var prompt = _formatter.FormatMessages(messageList);
         var genParams = BuildGenerationParameters(options);
 
         var responseText = await Task.Run(
@@ -99,7 +102,7 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
 
         var responseMessage = new ChatMessage(ChatRole.Assistant, responseText.Trim());
 
-        return new ChatCompletion(responseMessage)
+        return new ChatResponse(responseMessage)
         {
             ModelId = _options.Model.Id,
             CreatedAt = DateTimeOffset.UtcNow,
@@ -107,25 +110,24 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
     }
 
     /// <inheritdoc />
-    public async IAsyncEnumerable<StreamingChatCompletionUpdate> CompleteStreamingAsync(
-        IList<ChatMessage> chatMessages,
+    public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+        IEnumerable<ChatMessage> messages,
         ChatOptions? options = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        ArgumentNullException.ThrowIfNull(chatMessages);
+        ArgumentNullException.ThrowIfNull(messages);
 
         await EnsureInitializedAsync(progress: null, cancellationToken).ConfigureAwait(false);
 
-        var prompt = _formatter.FormatMessages(chatMessages);
+        var messageList = messages as IList<ChatMessage> ?? messages.ToList();
+        var prompt = _formatter.FormatMessages(messageList);
         var genParams = BuildGenerationParameters(options);
 
         await foreach (var token in _model!.GenerateStreamingAsync(prompt, genParams, cancellationToken).ConfigureAwait(false))
         {
-            yield return new StreamingChatCompletionUpdate
+            yield return new ChatResponseUpdate(ChatRole.Assistant, token)
             {
-                Role = ChatRole.Assistant,
-                Text = token,
                 ModelId = _options.Model.Id,
                 CreatedAt = DateTimeOffset.UtcNow,
             };
@@ -133,11 +135,11 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
     }
 
     /// <inheritdoc />
-    public TService? GetService<TService>(object? key = null) where TService : class
+    public object? GetService(Type serviceType, object? serviceKey = null)
     {
-        if (this is TService service)
+        if (serviceType == typeof(LocalChatClient) || serviceType == typeof(IChatClient))
         {
-            return service;
+            return serviceKey is null ? this : null;
         }
 
         return null;
@@ -145,6 +147,7 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
 
     // --- Lifecycle ---
 
+    /// <inheritdoc />
     public void Dispose()
     {
         if (_disposed) return;
@@ -154,6 +157,7 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
         _initLock.Dispose();
     }
 
+    /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
         if (_disposed) return;

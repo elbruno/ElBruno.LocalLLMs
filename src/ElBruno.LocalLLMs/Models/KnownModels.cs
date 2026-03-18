@@ -6,7 +6,7 @@ namespace ElBruno.LocalLLMs;
 /// </summary>
 public static class KnownModels
 {
-    // --- ⚪ Tiny ---
+    /// <summary>Qwen2.5-0.5B-Instruct — tiny edge model.</summary>
     public static readonly ModelDefinition Qwen25_05BInstruct = new()
     {
         Id = "qwen2.5-0.5b-instruct",
@@ -19,7 +19,7 @@ public static class KnownModels
         HasNativeOnnx = false
     };
 
-    // --- 🟢 Small (recommended starting point) ---
+    /// <summary>Phi-3.5 mini instruct — recommended starting point (small).</summary>
     public static readonly ModelDefinition Phi35MiniInstruct = new()
     {
         Id = "phi-3.5-mini-instruct",
@@ -32,7 +32,7 @@ public static class KnownModels
         HasNativeOnnx = true
     };
 
-    // --- 🟡 Medium ---
+    /// <summary>Phi-4 — medium-sized production model.</summary>
     public static readonly ModelDefinition Phi4 = new()
     {
         Id = "phi-4",

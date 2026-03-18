@@ -67,21 +67,21 @@ internal sealed class OnnxGenAIModel : IDisposable
         using var generator = new Generator(_model, genParams);
         generator.AppendTokenSequences(sequences);
 
-        var outputTokens = new List<int>();
+        using var tokenizerStream = _tokenizer.CreateStream();
+        var outputText = new System.Text.StringBuilder();
 
         while (!generator.IsDone())
         {
             ct.ThrowIfCancellationRequested();
             generator.GenerateNextToken();
 
-            var nextTokens = generator.GetNextTokens();
-            foreach (var token in nextTokens)
-            {
-                outputTokens.Add(token);
-            }
+            var seq = generator.GetSequence(0);
+            var tokenId = seq[^1];
+            var decoded = tokenizerStream.Decode(tokenId);
+            outputText.Append(decoded);
         }
 
-        return _tokenizer.Decode(outputTokens.ToArray());
+        return outputText.ToString();
     }
 
     /// <summary>
@@ -109,14 +109,12 @@ internal sealed class OnnxGenAIModel : IDisposable
             ct.ThrowIfCancellationRequested();
             generator.GenerateNextToken();
 
-            var nextTokens = generator.GetNextTokens();
-            foreach (var tokenId in nextTokens)
+            var seq = generator.GetSequence(0);
+            var tokenId = seq[^1];
+            var tokenText = tokenizerStream.Decode(tokenId);
+            if (!string.IsNullOrEmpty(tokenText))
             {
-                var tokenText = tokenizerStream.Decode(tokenId);
-                if (!string.IsNullOrEmpty(tokenText))
-                {
-                    yield return tokenText;
-                }
+                yield return tokenText;
             }
 
             // Yield control to allow cooperative cancellation

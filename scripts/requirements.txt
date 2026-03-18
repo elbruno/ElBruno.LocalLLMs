@@ -1,0 +1,7 @@
+# ONNX Conversion Pipeline Dependencies
+# Install: pip install -r requirements.txt
+
+optimum[onnxruntime]>=1.18.0
+onnxruntime>=1.17.0
+transformers>=4.40.0
+torch>=2.2.0
