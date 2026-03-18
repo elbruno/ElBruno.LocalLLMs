@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   release:
@@ -84,3 +85,11 @@ jobs:
         run: |
           gh release view "${{ steps.version.outputs.tag }}"
           echo "✅ Release ${{ steps.version.outputs.tag }} created and verified."
+
+      - name: Trigger publish workflow
+        if: steps.check_tag.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run publish.yml -f version=${{ steps.version.outputs.version }}
+          echo "🚀 Triggered publish workflow for version ${{ steps.version.outputs.version }}"
