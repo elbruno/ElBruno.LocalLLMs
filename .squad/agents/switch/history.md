@@ -23,3 +23,8 @@
 - **xUnit 2.9.0 / NSubstitute 5.3.0** are latest stable (not 2.8.2 / 5.1.1). TreatWarningsAsErrors means NuGet version resolution warnings become hard errors — pin exact versions.
 - **Record types with `string[]` properties** don't get value equality — arrays use reference equality. Tests must compare properties individually or share array instances.
 - **Multi-target `net8.0;net10.0` works** with the current package set. All dependencies resolve for both TFMs.
+- **GitHub Actions workflows scaffolded from Node.js templates** — All Squad workflows (squad-release, squad-ci, squad-promote, etc.) were Node.js templates applied to C# project. Required full rewrite: `setup-node` → `setup-dotnet`, `node --test` → `dotnet test`, version extraction from `package.json` → `.csproj`. Version extraction pattern: `grep -oP '(?<=<Version>).*(?=</Version>)' src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj`.
+- **Worktree-local strategy allows `.squad/` on main** — Unlike standard Squad setup (where `.squad/` stays on dev), this project commits `.squad/` and `.ai-team/` to main by design. `squad-main-guard.yml` updated to allow these paths.
+- **NuGet publishing requires secret check** — `publish.yml` checks if `NUGET_API_KEY` secret is set before attempting push. If not set, workflow still succeeds and uploads artifact (enables testing publish workflow without NuGet credentials).
+- **CHANGELOG validation expects Keep a Changelog format** — All release workflows validate CHANGELOG.md has `## [X.Y.Z]` entry matching version in `.csproj`. Must update both files before release.
+
