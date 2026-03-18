@@ -1,17 +1,22 @@
 name: Publish to NuGet
 
 on:
-  push:
-    tags:
-      - "v*"
-
-permissions:
-  contents: read
-  packages: write
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Package version (leave empty to use csproj version)"
+        required: false
+        type: string
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -22,39 +27,47 @@ jobs:
             8.0.x
             10.0.x
 
-      - name: Extract version from tag
+      - name: Determine version
         id: version
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            VERSION="${{ github.event.release.tag_name }}"
+            VERSION="${VERSION#v}"
+            VERSION="${VERSION#.}"
+          elif [[ -n "${{ inputs.version }}" ]]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION=$(grep -oP '<Version>\K[^<]+' src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj)
+          fi
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "❌ Invalid version: '$VERSION'"; exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "📦 Publishing version: $VERSION"
 
       - name: Restore
         run: dotnet restore ElBruno.LocalLLMs.slnx
 
       - name: Build
-        run: dotnet build ElBruno.LocalLLMs.slnx --configuration Release --no-restore
+        run: dotnet build ElBruno.LocalLLMs.slnx -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
 
       - name: Unit Tests
-        run: dotnet test tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj --configuration Release --no-build --verbosity normal
+        run: dotnet test tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj -c Release --no-build --verbosity normal
 
       - name: Pack
-        run: dotnet pack src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj --configuration Release --no-build -p:PackageVersion=${{ steps.version.outputs.VERSION }} --output ./nupkg
+        run: dotnet pack src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
 
-      - name: Check NuGet API Key
-        id: check_key
-        run: |
-          if [ -z "${{ secrets.NUGET_API_KEY }}" ]; then
-            echo "has_key=false" >> "$GITHUB_OUTPUT"
-            echo "⚠️ NUGET_API_KEY secret is not set — skipping NuGet push"
-          else
-            echo "has_key=true" >> "$GITHUB_OUTPUT"
-            echo "✅ NUGET_API_KEY is configured"
-          fi
+      - name: NuGet login (OIDC → temp API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
 
-      - name: Push to NuGet
-        if: steps.check_key.outputs.has_key == 'true'
-        run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+      - name: Push to NuGet.org
+        run: dotnet nuget push artifacts/*.nupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: Upload NuGet package artifact
         uses: actions/upload-artifact@v4
         with:
           name: nupkg
-          path: ./nupkg/*.nupkg
+          path: artifacts/*.nupkg

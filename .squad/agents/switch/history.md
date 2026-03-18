@@ -27,4 +27,6 @@
 - **Worktree-local strategy allows `.squad/` on main** — Unlike standard Squad setup (where `.squad/` stays on dev), this project commits `.squad/` and `.ai-team/` to main by design. `squad-main-guard.yml` updated to allow these paths.
 - **NuGet publishing requires secret check** — `publish.yml` checks if `NUGET_API_KEY` secret is set before attempting push. If not set, workflow still succeeds and uploads artifact (enables testing publish workflow without NuGet credentials).
 - **CHANGELOG validation expects Keep a Changelog format** — All release workflows validate CHANGELOG.md has `## [X.Y.Z]` entry matching version in `.csproj`. Must update both files before release.
+- **NuGet OIDC Trusted Publishing replaces API keys** — `publish.yml` now uses `NuGet/login@v1` for OIDC token exchange instead of `NUGET_API_KEY`. Requires: (1) NuGet.org Trusted Publishing policy matching repo/workflow/environment, (2) GitHub `release` environment, (3) `NUGET_USER` secret (profile name). Trigger changed from `push: tags` to `release: published` + `workflow_dispatch`.
+- **Release chain: main → squad-release → publish** — Push to main triggers `squad-release.yml` which creates a GitHub Release via `gh release create`. The `release: published` event then triggers `publish.yml`. No manual tag creation needed.
 
