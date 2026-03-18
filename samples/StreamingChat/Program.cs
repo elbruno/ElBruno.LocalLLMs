@@ -1,5 +1,17 @@
-// TODO: StreamingChat sample — Trinity is building the core library
-// See docs/architecture.md §10.2 for the target implementation
+using ElBruno.LocalLLMs;
+using Microsoft.Extensions.AI;
 
-Console.WriteLine("ElBruno.LocalLLMs — StreamingChat Sample");
-Console.WriteLine("Waiting for core library implementation...");
+using var client = await LocalChatClient.CreateAsync(new LocalLLMsOptions
+{
+    Model = KnownModels.Phi35MiniInstruct
+});
+
+Console.WriteLine("Streaming response:");
+await foreach (var update in client.GetStreamingResponseAsync([
+    new(ChatRole.System, "You are a helpful assistant."),
+    new(ChatRole.User, "Explain quantum computing in simple terms.")
+]))
+{
+    Console.Write(update.Text);
+}
+Console.WriteLine();

@@ -1,5 +1,26 @@
-// TODO: MultiModelChat sample — Trinity is building the core library
-// See docs/architecture.md §10.3 for the target implementation
+using ElBruno.LocalLLMs;
+using Microsoft.Extensions.AI;
 
-Console.WriteLine("ElBruno.LocalLLMs — MultiModelChat Sample");
-Console.WriteLine("Waiting for core library implementation...");
+var question = new ChatMessage(ChatRole.User, "What is machine learning? Answer in one sentence.");
+
+// Try with Phi-3.5 mini
+Console.WriteLine("=== Phi-3.5 mini ===");
+using (var client = await LocalChatClient.CreateAsync(new LocalLLMsOptions
+{
+    Model = KnownModels.Phi35MiniInstruct
+}))
+{
+    var response = await client.GetResponseAsync([question]);
+    Console.WriteLine(response.Text);
+}
+
+// Try with Qwen 2.5 0.5B (tiny model)
+Console.WriteLine("\n=== Qwen 2.5 0.5B ===");
+using (var client = await LocalChatClient.CreateAsync(new LocalLLMsOptions
+{
+    Model = KnownModels.Qwen25_05BInstruct
+}))
+{
+    var response = await client.GetResponseAsync([question]);
+    Console.WriteLine(response.Text);
+}

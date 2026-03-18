@@ -13,7 +13,7 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 - 🚀 **Zero friction** — works out of the box with sensible defaults (Phi-3.5 mini)
 - 🖥️ **Multi-hardware** — CPU, CUDA, and DirectML execution providers
 - 💉 **DI-friendly** — register with `AddLocalLLMs()` in ASP.NET Core
-- 🔄 **Streaming** — token-by-token streaming via `CompleteStreamingAsync`
+- 🔄 **Streaming** — token-by-token streaming via `GetStreamingResponseAsync`
 - 📊 **Multi-model** — switch between Phi-3.5, Phi-4, Qwen2.5, Llama 3.2, and more
 
 ## Installation
@@ -26,28 +26,30 @@ dotnet add package ElBruno.LocalLLMs
 
 ```csharp
 using ElBruno.LocalLLMs;
+using Microsoft.Extensions.AI;
 
 // Create a local chat client (downloads Phi-3.5 mini on first run)
 using var client = await LocalChatClient.CreateAsync();
 
-var response = await client.CompleteAsync([
+var response = await client.GetResponseAsync([
     new(ChatRole.User, "What is the capital of France?")
 ]);
 
-Console.WriteLine(response.Message.Text);
+Console.WriteLine(response.Text);
 ```
 
 ## Streaming
 
 ```csharp
 using ElBruno.LocalLLMs;
+using Microsoft.Extensions.AI;
 
 using var client = await LocalChatClient.CreateAsync(new LocalLLMsOptions
 {
     Model = KnownModels.Phi35MiniInstruct
 });
 
-await foreach (var update in client.CompleteStreamingAsync([
+await foreach (var update in client.GetStreamingResponseAsync([
     new(ChatRole.System, "You are a helpful assistant."),
     new(ChatRole.User, "Explain quantum computing in simple terms.")
 ]))
