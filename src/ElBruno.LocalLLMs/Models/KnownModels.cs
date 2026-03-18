@@ -110,12 +110,12 @@ public static class KnownModels
     {
         Id = "qwen2.5-3b-instruct",
         DisplayName = "Qwen2.5-3B-Instruct",
-        HuggingFaceRepoId = "Qwen/Qwen2.5-3B-Instruct",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/Qwen2.5-3B-Instruct-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Qwen,
         Tier = ModelTier.Small,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
     /// <summary>Llama 3.2 3B Instruct — Meta's compact instruct model.</summary>
@@ -153,12 +153,12 @@ public static class KnownModels
     {
         Id = "qwen2.5-7b-instruct",
         DisplayName = "Qwen2.5-7B-Instruct",
-        HuggingFaceRepoId = "Qwen/Qwen2.5-7B-Instruct",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/Qwen2.5-7B-Instruct-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Qwen,
         Tier = ModelTier.Medium,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
     /// <summary>Llama 3.1 8B Instruct — Meta's mainstream instruct model.</summary>
@@ -166,12 +166,12 @@ public static class KnownModels
     {
         Id = "llama-3.1-8b-instruct",
         DisplayName = "Llama-3.1-8B-Instruct",
-        HuggingFaceRepoId = "meta-llama/Llama-3.1-8B-Instruct",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/Llama-3.1-8B-Instruct-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Llama3,
         Tier = ModelTier.Medium,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
     /// <summary>Mistral 7B Instruct v0.3 — Mistral AI's flagship 7B.</summary>
@@ -179,12 +179,12 @@ public static class KnownModels
     {
         Id = "mistral-7b-instruct-v0.3",
         DisplayName = "Mistral-7B-Instruct-v0.3",
-        HuggingFaceRepoId = "mistralai/Mistral-7B-Instruct-v0.3",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/Mistral-7B-Instruct-v0.3-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Mistral,
         Tier = ModelTier.Medium,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
     /// <summary>Gemma 2 9B IT — Google's mid-size instruct model.</summary>
@@ -218,12 +218,12 @@ public static class KnownModels
     {
         Id = "deepseek-r1-distill-qwen-14b",
         DisplayName = "DeepSeek-R1-Distill-Qwen-14B",
-        HuggingFaceRepoId = "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/DeepSeek-R1-Distill-Qwen-14B-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.DeepSeek,
         Tier = ModelTier.Medium,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
     /// <summary>Mistral Small 24B Instruct — Mistral AI's mid-large model.</summary>
@@ -231,12 +231,12 @@ public static class KnownModels
     {
         Id = "mistral-small-24b-instruct",
         DisplayName = "Mistral-Small-24B-Instruct",
-        HuggingFaceRepoId = "mistralai/Mistral-Small-24B-Instruct-2501",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/Mistral-Small-24B-Instruct-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Mistral,
         Tier = ModelTier.Medium,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
     // ────────────────────────────────────────────────────────
