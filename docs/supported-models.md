@@ -8,25 +8,25 @@ ElBruno.LocalLLMs supports **29 LLMs** across 5 tiers. This guide details each m
 
 | Tier | Model | Params | HuggingFace ID | ONNX Status | Chat Template | Recommended RAM | Speed |
 |------|-------|--------|----------------|----|---|---|---|
-| ⚪ Tiny | TinyLlama-1.1B-Chat | 1.1B | TinyLlama/TinyLlama-1.1B-Chat-v1.0 | 🔄 Convert | ChatML | 2–4 GB | ⚡⚡⚡ |
-| ⚪ Tiny | SmolLM2-1.7B-Instruct | 1.7B | HuggingFaceTB/SmolLM2-1.7B-Instruct | 🔄 Convert | ChatML | 2–4 GB | ⚡⚡⚡ |
-| ⚪ Tiny | Qwen2.5-0.5B-Instruct | 0.5B | Qwen/Qwen2.5-0.5B-Instruct | 🔄 Convert | Qwen | 1–2 GB | ⚡⚡⚡ |
-| ⚪ Tiny | Qwen2.5-1.5B-Instruct | 1.5B | Qwen/Qwen2.5-1.5B-Instruct | 🔄 Convert | Qwen | 2–4 GB | ⚡⚡⚡ |
+| ⚪ Tiny | TinyLlama-1.1B-Chat | 1.1B | TinyLlama/TinyLlama-1.1B-Chat-v1.0 | ✅ Native | ChatML | 2–4 GB | ⚡⚡⚡ |
+| ⚪ Tiny | SmolLM2-1.7B-Instruct | 1.7B | HuggingFaceTB/SmolLM2-1.7B-Instruct | ✅ Native | ChatML | 2–4 GB | ⚡⚡⚡ |
+| ⚪ Tiny | Qwen2.5-0.5B-Instruct | 0.5B | Qwen/Qwen2.5-0.5B-Instruct | ✅ Native | Qwen | 1–2 GB | ⚡⚡⚡ |
+| ⚪ Tiny | Qwen2.5-1.5B-Instruct | 1.5B | Qwen/Qwen2.5-1.5B-Instruct | ✅ Native | Qwen | 2–4 GB | ⚡⚡⚡ |
 | ⚪ Tiny | Gemma-2B-IT | 2B | google/gemma-2b-it | 🔄 Convert | ChatML | 4 GB | ⚡⚡⚡ |
 | ⚪ Tiny | StableLM-2-1.6B-Chat | 1.6B | stabilityai/stablelm-2-zephyr-1_6b | 🔄 Convert | ChatML | 3–4 GB | ⚡⚡⚡ |
 | 🟢 Small | Phi-3.5-mini-instruct | 3.8B | microsoft/Phi-3.5-mini-instruct-onnx | ✅ Native | Phi3 | 6–8 GB | ⚡⚡ |
-| 🟢 Small | Qwen2.5-3B-Instruct | 3B | Qwen/Qwen2.5-3B-Instruct | 🔄 Convert | Qwen | 6–8 GB | ⚡⚡ |
+| 🟢 Small | Qwen2.5-3B-Instruct | 3B | Qwen/Qwen2.5-3B-Instruct | ✅ Native | Qwen | 6–8 GB | ⚡⚡ |
 | 🟢 Small | Llama-3.2-3B-Instruct | 3B | meta-llama/Llama-3.2-3B-Instruct | 🔄 Convert | Llama3 | 6–8 GB | ⚡⚡ |
 | 🟢 Small | Gemma-2-2B-IT | 2.6B | google/gemma-2-2b-it | 🔄 Convert | ChatML | 6 GB | ⚡⚡ |
-| 🟡 Medium | Qwen2.5-7B-Instruct | 7B | Qwen/Qwen2.5-7B-Instruct | 🔄 Convert | Qwen | 8–12 GB | ⚡ |
-| 🟡 Medium | Llama-3.1-8B-Instruct | 8B | meta-llama/Llama-3.1-8B-Instruct | 🔄 Convert | Llama3 | 8–12 GB | ⚡ |
-| 🟡 Medium | Mistral-7B-Instruct-v0.3 | 7B | mistralai/Mistral-7B-Instruct-v0.3 | 🔄 Convert | Mistral | 8–12 GB | ⚡ |
+| 🟡 Medium | Qwen2.5-7B-Instruct | 7B | Qwen/Qwen2.5-7B-Instruct | ✅ Native | Qwen | 8–12 GB | ⚡ |
+| 🟡 Medium | Llama-3.1-8B-Instruct | 8B | meta-llama/Llama-3.1-8B-Instruct | ✅ Native | Llama3 | 8–12 GB | ⚡ |
+| 🟡 Medium | Mistral-7B-Instruct-v0.3 | 7B | mistralai/Mistral-7B-Instruct-v0.3 | ✅ Native | Mistral | 8–12 GB | ⚡ |
 | 🟡 Medium | Gemma-2-9B-IT | 9B | google/gemma-2-9b-it | 🔄 Convert | ChatML | 12 GB | ⚡ |
 | 🟡 Medium | Phi-4 | 14B | microsoft/phi-4 | ✅ Native | Phi3 | 12–16 GB | ⚡ |
-| 🟡 Medium | DeepSeek-R1-Distill-Qwen-14B | 14B | deepseek-ai/DeepSeek-R1-Distill-Qwen-14B | 🔄 Convert | ChatML | 12–16 GB | ⚡ |
-| 🟡 Medium | Mistral-Small-24B-Instruct | 24B | mistralai/Mistral-Small-24B-Instruct-2501 | 🔄 Convert | Mistral | 16–20 GB | ⚡ |
-| 🔴 Large | Qwen2.5-14B-Instruct | 14B | Qwen/Qwen2.5-14B-Instruct | 🔄 Convert | Qwen | 16–24 GB | 🐢 |
-| 🔴 Large | Qwen2.5-32B-Instruct | 32B | Qwen/Qwen2.5-32B-Instruct | 🔄 Convert | Qwen | 24–32 GB | 🐢 |
+| 🟡 Medium | DeepSeek-R1-Distill-Qwen-14B | 14B | deepseek-ai/DeepSeek-R1-Distill-Qwen-14B | ✅ Native | ChatML | 12–16 GB | ⚡ |
+| 🟡 Medium | Mistral-Small-24B-Instruct | 24B | mistralai/Mistral-Small-24B-Instruct-2501 | ✅ Native | Mistral | 16–20 GB | ⚡ |
+| 🔴 Large | Qwen2.5-14B-Instruct | 14B | Qwen/Qwen2.5-14B-Instruct | ✅ Native | Qwen | 16–24 GB | 🐢 |
+| 🔴 Large | Qwen2.5-32B-Instruct | 32B | Qwen/Qwen2.5-32B-Instruct | ✅ Native | Qwen | 24–32 GB | 🐢 |
 | 🔴 Large | Llama-3.3-70B-Instruct | 70B | meta-llama/Llama-3.3-70B-Instruct | 🔄 Convert | Llama3 | 40+ GB | 🐢 |
 | 🔴 Large | Mixtral-8x7B-Instruct-v0.1 | 46.7B (MoE) | mistralai/Mixtral-8x7B-Instruct-v0.1 | 🔄 Convert | Mistral | 24–32 GB | 🐢 |
 | 🔴 Large | DeepSeek-R1-Distill-Llama-70B | 70B | deepseek-ai/DeepSeek-R1-Distill-Llama-70B | 🔄 Convert | Llama3 | 40+ GB | 🐢 |

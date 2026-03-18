@@ -248,12 +248,12 @@ public static class KnownModels
     {
         Id = "qwen2.5-14b-instruct",
         DisplayName = "Qwen2.5-14B-Instruct",
-        HuggingFaceRepoId = "Qwen/Qwen2.5-14B-Instruct",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/Qwen2.5-14B-Instruct-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Qwen,
         Tier = ModelTier.Large,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
     /// <summary>Qwen2.5-32B-Instruct — extra-large Qwen model.</summary>
@@ -261,12 +261,12 @@ public static class KnownModels
     {
         Id = "qwen2.5-32b-instruct",
         DisplayName = "Qwen2.5-32B-Instruct",
-        HuggingFaceRepoId = "Qwen/Qwen2.5-32B-Instruct",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/Qwen2.5-32B-Instruct-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Qwen,
         Tier = ModelTier.Large,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
     /// <summary>Llama 3.3 70B Instruct — Meta's flagship large model.</summary>
