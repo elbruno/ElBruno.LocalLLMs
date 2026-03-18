@@ -379,6 +379,127 @@ Push to main → squad-release.yml (creates GitHub Release) → release event tr
 
 ---
 
+### Decision 21: Tiny Tier ONNX Conversions (4 of 6 Succeeded)
+
+**Date:** 2026-03-18  
+**Author:** Dozer (ML/ONNX Conversion Engineer)  
+**Status:** Implemented
+
+**Scope:** Converted 6 Tiny tier models from HuggingFace to ONNX GenAI INT4 format.
+
+**Outcome:**
+- ✅ 4 succeeded: Qwen2.5-0.5B, TinyLlama-1.1B, Qwen2.5-1.5B, SmolLM2-1.7B
+- ❌ 2 blocked: StableLM-2 (unsupported architecture), Gemma-2B (gated repo)
+
+**Model Sizes (INT4):**
+| Model | Size |
+|-------|------|
+| Qwen2.5-0.5B-Instruct | 841 MB |
+| TinyLlama-1.1B-Chat | 871 MB |
+| Qwen2.5-1.5B-Instruct | 1.85 GB |
+| SmolLM2-1.7B-Instruct | 1.41 GB |
+
+**Blockers:**
+- StableLM-2: `NotImplementedError` — unsupported by onnxruntime_genai v0.12.1 builder
+- Gemma-2B: 403 gated repo — requires license acceptance at HuggingFace
+
+**Next:** Trinity to update KnownModels.cs; Bruno to accept Gemma license; Dozer to retry Gemma and evaluate alternative for StableLM-2.
+
+---
+
+### Decision 22: Small + Medium Tier ONNX Conversions (6 of 9 Succeeded)
+
+**Date:** 2026-03-18  
+**Author:** Dozer (ML/ONNX Conversion Engineer)  
+**Status:** Implemented
+
+**Scope:** Converted 9 Small + Medium tier models to ONNX GenAI INT4 format.
+
+**Outcome:**
+- ✅ 6 succeeded: Qwen2.5-3B/7B, Mistral-7B, Llama-3.1-8B, DeepSeek-R1-Distill-Qwen-14B, Mistral-Small-24B
+- ❌ 3 blocked: Llama-3.2-3B, Gemma-2-2B/9B (all gated repos)
+
+**Model Sizes (INT4):**
+| Model | Size |
+|-------|------|
+| Qwen2.5-3B-Instruct | 3.0 GB |
+| Qwen2.5-7B-Instruct | 6.3 GB |
+| Mistral-7B-Instruct-v0.3 | 4.8 GB |
+| Llama-3.1-8B-Instruct | 6.5 GB |
+| DeepSeek-R1-Distill-Qwen-14B | 11.4 GB |
+| Mistral-Small-24B-Instruct | 16.2 GB |
+
+**Gated Models:** Llama-3.2-3B, Gemma-2-2B-IT, Gemma-2-9B-IT (require license acceptance)
+
+**Observations:** Qwen2.5 family maintaining 100% success rate. INT4 size scales linearly (~0.7 GB per billion params). Mistral-Small-24B regex tokenizer warning noted but did not block conversion.
+
+**Next:** Trinity to update KnownModels.cs; Bruno to accept Llama-3.2 and Gemma licenses; Dozer to retry gated models.
+
+---
+
+### Decision 23: Large Tier ONNX Conversions (2 of 6 Succeeded)
+
+**Date:** 2026-03-18  
+**Author:** Dozer (ML/ONNX Conversion Engineer)  
+**Status:** Implemented
+
+**Scope:** Attempted conversion of 6 Large tier models to ONNX GenAI INT4 format.
+
+**Outcome:**
+- ✅ 2 succeeded: Qwen2.5-14B, Qwen2.5-32B
+- ❌ 4 blocked: Command-R (gated), Mixtral-8x7B (unsupported MoE), DeepSeek-70B (OOM), Llama-3.3-70B (gated + likely OOM)
+
+**Model Sizes (INT4):**
+| Model | Size |
+|-------|------|
+| Qwen2.5-14B-Instruct | 11.3 GB |
+| Qwen2.5-32B-Instruct | 22.1 GB |
+
+**Blockers by Type:**
+| Reason | Models | Details |
+|--------|--------|---------|
+| Gated | Command-R (35B), Llama-3.3-70B | Require license acceptance |
+| Architecture | Mixtral-8x7B (46.7B MoE) | MoE unsupported by builder v0.12.1 |
+| Memory | DeepSeek-70B, (Llama-3.3-70B) | INT4 quantizer OOM during graph processing |
+
+**Key Finding:** 70B model quantization requires chunked/streaming approach — builder cannot hold full graph in memory simultaneously. Alternative tools (optimum, llama.cpp) needed.
+
+**Next:** Trinity to update KnownModels.cs; Bruno to accept Cohere Command-R and Meta Llama-3.3 licenses; Dozer to evaluate alternative quantization tools for 70B and MoE support.
+
+---
+
+### Decision 24: Documentation Overhaul — File Locations & New Guides
+
+**Date:** 2026-03-18  
+**Author:** Trinity (Core Dev)  
+**Status:** Implemented
+
+**Scope:** Comprehensive documentation reorganization per Bruno's directive; integration with 23-model registry.
+
+**Changes:**
+1. **Moved to docs/:** CONTRIBUTING.md, CHANGELOG.md
+2. **Updated README:** Full 23-model table (Tiny/Small/Medium/Large) with ONNX status
+3. **Created new docs:**
+   - docs/samples.md — Usage examples and patterns
+   - docs/benchmarks.md — Performance data across models
+   - docs/onnx-conversion.md — ONNX conversion process
+4. **Updated CI workflows:** All references now point to docs/CHANGELOG.md
+
+**Rationale:**
+- Clean repo root (only README.md + LICENSE)
+- Comprehensive model reference for user decision-making
+- Clear pathway for contributors and model additions
+- Transparent changelog and benchmarking
+
+**Consequences:**
+- ✅ All documentation centralized in docs/
+- 📝 Future model additions require README table + KnownModels.cs updates
+- 📝 CI workflows locked to docs/CHANGELOG.md paths
+
+**Integration:** All 246 tests passing; CI workflows validated against new paths.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
