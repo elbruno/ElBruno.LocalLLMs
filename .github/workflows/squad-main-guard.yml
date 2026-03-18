@@ -74,8 +74,6 @@ jobs:
               .filter(f => f.status !== 'removed')
               .map(f => f.filename)
               .filter(f => {
-                // .ai-team/** and .squad/** — ALL team state files, zero exceptions
-                if (f === '.ai-team' || f.startsWith('.ai-team/') || f === '.squad' || f.startsWith('.squad/')) return true;
                 // .ai-team-templates/** — Squad's own templates, stay on dev
                 if (f === '.ai-team-templates' || f.startsWith('.ai-team-templates/')) return true;
                 // team-docs/** — ALL internal team docs, zero exceptions
@@ -95,7 +93,6 @@ jobs:
               '## 🚫 Forbidden files detected in PR to main',
               '',
               'The following files must NOT be merged into `main`.',
-              '`.ai-team/` and `.squad/` are runtime team state — they belong on dev branches only.',
               '`.ai-team-templates/` is Squad\'s internal planning — it belongs on dev branches only.',
               '`team-docs/` is internal team content — it belongs on dev branches only.',
               '`docs/proposals/` is internal design proposals — it belongs on dev branches only.',
@@ -107,23 +104,22 @@ jobs:
               '### How to fix:',
               '',
               '```bash',
-              '# Remove tracked .ai-team/ files (keeps local copies):',
-              'git rm --cached -r .ai-team/',
-              '',
-              '# Remove tracked .squad/ files (keeps local copies):',
-              'git rm --cached -r .squad/',
+              '# Remove tracked .ai-team-templates/ files (keeps local copies):',
+              'git rm --cached -r .ai-team-templates/',
               '',
               '# Remove tracked team-docs/ files:',
               'git rm --cached -r team-docs/',
+              '',
+              '# Remove tracked docs/proposals/ files:',
+              'git rm --cached -r docs/proposals/',
               '',
               '# Commit the removal and push:',
               'git commit -m "chore: remove forbidden paths from PR"',
               'git push',
               '```',
               '',
-              '> ⚠️ `.ai-team/` and `.squad/` are committed on `dev` and feature branches by design.',
-              '> The guard workflow is the enforcement mechanism that keeps these files off `main` and `preview`.',
-              '> `git rm --cached` untracks them from this PR without deleting your local copies.',
+              '> ⚠️ Note: `.ai-team/` and `.squad/` ARE allowed on main for this project (worktree-local strategy).',
+              '> The guard workflow prevents only internal team documentation from reaching main.',
             ];
 
             core.setFailed(lines.join('\n'));

@@ -38,7 +38,19 @@ jobs:
       - name: Pack
         run: dotnet pack src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj --configuration Release --no-build -p:PackageVersion=${{ steps.version.outputs.VERSION }} --output ./nupkg
 
+      - name: Check NuGet API Key
+        id: check_key
+        run: |
+          if [ -z "${{ secrets.NUGET_API_KEY }}" ]; then
+            echo "has_key=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ NUGET_API_KEY secret is not set — skipping NuGet push"
+          else
+            echo "has_key=true" >> "$GITHUB_OUTPUT"
+            echo "✅ NUGET_API_KEY is configured"
+          fi
+
       - name: Push to NuGet
+        if: steps.check_key.outputs.has_key == 'true'
         run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: Upload NuGet package artifact

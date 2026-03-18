@@ -15,17 +15,26 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
         with:
-          node-version: 22
+          dotnet-version: |
+            8.0.x
+            10.0.x
 
-      - name: Run tests
-        run: node --test test/*.test.js
+      - name: Restore
+        run: dotnet restore ElBruno.LocalLLMs.slnx
 
-      - name: Read version from package.json
+      - name: Build
+        run: dotnet build ElBruno.LocalLLMs.slnx --configuration Release --no-restore
+
+      - name: Unit Tests
+        run: dotnet test tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj --configuration Release --no-build --verbosity normal
+
+      - name: Read version from .csproj
         id: version
         run: |
-          VERSION=$(node -e "console.log(require('./package.json').version)")
+          VERSION=$(grep -oP '(?<=<Version>).*(?=</Version>)' src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj)
           SHORT_SHA=$(git rev-parse --short HEAD)
           INSIDER_VERSION="${VERSION}-insider+${SHORT_SHA}"
           INSIDER_TAG="v${INSIDER_VERSION}"
@@ -50,7 +59,7 @@ jobs:
         run: |
           gh release create "${{ steps.version.outputs.insider_tag }}" \
             --title "${{ steps.version.outputs.insider_tag }}" \
-            --notes "This is an insider/development build of Squad. Install with:\`\`\`bash\nnpx github:bradygaster/squad#${{ steps.version.outputs.insider_tag }}\n\`\`\`\n\n**Note:** Insider builds may be unstable and are intended for early adopters and testing only." \
+            --notes "This is an insider/development build of ElBruno.LocalLLMs. Install with:\`\`\`bash\ndotnet add package ElBruno.LocalLLMs --version ${{ steps.version.outputs.insider_version }}\n\`\`\`\n\n**Note:** Insider builds may be unstable and are intended for early adopters and testing only." \
             --prerelease
 
       - name: Verify release

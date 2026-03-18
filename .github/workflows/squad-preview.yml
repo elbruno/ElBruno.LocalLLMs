@@ -13,21 +13,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
         with:
-          node-version: 22
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Restore
+        run: dotnet restore ElBruno.LocalLLMs.slnx
+
+      - name: Build
+        run: dotnet build ElBruno.LocalLLMs.slnx --configuration Release --no-restore
+
+      - name: Unit Tests
+        run: dotnet test tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj --configuration Release --no-build --verbosity normal
+
+      - name: Validate version in .csproj
+        run: |
+          VERSION=$(grep -oP '(?<=<Version>).*(?=</Version>)' src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj)
+          if [ -z "$VERSION" ]; then
+            echo "::error::❌ No <Version> field found in .csproj."
+            exit 1
+          fi
+          echo "✅ .csproj version: $VERSION"
 
       - name: Validate version consistency
         run: |
-          VERSION=$(node -e "console.log(require('./package.json').version)")
+          VERSION=$(grep -oP '(?<=<Version>).*(?=</Version>)' src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj)
           if ! grep -q "## \[$VERSION\]" CHANGELOG.md 2>/dev/null; then
             echo "::error::Version $VERSION not found in CHANGELOG.md — update CHANGELOG.md before release"
             exit 1
           fi
           echo "✅ Version $VERSION validated in CHANGELOG.md"
-
-      - name: Run tests
-        run: node --test test/*.test.js
 
       - name: Check no .ai-team/ or .squad/ files are tracked
         run: |
@@ -44,12 +62,3 @@ jobs:
             exit 1
           fi
           echo "✅ No .ai-team/ or .squad/ files tracked — clean for release."
-
-      - name: Validate package.json version
-        run: |
-          VERSION=$(node -e "console.log(require('./package.json').version)")
-          if [ -z "$VERSION" ]; then
-            echo "::error::❌ No version field found in package.json."
-            exit 1
-          fi
-          echo "✅ package.json version: $VERSION"

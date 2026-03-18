@@ -16,9 +16,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
         with:
-          node-version: 22
+          dotnet-version: |
+            8.0.x
+            10.0.x
 
-      - name: Run tests
-        run: node --test test/*.test.js
+      - name: Restore
+        run: dotnet restore ElBruno.LocalLLMs.slnx
+
+      - name: Build
+        run: dotnet build ElBruno.LocalLLMs.slnx --configuration Release --no-restore
+
+      - name: Unit Tests
+        run: dotnet test tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj --configuration Release --no-build --verbosity normal
