@@ -99,7 +99,7 @@ public class MyService(IChatClient chatClient) { ... }
 | 🟡 Medium | Mistral-Small-24B-Instruct | 24B | ✅ Native | `mistral-small-24b-instruct` |
 | 🔴 Large | Qwen2.5-14B-Instruct | 14B | ✅ Native | `qwen2.5-14b-instruct` |
 | 🔴 Large | Qwen2.5-32B-Instruct | 32B | ✅ Native | `qwen2.5-32b-instruct` |
-| 🔴 Large | Llama-3.3-70B-Instruct | 70B | 🔄 Convert | `llama-3.3-70b-instruct` |
+| 🔴 Large | Llama-3.3-70B-Instruct | 70B | ✅ ONNX | `llama-3.3-70b-instruct` |
 | 🔴 Large | Mixtral-8x7B-Instruct-v0.1 | 8x7B | 🔄 Convert | `mixtral-8x7b-instruct-v0.1` |
 | 🔴 Large | DeepSeek-R1-Distill-Llama-70B | 70B | 🔄 Convert | `deepseek-r1-distill-llama-70b` |
 | 🔴 Large | Command-R (35B) | 35B | 🔄 Convert | `command-r-35b` |

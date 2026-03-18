@@ -274,12 +274,12 @@ public static class KnownModels
     {
         Id = "llama-3.3-70b-instruct",
         DisplayName = "Llama-3.3-70B-Instruct",
-        HuggingFaceRepoId = "meta-llama/Llama-3.3-70B-Instruct",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/Llama-3.3-70B-Instruct-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Llama3,
         Tier = ModelTier.Large,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
     /// <summary>Mixtral 8x7B Instruct — Mistral AI's MoE model.</summary>

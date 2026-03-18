@@ -27,7 +27,7 @@ ElBruno.LocalLLMs supports **29 LLMs** across 5 tiers. This guide details each m
 | 🟡 Medium | Mistral-Small-24B-Instruct | 24B | mistralai/Mistral-Small-24B-Instruct-2501 | ✅ Native | Mistral | 16–20 GB | ⚡ |
 | 🔴 Large | Qwen2.5-14B-Instruct | 14B | Qwen/Qwen2.5-14B-Instruct | ✅ Native | Qwen | 16–24 GB | 🐢 |
 | 🔴 Large | Qwen2.5-32B-Instruct | 32B | Qwen/Qwen2.5-32B-Instruct | ✅ Native | Qwen | 24–32 GB | 🐢 |
-| 🔴 Large | Llama-3.3-70B-Instruct | 70B | meta-llama/Llama-3.3-70B-Instruct | 🔄 Convert | Llama3 | 40+ GB | 🐢 |
+| 🔴 Large | Llama-3.3-70B-Instruct | 70B | elbruno/Llama-3.3-70B-Instruct-onnx | ✅ Native | Llama3 | 40+ GB | 🐢 |
 | 🔴 Large | Mixtral-8x7B-Instruct-v0.1 | 46.7B (MoE) | mistralai/Mixtral-8x7B-Instruct-v0.1 | 🔄 Convert | Mistral | 24–32 GB | 🐢 |
 | 🔴 Large | DeepSeek-R1-Distill-Llama-70B | 70B | deepseek-ai/DeepSeek-R1-Distill-Llama-70B | 🔄 Convert | Llama3 | 40+ GB | 🐢 |
 | 🔴 Large | Command-R (35B) | 35B | CohereForAI/c4ai-command-r-v01 | 🔄 Convert | ChatML | 24–32 GB | 🐢 |

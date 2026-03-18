@@ -9,7 +9,7 @@ This document details models that cannot be converted to ONNX yet, along with th
 Meta's Llama models use **per-model license gates** on HuggingFace. Having access to one Llama model does **not** grant access to others:
 
 - **Llama-3.2-3B-Instruct** — ✅ **DONE** — License accepted, converted, and uploaded to `elbruno/Llama-3.2-3B-Instruct-onnx`.
-- **Llama-3.3-70B-Instruct** — ✅ License accepted. ❌ **OOM during conversion** — model downloads and loads successfully (all 80 decoder layers), but INT4 quantization exhausts ~440GB RAM and gets killed by the OS. Requires a machine with 512GB+ RAM or a cloud GPU instance.
+- **Llama-3.3-70B-Instruct** — ✅ **DONE** — License accepted, converted to INT4 ONNX using CUDA execution provider (CPU OOM'd at ~440GB, CUDA succeeded), and uploaded to `elbruno/Llama-3.3-70B-Instruct-onnx` (39.3 GB).
 
 Use `Llama-3.1-8B-Instruct` (already converted, native ONNX) or `Llama-3.2-3B-Instruct` as smaller alternatives.
 
@@ -23,7 +23,7 @@ Use `Llama-3.1-8B-Instruct` (already converted, native ONNX) or `Llama-3.2-3B-In
 | **Mixtral-8x7B-Instruct-v0.1** | 46.7B (MoE) | MoE routing not supported | ⛔ Blocked | Wait for builder MoE support or use Mistral-7B |
 | **DeepSeek-R1-Distill-Llama-70B** | 70B | RAM: ~450GB needed for INT4 | ⛔ Blocked | Use 512GB+ machine, cloud GPU, or smaller DeepSeek-R1-Distill-Qwen-14B |
 | **Command-R (35B)** | 35B | Gated model / license issue | ⛔ Blocked | Verify HuggingFace license or use CohereForAI/c4ai-command-r-plus |
-| **Llama-3.3-70B-Instruct** | 70B | RAM: ~450GB needed for INT4 | ⛔ Blocked | Use 512GB+ machine, cloud GPU, or smaller alternative |
+| **Llama-3.3-70B-Instruct** | 70B | ~~RAM: ~450GB needed for INT4~~ | ✅ Resolved | CUDA conversion succeeded; uploaded to elbruno/Llama-3.3-70B-Instruct-onnx |
 
 ---
 
@@ -157,35 +157,24 @@ You need ~500 GB free disk space during conversion.
 
 ---
 
-### Llama-3.3-70B-Instruct
+### Llama-3.3-70B-Instruct — ✅ RESOLVED
 
 **Model:** meta-llama/Llama-3.3-70B-Instruct  
 **Parameters:** 70B  
-**HuggingFace:** https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct
+**HuggingFace:** https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct  
+**Converted ONNX:** https://huggingface.co/elbruno/Llama-3.3-70B-Instruct-onnx (39.3 GB, INT4)
 
-#### Why It's Blocked
+#### Resolution
 
-**Same RAM constraint as DeepSeek-R1-Distill-Llama-70B:** A 70B model requires ~450 GB RAM for INT4 quantization.
+Converted to INT4 ONNX using **CUDA execution provider**, bypassing the CPU RAM limitation. CPU conversion OOM'd at ~440GB; CUDA succeeded.
 
-Confirmed details from conversion attempt (2026-03-18):
+#### Historical Details (for reference)
+
+Confirmed details from initial conversion attempt (2026-03-18):
 - ✅ License accepted — model downloads successfully (no more 403)
 - ✅ All 80 decoder layers load correctly — Llama architecture fully supported by builder v0.12.1
-- ❌ INT4 quantization phase exhausts ~440GB RAM → OS kill
-- The builder v0.12.1 supports Llama architecture including GQA — the only blocker is RAM
-
-#### What You Can Do
-
-Follow the same steps as DeepSeek-R1-Distill-Llama-70B:
-
-1. **512GB+ RAM machine** (conversion: 2–4 hours)
-2. **Cloud GPU instance** (A100 with 80 GB VRAM; cost ~$2–4/hour; conversion: 20–30 min)
-3. **Use smaller Llama alternative:**
-
-#### Recommended Alternatives
-
-- **Llama-3.1-8B-Instruct** (8B) — ✅ native ONNX, excellent, only 8–12 GB RAM
-- **Llama-3.2-3B-Instruct** (3B) — being converted now, needs only 6–8 GB RAM
-- **Qwen2.5-32B-Instruct** (32B) — native ONNX, better instruction-following than Llama-3.1-8B
+- ❌ INT4 quantization phase exhausts ~440GB RAM → OS kill (CPU only)
+- ✅ CUDA conversion succeeded — GPU memory bypasses CPU RAM bottleneck
 
 ---
 
@@ -384,7 +373,7 @@ These models are in the `team.md` roadmap but haven't been added to the library 
 **Likely to be converted:**
 - ✅ Gemma-2B-IT, Gemma-2-2B-IT, Gemma-2-9B-IT — **DONE** (converted and uploaded to elbruno HuggingFace repos)
 - ✅ Llama-3.2-3B-Instruct — **DONE** (converted and uploaded to elbruno/Llama-3.2-3B-Instruct-onnx)
-- ❌ Llama-3.3-70B — License accepted, but **OOM** during conversion (~440GB RAM insufficient). Requires 512GB+ machine or cloud GPU.
+- ✅ Llama-3.3-70B — **DONE** (converted to INT4 ONNX using CUDA, uploaded to elbruno/Llama-3.3-70B-Instruct-onnx)
 - ✅ Qwen3-8B, Qwen3-32B (architecture compatibility expected to be solid)
 - ✅ Gemma-3-12B-IT (likely works with current builder)
 
@@ -412,7 +401,7 @@ These models are in the `team.md` roadmap but haven't been added to the library 
 | Gemma-3-12B-IT | 2025 | ✅ Low (Gemma-2 compatible) |
 | Mixtral-8x7B | 2025–2026 | 🔴 High (requires MoE builder support) |
 | Llama-4-Scout | 2025–2026 | 🔴 High (requires MoE builder support) |
-| Llama-3.3-70B | 2025–2026 | ⚠️ Medium (RAM blocker solvable with cloud) |
+| Llama-3.3-70B | ✅ Done | ✅ Resolved (CUDA conversion) |
 | StableLM-2-1.6B | 2025–2026 | 🔴 High (requires new architecture support) |
 | Llama-4-Maverick | 2026+ | 🔴 Very High (complex MoE, rarely practical) |
 | DeepSeek-V3 | 2026+ | 🔴 Impractical (even with MoE, too large) |
