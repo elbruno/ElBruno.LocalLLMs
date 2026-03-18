@@ -403,6 +403,54 @@ Push to main → squad-release.yml (creates GitHub Release) → release event tr
 - StableLM-2: `NotImplementedError` — unsupported by onnxruntime_genai v0.12.1 builder
 - Gemma-2B: 403 gated repo — requires license acceptance at HuggingFace
 
+---
+
+### Decision 25: 70B ONNX Conversions Not Feasible on This Machine
+
+**Date:** 2026-03-18  
+**Author:** Dozer (ML / ONNX Conversion Engineer)  
+**Status:** Active
+
+**Context**
+
+Bruno accepted the Meta Llama 3.3 license on HuggingFace. Attempted to convert `meta-llama/Llama-3.3-70B-Instruct` to ONNX GenAI INT4 CPU format using `onnxruntime_genai.models.builder`.
+
+The conversion progressed through:
+1. ✅ Download: 30 files (~130 GB safetensors), ~16 minutes
+2. ✅ Load checkpoint: 30 shards, ~1 minute
+3. ✅ Read all 80 decoder layers + embedding + LM head
+4. ❌ **"Saving ONNX model" (INT4 quantization + serialization):** Process killed by OS after 40+ minutes. Zero output files. Out of memory.
+
+This is the **second confirmed 70B OOM failure** — DeepSeek-R1-Distill-Llama-70B (also 70B params) failed identically on 2026-03-18.
+
+**Decision**
+
+**70B parameter models cannot be converted to ONNX GenAI format on this machine (440 GB RAM).** Do not attempt further 70B conversions locally.
+
+**Rationale**
+
+The `onnxruntime_genai` builder's INT4 quantization step requires holding the entire ONNX graph plus all quantized weight tensors in memory simultaneously during protobuf serialization. For 70B models, this exceeds 440 GB. The OS OOM killer terminates the process silently.
+
+This has now been validated across two different 70B architectures:
+- **DeepSeek-R1-Distill-Llama-70B** (Qwen2 architecture) — MemoryError
+- **Llama-3.3-70B-Instruct** (Llama architecture) — OOM kill
+
+**Alternatives**
+
+1. **Cloud VM with 512+ GB RAM** — Rent an Azure/AWS/GCP instance with sufficient memory for the conversion. Estimated cost: ~$5-10 for a single conversion run.
+2. **Pre-converted models** — Check if ONNX GenAI versions are published by Microsoft or community on HuggingFace (e.g., under `microsoft/` or `onnx-community/`).
+3. **GGUF format via llama.cpp** — `llama.cpp`'s quantization uses memory-mapped I/O and can handle 70B models on machines with less RAM. However, GGUF is not compatible with our `Microsoft.ML.OnnxRuntimeGenAI` library.
+4. **Wait for builder improvements** — Future versions of `onnxruntime_genai` may implement streaming/chunked quantization that doesn't require the full graph in memory.
+
+**Impact**
+
+The following models in our conversion list are affected:
+- `meta-llama/Llama-3.3-70B-Instruct` — ❌ Cannot convert locally
+- `deepseek-ai/DeepSeek-R1-Distill-Llama-70B` — ❌ Already confirmed OOM
+
+All models ≤32B params convert successfully on this machine.
+
+
 **Next:** Trinity to update KnownModels.cs; Bruno to accept Gemma license; Dozer to retry Gemma and evaluate alternative for StableLM-2.
 
 ---

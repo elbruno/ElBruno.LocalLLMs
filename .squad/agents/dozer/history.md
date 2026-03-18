@@ -81,3 +81,14 @@
 - **Llama-3.3-70B-Instruct is GATED** — 403, separate license from Llama 3.1. Even if access is granted, it would likely hit the same MemoryError as DeepSeek-70B.
 - **70B models appear to be beyond the practical limit** for `onnxruntime_genai` builder INT4 CPU conversion on this machine. Alternative approaches: `optimum` library, `llama.cpp` GGUF conversion, or a machine with more RAM (likely needs 500+ GB for the quantization step).
 - Conversion times: 14B ~10 min total, 32B ~25 min total. The 70B download alone took ~18 min (130+ GB of safetensors).
+
+### 2025-03-18 — Llama-3.3-70B-Instruct Conversion Attempt
+
+**FAILED — OOM during quantization/serialization.**
+
+- **License now accepted** — Bruno accepted the Meta Llama 3.3 license. Download succeeded (30 files, ~16 min). No more 403 errors.
+- **Model loaded fully** — All 30 checkpoint shards loaded (~1 min), all 80 decoder layers read, embedding layer and LM head read. No issues with the model architecture.
+- **OOM during "Saving ONNX model"** — The process ran for 40+ minutes in the ONNX serialization/INT4 quantization phase, then was killed silently by the OS. Zero output files produced. No error message captured (process killed by OS OOM killer).
+- **Identical failure pattern to DeepSeek-R1-Distill-Llama-70B** — both 70B models fail at the exact same stage. The `onnxruntime_genai` builder's INT4 quantization requires holding the entire ONNX graph + quantized weights in memory simultaneously, which exceeds 440 GB RAM.
+- **Confirmed: 70B models cannot be converted on this machine** with `onnxruntime_genai` builder. This is now validated across two different 70B model families (Llama and Qwen/DeepSeek).
+- **Alternatives remain:** cloud VM with 512+ GB RAM, pre-converted ONNX models from HuggingFace, or GGUF format via `llama.cpp` (which uses memory-mapped I/O and handles large models better).
