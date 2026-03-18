@@ -536,6 +536,78 @@ Push to main → squad-release.yml (creates GitHub Release) → release event tr
 
 ---
 
+## Decision: Gemma Models Now Use Native ONNX Repos
+
+**Date:** 2026-03-18  
+**Author:** Trinity (Core Dev)  
+**Status:** Implemented  
+
+### Context
+
+Dozer converted 3 Gemma models to ONNX GenAI format and uploaded them to elbruno HuggingFace repos. KnownModels.cs previously pointed at Google's original repos with `HasNativeOnnx = false`.
+
+### Decision
+
+Updated all 3 Gemma entries in KnownModels to point at elbruno ONNX repos with `RequiredFiles = ["*"]` and `HasNativeOnnx = true`:
+- `elbruno/Gemma-2B-IT-onnx` (Tiny tier)
+- `elbruno/Gemma-2-2B-IT-onnx` (Small tier)
+- `elbruno/Gemma-2-9B-IT-onnx` (Medium tier)
+
+### Rationale
+
+- GenAI format repos contain all necessary files (model, tokenizer, genai_config.json), so `["*"]` is the correct RequiredFiles pattern
+- Consistent with how all other converted models (TinyLlama, Qwen, Llama-3.1, Mistral, etc.) are configured
+- Users no longer need to run ONNX conversion for any Gemma v1/v2 model
+
+### Impact
+
+- Gemma models now work out of the box (no conversion step)
+- 16 of 23 KnownModels now have native ONNX — only 7 still need conversion
+- Remaining blocked Llama models (3.2-3B, 3.3-70B) are gated by Meta license, not architecture
+
+---
+
+## Decision: Llama Model ONNX Conversion Retry (2026-03-18)
+
+**Author:** Dozer (ML Engineer)  
+**Requested by:** Bruno Capuano  
+**Status:** Completed
+
+### Context
+
+Bruno accepted the Meta Llama licenses on HuggingFace and asked for a retry of the two remaining Llama models:
+1. Llama-3.2-3B-Instruct
+2. Llama-3.3-70B-Instruct
+
+### Results
+
+| Model | Status | HuggingFace Repo | Notes |
+|-------|--------|------------------|-------|
+| Llama-3.2-3B-Instruct | ✅ Success | [elbruno/Llama-3.2-3B-Instruct-onnx](https://huggingface.co/elbruno/Llama-3.2-3B-Instruct-onnx) | INT4 CPU, ~3.5 GB. Converted and uploaded cleanly. |
+| Llama-3.3-70B-Instruct | ❌ Failed — Still Gated | N/A | 403: "Your request to access model meta-llama/Llama-3.3-70B-Instruct is awaiting a review from the repo authors." Llama 3.3 has a separate license from 3.2 — Meta has not yet approved it. |
+
+### Details: Llama-3.2-3B-Instruct ✅
+
+- **Conversion:** Completed successfully with `onnxruntime_genai` builder v0.12.1, INT4 CPU
+- **Output files:** genai_config.json, model.onnx (210 KB), model.onnx.data (3,482 MB), tokenizer.json (16.4 MB), tokenizer_config.json, special_tokens_map.json, chat_template.jinja
+- **Total size:** ~3.5 GB INT4 (consistent with 3B parameter model)
+- **Upload:** Completed to elbruno/Llama-3.2-3B-Instruct-onnx at ~290 MB/s
+- **Local cleanup:** Done
+
+### Details: Llama-3.3-70B-Instruct ❌
+
+- **Error:** `GatedRepoError: 403 Client Error` — access is "awaiting a review from the repo authors"
+- **Root cause:** Llama 3.3 has a separate gated license from Llama 3.2 on HuggingFace. Bruno accepted the Llama 3.2 license (which worked), but the Llama 3.3 license request is still pending Meta's approval.
+- **Note:** Even if access is granted, this 70B model will very likely hit the same MemoryError seen with DeepSeek-R1-Distill-Llama-70B — the INT4 quantization step exceeds 450 GB RAM.
+
+### Action Items
+
+1. **Bruno:** Check Llama 3.3 license status at https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct — it may need a separate acceptance from Llama 3.2.
+2. **When approved:** Retry conversion, but expect MemoryError. Document if it fails for the same reason as the 70B DeepSeek.
+3. **Alternative for 70B:** Consider `optimum` library, `llama.cpp` GGUF, or a higher-RAM machine if the builder fails.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus

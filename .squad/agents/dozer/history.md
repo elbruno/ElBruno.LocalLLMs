@@ -61,6 +61,15 @@
 - **Llama-3.3-70B-Instruct is STILL GATED** — "not in the authorized list." Needs a separate access request from Llama 3.1/3.2.
 - Conversion times: Gemma-2B ~2 min, Gemma-2-2B ~3 min, Gemma-2-9B ~8 min.
 
+### 2025-03-18 — Llama License Retry
+
+**Converted 1 of 2 Llama models successfully.**
+
+- **Llama-3.2-3B-Instruct CONVERTED** — Bruno accepted the Llama 3.2 license. Converted cleanly to INT4 CPU (~3.5 GB). Uploaded to elbruno/Llama-3.2-3B-Instruct-onnx. Output: genai_config.json, model.onnx (210 KB), model.onnx.data (3,482 MB), tokenizer files.
+- **Llama-3.3-70B-Instruct STILL GATED** — 403 "awaiting review from repo authors." Llama 3.3 has a **separate** license from Llama 3.2. Bruno accepted 3.2 but 3.3 is independently gated and Meta hasn't approved it yet.
+- **Key insight:** Each Llama version (3.1, 3.2, 3.3) has its own independent gated license on HuggingFace. Accepting one does NOT grant access to others.
+- Even if 3.3 access is granted, the 70B model will very likely hit MemoryError (same as DeepSeek-70B).
+
 ### 2025-07-15 — Large Tier Batch Conversion
 
 **Converted 2 of 6 Large tier models successfully.**
