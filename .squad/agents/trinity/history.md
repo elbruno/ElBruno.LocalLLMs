@@ -53,3 +53,11 @@
 - Updated ONNX status from 🔄 Convert → ✅ Native in both README.md model table and docs/supported-models.md
 - Expanded README badge block to 8 badges matching ElBruno.VibeVoiceTTS style: NuGet, NuGet Downloads, Build Status, MIT License, HuggingFace, .NET 8/10, GitHub Stars, Twitter Follow
 - Beware: `git add -A` can pick up a local `cache_dir/` with multi-GB model blobs — always stage specific files instead
+
+### 2026-03-18: ConsoleAppDemo sample created
+- Created `samples/ConsoleAppDemo/` — comprehensive demo with 4 examples: download progress, simple Q&A, streaming, multi-turn conversation
+- Follows the LocalEmbeddings ConsoleApp pattern: box-drawn banners (╔═══╗), section separators (━━━), emoji markers (⬇️ ✓ 🗣️ 🤖)
+- `ModelDownloadProgress.PercentComplete` is 0.0–1.0 range (use `:P0` format specifier for display)
+- `_resolvedModelPath` is private — use `Path.Combine(SpecialFolder.LocalApplicationData, "ElBruno", "LocalLLMs", "models")` to show expected cache path
+- Multi-turn conversation demo adds assistant response to `List<ChatMessage>` history between turns
+- Added to `ElBruno.LocalLLMs.slnx` under `/samples/` folder — builds clean (0 warnings)

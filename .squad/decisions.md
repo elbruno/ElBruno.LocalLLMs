@@ -455,6 +455,58 @@ All models ≤32B params convert successfully on this machine.
 
 ---
 
+### Decision 26: Llama-3.3-70B-Instruct CUDA Conversion
+
+**Date:** 2026-03-18  
+**Author:** Dozer (ML Engineer)  
+**Status:** Completed
+
+**Context**
+
+Llama-3.3-70B-Instruct previously failed twice with `-e cpu` — OOM after 40+ minutes, exhausting 440+ GB of the machine's 450 GB RAM. The ONNX serialization step tries to hold the entire quantized graph in memory at once. Bruno asked to retry with CUDA execution provider on what was reported as an A100 GPU (actually an A10-24Q with 24 GB VRAM).
+
+**Decision**
+
+Used `-e cuda` with `onnxruntime-genai-cuda` 0.12.2. This succeeded where CPU failed — the CUDA quantization path serializes INT4 weights incrementally (966 chunks) instead of building the full graph in RAM. Peak RAM stayed under 250 GB.
+
+**Outcome**
+
+- **Model converted:** 39.3 GB INT4 ONNX (80 layers, 128K context, GQA)
+- **Uploaded:** `elbruno/Llama-3.3-70B-Instruct-onnx` on HuggingFace
+- **Conversion time:** ~25-30 minutes (model was cached from prior attempt)
+- **Local files cleaned up** after upload
+
+**Implications**
+
+- **DeepSeek-R1-Distill-Llama-70B should also work with `-e cuda`** — same 70B scale, same OOM pattern on CPU. Recommend retrying.
+- **All future large model conversions (32B+) should default to `-e cuda`** even if a GPU isn't strictly needed — it uses a more memory-efficient quantization path.
+- The GPU hardware (A10-24Q, 24 GB) was irrelevant — CUDA EP changes the algorithm, not the compute device. GPU utilization stayed at 0%.
+
+---
+
+### Decision 27: ConsoleAppDemo Sample Structure
+
+**Date:** 2026-03-18  
+**Author:** Trinity (Core Dev)  
+**Status:** Implemented
+
+**Context**
+
+Bruno requested a comprehensive console sample app that demonstrates the full LocalLLMs API surface — download progress, metadata, Q&A, streaming, and multi-turn — following the LocalEmbeddings ConsoleApp visual pattern.
+
+**Decision**
+
+Created `samples/ConsoleAppDemo/` with a single `Program.cs` top-level program containing 4 sequential examples. Each example is self-contained but reuses the same `LocalChatClient` instance (created once with progress tracking in Example 1).
+
+**Key choices**
+
+- **Single client instance** for all examples — avoids re-downloading the model 4 times
+- **`List<ChatMessage>`** for multi-turn — demonstrates the explicit history pattern rather than hiding it behind an abstraction
+- **Expected cache path** via `Environment.SpecialFolder.LocalApplicationData` — since `_resolvedModelPath` is private, this shows users where to find their cached models
+- **Box-drawn UI** matching the LocalEmbeddings pattern — consistency across samples
+
+---
+
 ### Decision 22: Small + Medium Tier ONNX Conversions (6 of 9 Succeeded)
 
 **Date:** 2026-03-18  

@@ -92,3 +92,16 @@
 - **Identical failure pattern to DeepSeek-R1-Distill-Llama-70B** — both 70B models fail at the exact same stage. The `onnxruntime_genai` builder's INT4 quantization requires holding the entire ONNX graph + quantized weights in memory simultaneously, which exceeds 440 GB RAM.
 - **Confirmed: 70B models cannot be converted on this machine** with `onnxruntime_genai` builder. This is now validated across two different 70B model families (Llama and Qwen/DeepSeek).
 - **Alternatives remain:** cloud VM with 512+ GB RAM, pre-converted ONNX models from HuggingFace, or GGUF format via `llama.cpp` (which uses memory-mapped I/O and handles large models better).
+
+### 2026-03-18 — Llama-3.3-70B-Instruct CUDA Conversion SUCCESS
+
+**Converted Llama-3.3-70B-Instruct to INT4 ONNX using `-e cuda`. This was the first successful 70B conversion.**
+
+- **Previous CPU attempts OOM'd** — both Llama-3.3-70B and DeepSeek-R1-Distill-Llama-70B failed with `-e cpu` after exhausting 440+ GB RAM during the ONNX serialization/quantization step.
+- **CUDA execution provider (`-e cuda`) succeeded** — installed `onnxruntime-genai-cuda` 0.12.2 + `onnxruntime-gpu` 1.24.4 alongside the existing CPU packages. The `-e cuda` flag changed the quantization path to use GPU-accelerated INT4 quantization, which serializes weights incrementally (966 chunks at ~3 it/s) instead of building the entire graph in RAM at once.
+- **GPU was NOT the bottleneck** — the A10-24Q (24 GB VRAM) stayed at 0% utilization and ~4 GB VRAM throughout. The CUDA EP changed the quantization *algorithm* to a streaming approach, not the compute device. Peak system RAM was ~200-250 GB (vs 440+ GB that OOM'd on CPU).
+- **Output: 39.3 GB INT4** — model.onnx (0.6 MB) + model.onnx.data (39,322 MB) + tokenizer files. 80 layers, 128K context, GQA (64 heads / 8 KV heads), 128256 vocab.
+- **Uploaded to HuggingFace** at `elbruno/Llama-3.3-70B-Instruct-onnx`. Upload speed: ~62 MB/s for the 39 GB data file.
+- **Total conversion time: ~25-30 minutes** (model was already cached from previous attempt). Breakdown: checkpoint loading ~1.5 min, layer reading ~15-20 min, INT4 quantization/save ~3 min.
+- **KEY LEARNING: `-e cuda` is the workaround for 70B OOM on CPU.** The CUDA quantization path uses a fundamentally different serialization strategy that keeps peak RAM under 250 GB. This means DeepSeek-R1-Distill-Llama-70B should also be convertible with `-e cuda`.
+- **GPU setup:** NVIDIA A10-24Q (not A100 as initially reported), 24 GB VRAM, CUDA 12.4, Driver 553.62. The small VRAM was irrelevant — the CUDA EP helps with the algorithm, not the GPU compute.
