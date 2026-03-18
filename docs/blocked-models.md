@@ -8,10 +8,10 @@ This document details models that cannot be converted to ONNX yet, along with th
 
 Meta's Llama models use **per-model license gates** on HuggingFace. Having access to one Llama model does **not** grant access to others:
 
-- **Llama-3.2-3B-Instruct** — Access request is currently **"awaiting review"**. Llama 3.2 has a separate license from Llama 3.1, so existing Llama 3.1 approval does not carry over.
-- **Llama-3.3-70B-Instruct** — Requires a **separate access request** at https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct. This is a different license agreement from both Llama 3.1 and 3.2.
+- **Llama-3.2-3B-Instruct** — ✅ **DONE** — License accepted, converted, and uploaded to `elbruno/Llama-3.2-3B-Instruct-onnx`.
+- **Llama-3.3-70B-Instruct** — ✅ License accepted. ❌ **OOM during conversion** — model downloads and loads successfully (all 80 decoder layers), but INT4 quantization exhausts ~440GB RAM and gets killed by the OS. Requires a machine with 512GB+ RAM or a cloud GPU instance.
 
-Until access is granted, these models cannot be downloaded or converted. Use `Llama-3.1-8B-Instruct` (already converted, native ONNX) as an alternative.
+Use `Llama-3.1-8B-Instruct` (already converted, native ONNX) or `Llama-3.2-3B-Instruct` as smaller alternatives.
 
 ---
 
@@ -167,10 +167,11 @@ You need ~500 GB free disk space during conversion.
 
 **Same RAM constraint as DeepSeek-R1-Distill-Llama-70B:** A 70B model requires ~450 GB RAM for INT4 quantization.
 
-Additionally:
-- Llama-3.3 is very new; some tooling may not be fully optimized
-- License acceptance was recently added; verify access on HuggingFace
-- Group Query Attention (GQA) in Llama-3.3 requires proper builder support (available in v0.12.1+)
+Confirmed details from conversion attempt (2026-03-18):
+- ✅ License accepted — model downloads successfully (no more 403)
+- ✅ All 80 decoder layers load correctly — Llama architecture fully supported by builder v0.12.1
+- ❌ INT4 quantization phase exhausts ~440GB RAM → OS kill
+- The builder v0.12.1 supports Llama architecture including GQA — the only blocker is RAM
 
 #### What You Can Do
 
@@ -382,7 +383,8 @@ These models are in the `team.md` roadmap but haven't been added to the library 
 
 **Likely to be converted:**
 - ✅ Gemma-2B-IT, Gemma-2-2B-IT, Gemma-2-9B-IT — **DONE** (converted and uploaded to elbruno HuggingFace repos)
-- 🔄 Llama-3.2-3B, Llama-3.3-70B — blocked by Meta license gates (see top of this doc)
+- ✅ Llama-3.2-3B-Instruct — **DONE** (converted and uploaded to elbruno/Llama-3.2-3B-Instruct-onnx)
+- ❌ Llama-3.3-70B — License accepted, but **OOM** during conversion (~440GB RAM insufficient). Requires 512GB+ machine or cloud GPU.
 - ✅ Qwen3-8B, Qwen3-32B (architecture compatibility expected to be solid)
 - ✅ Gemma-3-12B-IT (likely works with current builder)
 
