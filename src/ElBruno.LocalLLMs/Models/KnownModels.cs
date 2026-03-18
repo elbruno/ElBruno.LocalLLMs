@@ -15,12 +15,12 @@ public static class KnownModels
     {
         Id = "tinyllama-1.1b-chat",
         DisplayName = "TinyLlama-1.1B-Chat",
-        HuggingFaceRepoId = "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/TinyLlama-1.1B-Chat-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.ChatML,
         Tier = ModelTier.Tiny,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
     /// <summary>SmolLM2 1.7B Instruct — compact instruct model from HuggingFace.</summary>
@@ -28,12 +28,12 @@ public static class KnownModels
     {
         Id = "smollm2-1.7b-instruct",
         DisplayName = "SmolLM2-1.7B-Instruct",
-        HuggingFaceRepoId = "HuggingFaceTB/SmolLM2-1.7B-Instruct",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/SmolLM2-1.7B-Instruct-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.ChatML,
         Tier = ModelTier.Tiny,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
     /// <summary>Qwen2.5-0.5B-Instruct — tiny edge model.</summary>
@@ -41,12 +41,12 @@ public static class KnownModels
     {
         Id = "qwen2.5-0.5b-instruct",
         DisplayName = "Qwen2.5-0.5B-Instruct",
-        HuggingFaceRepoId = "Qwen/Qwen2.5-0.5B-Instruct",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/Qwen2.5-0.5B-Instruct-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Qwen,
         Tier = ModelTier.Tiny,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
     /// <summary>Qwen2.5-1.5B-Instruct — small Qwen model.</summary>
@@ -54,12 +54,12 @@ public static class KnownModels
     {
         Id = "qwen2.5-1.5b-instruct",
         DisplayName = "Qwen2.5-1.5B-Instruct",
-        HuggingFaceRepoId = "Qwen/Qwen2.5-1.5B-Instruct",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/Qwen2.5-1.5B-Instruct-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Qwen,
         Tier = ModelTier.Tiny,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
     /// <summary>Gemma 2B IT — Google's tiny instruction-tuned model.</summary>

@@ -185,11 +185,11 @@ public class KnownModelsTests
 
         Assert.Equal("qwen2.5-0.5b-instruct", model.Id);
         Assert.Equal("Qwen2.5-0.5B-Instruct", model.DisplayName);
-        Assert.Equal("Qwen/Qwen2.5-0.5B-Instruct", model.HuggingFaceRepoId);
+        Assert.Equal("elbruno/Qwen2.5-0.5B-Instruct-onnx", model.HuggingFaceRepoId);
         Assert.Equal(OnnxModelType.GenAI, model.ModelType);
         Assert.Equal(ChatTemplateFormat.Qwen, model.ChatTemplate);
         Assert.Equal(ModelTier.Tiny, model.Tier);
-        Assert.False(model.HasNativeOnnx);
+        Assert.True(model.HasNativeOnnx);
     }
 
     // ──────────────────────────────────────────────
