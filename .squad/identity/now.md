@@ -1,21 +1,22 @@
 ---
-updated_at: 2026-03-18T00:05Z
-focus_area: Implementation complete — core lib, tests, samples, CI/CD all working
+updated_at: 2026-03-18T11:45Z
+focus_area: Phase 2+3 complete — 23 models, 7 formatters, 246 tests, benchmarks, full docs
 active_issues: []
 ---
 
 # What We're Focused On
 
-Implementation complete — core lib, tests, samples, CI/CD all working. 210 unit tests, 17 integration tests. Build is green.
+Phase 2 and Phase 3 implementation complete. All architecture phases delivered.
 
 **Library Status:**
-- ✅ Core `LocalChatClient` with Phi-3.5 support
-- ✅ MEAI 10.4.0 API integration (GetResponseAsync, ChatResponse, etc.)
-- ✅ OnnxRuntimeGenAI 0.8.3 streaming support with incremental token decoding
-- ✅ 4 sample applications demonstrating key patterns
-- ✅ Comprehensive test coverage: unit + integration tests
-- ✅ SkippableFact-based integration test gating (no crashes, graceful skips)
-- ✅ README updated with current API surface and examples
+- ✅ 23 models across 4 tiers (Tiny/Small/Medium/Large) in KnownModels
+- ✅ 7 chat template formatters (ChatML, Phi3, Llama3, Qwen, Mistral, Gemma, DeepSeek)
+- ✅ GPU execution providers (CPU, CUDA, DirectML)
+- ✅ 246 unit tests passing, 17 integration tests gated
+- ✅ Benchmarks project (BenchmarkDotNet)
+- ✅ Comprehensive docs: getting-started, supported-models, CONTRIBUTING, CHANGELOG
+- ✅ NuGet package builds (ElBruno.LocalLLMs.0.1.0.nupkg, 55KB)
+- ✅ 4 sample applications
 
-**Next:** Public release, future model expansion, and ecosystem integration (e.g., LocalSemanticKernel plugin).
+**Next:** Release v0.1.0, expand to Next-Gen models as ONNX support matures.
 

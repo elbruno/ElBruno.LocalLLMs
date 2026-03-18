@@ -257,6 +257,39 @@
 
 ---
 
+### Decision 18: Comprehensive Documentation Suite
+
+**Date:** 2026-03-18  
+**Author:** Morpheus (Lead/Architect)  
+**Status:** Active
+
+**Context:** With MVP feature-complete (23 models, 7 formatters, 246 tests), users and contributors need clear pathways for onboarding, model selection, contributing, and release transparency.
+
+**Decision:** Create and maintain a **4-part documentation suite**:
+
+1. **docs/getting-started.md** — User-focused onboarding (prerequisites, 5-minute quick start, decision tree, full examples, troubleshooting)
+2. **docs/supported-models.md** — Complete model reference (23-model table, tier explanations, benchmarks, decision tree)
+3. **CONTRIBUTING.md** — Developer onboarding (build quick start, project structure, step-by-step model addition, code style, CI/CD overview)
+4. **CHANGELOG.md** — Release history (v0.1.0 features, dependencies, known limitations, roadmap, Keep a Changelog format)
+
+**Rationale:**
+
+- **Separation of concerns:** Getting Started (how?), Supported Models (which?), Contributing (how to extend?), Changelog (what's new?)
+- **Cross-linking:** All docs link to each other, forming a cohesive knowledge base
+- **Fidelity:** All examples from actual sample code; all API names from MEAI 10.4.0 canonical API
+- **Pain point coverage:** Getting Started includes troubleshooting (OOM, slow first run); Supported Models includes decision tree; Contributing includes step-by-step model addition; Changelog provides transparency
+- **Maintenance clarity:** Clear ownership (Morpheus: docs, Tank: tests/benchmarks, Trinity: code samples, Switch: CI/CD)
+
+**Consequences:**
+
+- ✅ New users can ship their first LLM app in <1 hour
+- ✅ Experienced users can compare 23 models on a single page
+- ✅ Contributors have clear onboarding path (build → test → PR checklist)
+- ✅ Release transparency builds trust with early adopters
+- 📝 Maintenance burden: CONTRIBUTING.md must stay in sync with project structure; Supported Models table must be updated on model additions; CHANGELOG.md on every release
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
