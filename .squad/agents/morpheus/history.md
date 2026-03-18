@@ -41,3 +41,63 @@
 - Both reference repos target `net8.0;net10.0`
 - NuGet metadata includes icon, README, MIT license in all projects
 - `InternalsVisibleTo` test projects is standard practice
+
+### 2026-03-18 — Comprehensive Documentation Complete
+
+**Documentation created:**
+- `docs/getting-started.md` — 15KB user guide covering:
+  - Prerequisites, installation, quick start (5-line example)
+  - Model tier explanation (Tiny/Small/Medium/Large/Next-Gen) with use cases
+  - Streaming responses with full example
+  - Using different models via `KnownModels`
+  - Custom model paths (skip re-download)
+  - Dependency injection for ASP.NET Core
+  - GPU acceleration (CUDA, DirectML)
+  - Complete `LocalLLMsOptions` reference table
+  - ONNX conversion workflow
+  - Troubleshooting section (model not found, OOM, slow first run, gibberish output)
+
+- `docs/supported-models.md` — 15KB model reference:
+  - Complete table of all 29 models with Params, Tier, HF ID, ONNX status, Chat template, RAM
+  - Detailed tier sections (⚪ Tiny through 🟣 Next-Gen) with realistic output examples
+  - Chat template format explanations
+  - ONNX conversion guide (native vs. requires conversion)
+  - Custom model creation example
+  - Performance comparison table (tokens/sec on RTX 4080)
+  - Decision tree for choosing the right model
+
+- `CONTRIBUTING.md` — 14KB contributor guide:
+  - Quick start (build, test)
+  - Project structure explanation
+  - Code style rules (based on `.editorconfig`)
+  - Step-by-step: Adding a new model (ModelDefinition, tests, PR)
+  - ONNX conversion prerequisites and walkthrough
+  - Architecture overview with layered design diagram
+  - Testing strategy (unit vs. integration, gated by env var)
+  - Debugging tips and common issues
+  - CI/CD pipeline overview
+  - PR guidelines and commit message format
+
+- `CHANGELOG.md` — Release notes:
+  - `[0.1.0] - 2026-03-18` initial release documented
+  - All features, models, GPU providers, chat templates listed
+  - Technical details (dependencies, versions, design patterns)
+  - 210 unit tests, 17 integration tests noted
+  - 4 samples documented
+  - Known limitations and planned features for future releases
+
+**Key documentation decisions:**
+- Getting Started is user-focused (no architecture jargon until troubleshooting)
+- Supported Models is reference-focused (decision trees, performance data, tier explanations)
+- Contributing is for both beginners and experienced developers (clear step-by-step)
+- CHANGELOG follows Keep a Changelog standard (for transparency and release tracking)
+- All docs use examples from actual sample code (`HelloChat`, `StreamingChat`, `DependencyInjection`)
+- All docs reference MEAI 10.4.0 API names (`GetResponseAsync`, `ChatResponse`, not old names)
+- Model table includes all 29 models from team.md for completeness
+- Troubleshooting covers real issues users will hit (download fails, OOM, slow first run)
+
+**Impact on users:**
+- New users can go from 0 to working example in <5 minutes
+- Experienced users have a complete model reference for selection
+- Contributors have clear onboarding path to add new models
+- Release transparency via CHANGELOG for early adopters
