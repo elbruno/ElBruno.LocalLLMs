@@ -40,11 +40,14 @@ Console.WriteLine();
 
 var loadStart = DateTime.Now;
 
+var downloadComplete = false;
 var progressLock = new object();
 var progress = new Progress<ModelDownloadProgress>(p =>
 {
+    if (Volatile.Read(ref downloadComplete)) return;
     lock (progressLock)
     {
+        if (Volatile.Read(ref downloadComplete)) return;
         try
         {
             var filled = Math.Clamp((int)(p.PercentComplete / 100.0 * 30), 0, 30);
@@ -65,6 +68,7 @@ var progress = new Progress<ModelDownloadProgress>(p =>
 });
 
 using var client = await LocalChatClient.CreateAsync(options, progress);
+Volatile.Write(ref downloadComplete, true);
 
 var loadTime = DateTime.Now - loadStart;
 Console.WriteLine();
