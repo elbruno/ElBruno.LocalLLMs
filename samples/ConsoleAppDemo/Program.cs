@@ -40,12 +40,28 @@ Console.WriteLine();
 
 var loadStart = DateTime.Now;
 
+var progressLock = new object();
 var progress = new Progress<ModelDownloadProgress>(p =>
 {
-    var filled = Math.Clamp((int)(p.PercentComplete / 100.0 * 50), 0, 50);
-    var bar = new string('█', filled);
-    var empty = new string('░', 50 - filled);
-    Console.Write($"\r  ⬇️ Downloading {p.FileName}: [{bar}{empty}] {p.PercentComplete:F0}%   ");
+    lock (progressLock)
+    {
+        try
+        {
+            var filled = Math.Clamp((int)(p.PercentComplete / 100.0 * 30), 0, 30);
+            var bar = new string('█', filled);
+            var empty = new string('░', 30 - filled);
+            var fileName = Path.GetFileName(p.FileName);
+            if (fileName.Length > 30) fileName = fileName[..27] + "...";
+            var width = Math.Max(80, Console.WindowWidth);
+            var line = $"  ⬇️ [{bar}{empty}] {p.PercentComplete:F0}% {fileName}";
+            Console.CursorLeft = 0;
+            Console.Write(line.PadRight(width - 1)[..(width - 1)]);
+        }
+        catch (IOException)
+        {
+            // Redirected console — skip progress display
+        }
+    }
 });
 
 using var client = await LocalChatClient.CreateAsync(options, progress);
