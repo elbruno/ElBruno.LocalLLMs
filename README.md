@@ -43,6 +43,35 @@ var response = await client.GetResponseAsync([
 Console.WriteLine(response.Text);
 ```
 
+## GPU Support
+
+The library **auto-detects GPU hardware at runtime** — no code changes needed. By default it tries GPU first, then falls back to CPU:
+
+| OS | Fallback order |
+|----|---------------|
+| Windows | DirectML → CUDA → CPU |
+| Linux | CUDA → CPU |
+
+The base `ElBruno.LocalLLMs` package includes CPU support only. To enable GPU acceleration, add **one** GPU package to your application project:
+
+```bash
+# For any Windows GPU (AMD, Intel, NVIDIA) via DirectML:
+dotnet add package Microsoft.ML.OnnxRuntimeGenAI.DirectML --version 0.12.2
+
+# For NVIDIA GPUs via CUDA:
+dotnet add package Microsoft.ML.OnnxRuntimeGenAI.Cuda --version 0.12.2
+```
+
+That's it. The runtime detects the available provider and uses it automatically. If the GPU package isn't installed or the hardware isn't available, it silently falls back to CPU.
+
+> **Tip:** You can force a specific provider if needed:
+> ```csharp
+> var options = new LocalLLMsOptions
+> {
+>     ExecutionProvider = ExecutionProvider.Cuda  // or DirectML, Cpu
+> };
+> ```
+
 ## Streaming
 
 ```csharp

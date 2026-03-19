@@ -118,10 +118,14 @@ ModelInitialized:
                normalized.Contains("provider is unavailable", StringComparison.Ordinal) ||
                normalized.Contains("is not enabled", StringComparison.Ordinal) ||
                normalized.Contains("not been built with", StringComparison.Ordinal) ||
-               normalized.Contains("could not be created", StringComparison.Ordinal);
+               normalized.Contains("could not be created", StringComparison.Ordinal) ||
+               normalized.Contains("no available provider", StringComparison.Ordinal) ||
+               normalized.Contains("unable to find", StringComparison.Ordinal) ||
+               normalized.Contains("cannot load", StringComparison.Ordinal) ||
+               normalized.Contains("not available", StringComparison.Ordinal);
     }
 
-    private static string BuildProviderFailureReason(ExecutionProvider provider, Exception ex)
+    internal static string BuildProviderFailureReason(ExecutionProvider provider, Exception ex)
     {
         var message = ex.Message.Replace(Environment.NewLine, " ", StringComparison.Ordinal).Trim();
         if (message.Length > 180)

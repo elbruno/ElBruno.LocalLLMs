@@ -16,6 +16,15 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-03-19: GPU/CPU NuGet package strategy
+- Main library keeps CPU-only `Microsoft.ML.OnnxRuntimeGenAI` — GPU is additive via app-level package refs
+- GPU NuGet packages for v0.12.2: `Microsoft.ML.OnnxRuntimeGenAI.Cuda` and `.DirectML` (no .NET packages for QNN or WinML)
+- QNN is Qualcomm/ARM-only (Android native), WinML is a system component (no separate NuGet) — neither relevant for .NET desktop/server
+- ExecutionProvider enum (Auto/Cpu/Cuda/DirectML) covers all available .NET providers — no new entries needed
+- `ShouldFallbackToNextProvider` expanded with 4 additional error patterns: "no available provider", "unable to find", "cannot load", "not available"
+- ConsoleAppDemo.csproj shows GPU enablement via commented-out package refs — clean pattern for samples
+- README GPU section placed after Quick Start, documents fallback order per OS
+
 ### 2026-03-19: Progress rendering + provider fallback hardening
 - `ConsoleDownloadProgressRenderer` centralizes console progress behavior with two modes: interactive single-line updates and redirected concise periodic lines.
 - Interactive rendering should throttle and state-filter updates, then always emit one final newline after completion to avoid prompt overlap.

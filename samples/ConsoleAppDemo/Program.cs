@@ -86,13 +86,12 @@ if (progressRenderer.NeedsFinalNewLine)
 var loadTime = DateTime.Now - loadStart;
 Console.WriteLine();
 Console.WriteLine($"  ✓ Model loaded in {loadTime.TotalSeconds:F1}s");
-Console.WriteLine();
-Console.WriteLine($"  Requested provider: {options.ExecutionProvider}");
-Console.WriteLine($"  Active provider:    {client.ActiveExecutionProvider}");
+Console.WriteLine($"  ⚡ Execution: {client.ActiveExecutionProvider} (requested: {options.ExecutionProvider})");
 if (!string.IsNullOrWhiteSpace(client.ProviderSelectionDetails))
 {
-    Console.WriteLine($"  Selection:          {client.ProviderSelectionDetails}");
+    Console.WriteLine($"     ↳ {client.ProviderSelectionDetails}");
 }
+Console.WriteLine();
 Console.WriteLine($"  Provider:  {client.Metadata.ProviderName}");
 Console.WriteLine($"  Model ID:  {client.Metadata.DefaultModelId}");
 Console.WriteLine($"  URI:       {client.Metadata.ProviderUri}");

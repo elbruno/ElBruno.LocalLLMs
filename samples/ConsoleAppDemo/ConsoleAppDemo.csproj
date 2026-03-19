@@ -6,4 +6,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\ElBruno.LocalLLMs\ElBruno.LocalLLMs.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Uncomment ONE of these for GPU support (auto-detected at runtime): -->
+    <!-- <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI.Cuda" Version="0.12.2" /> -->
+    <!-- <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI.DirectML" Version="0.12.2" /> -->
+  </ItemGroup>
 </Project>

@@ -173,6 +173,30 @@ public class LocalChatClientTests : IAsyncDisposable
         Assert.Equal(ExecutionProvider.DirectML, client.ActiveExecutionProvider);
     }
 
+    [Fact]
+    public void ProviderSelectionDetails_BeforeInitialization_IsNull()
+    {
+        var downloader = Substitute.For<IModelDownloader>();
+        var client = new LocalChatClient(new LocalLLMsOptions(), downloader);
+        _disposables.Add(client);
+
+        Assert.Null(client.ProviderSelectionDetails);
+    }
+
+    [Theory]
+    [InlineData(ExecutionProvider.Cpu)]
+    [InlineData(ExecutionProvider.Cuda)]
+    [InlineData(ExecutionProvider.DirectML)]
+    public void ActiveExecutionProvider_BeforeInitialization_MatchesConfigured(ExecutionProvider provider)
+    {
+        var downloader = Substitute.For<IModelDownloader>();
+        var options = new LocalLLMsOptions { ExecutionProvider = provider };
+        var client = new LocalChatClient(options, downloader);
+        _disposables.Add(client);
+
+        Assert.Equal(provider, client.ActiveExecutionProvider);
+    }
+
     // ──────────────────────────────────────────────
     // GetService
     // ──────────────────────────────────────────────
