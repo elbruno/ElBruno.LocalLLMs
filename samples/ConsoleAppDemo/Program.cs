@@ -42,9 +42,10 @@ var loadStart = DateTime.Now;
 
 var progress = new Progress<ModelDownloadProgress>(p =>
 {
-    var bar = new string('█', (int)(p.PercentComplete * 50));
-    var empty = new string('░', 50 - (int)(p.PercentComplete * 50));
-    Console.Write($"\r  ⬇️ Downloading {p.FileName}: [{bar}{empty}] {p.PercentComplete:P0}   ");
+    var filled = Math.Clamp((int)(p.PercentComplete / 100.0 * 50), 0, 50);
+    var bar = new string('█', filled);
+    var empty = new string('░', 50 - filled);
+    Console.Write($"\r  ⬇️ Downloading {p.FileName}: [{bar}{empty}] {p.PercentComplete:F0}%   ");
 });
 
 using var client = await LocalChatClient.CreateAsync(options, progress);
