@@ -27,6 +27,18 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 dotnet add package ElBruno.LocalLLMs
 ```
 
+This works everywhere (CPU). To enable **GPU acceleration**, add one extra package:
+
+```bash
+# 🟢 NVIDIA GPU (CUDA):
+dotnet add package Microsoft.ML.OnnxRuntimeGenAI.Cuda
+
+# 🔵 Any Windows GPU — AMD, Intel, NVIDIA (DirectML):
+dotnet add package Microsoft.ML.OnnxRuntimeGenAI.DirectML
+```
+
+> 🚀 The library defaults to `ExecutionProvider.Auto` — it tries GPU first and falls back to CPU automatically. No code changes needed.
+
 ## Quick Start
 
 ```csharp
@@ -42,35 +54,6 @@ var response = await client.GetResponseAsync([
 
 Console.WriteLine(response.Text);
 ```
-
-## GPU Support
-
-The library **auto-detects GPU hardware at runtime** — no code changes needed. By default it tries GPU first, then falls back to CPU:
-
-| OS | Fallback order |
-|----|---------------|
-| Windows | DirectML → CUDA → CPU |
-| Linux | CUDA → CPU |
-
-The base `ElBruno.LocalLLMs` package includes CPU support only. To enable GPU acceleration, add **one** GPU package to your application project:
-
-```bash
-# For any Windows GPU (AMD, Intel, NVIDIA) via DirectML:
-dotnet add package Microsoft.ML.OnnxRuntimeGenAI.DirectML --version 0.12.2
-
-# For NVIDIA GPUs via CUDA:
-dotnet add package Microsoft.ML.OnnxRuntimeGenAI.Cuda --version 0.12.2
-```
-
-That's it. The runtime detects the available provider and uses it automatically. If the GPU package isn't installed or the hardware isn't available, it silently falls back to CPU.
-
-> **Tip:** You can force a specific provider if needed:
-> ```csharp
-> var options = new LocalLLMsOptions
-> {
->     ExecutionProvider = ExecutionProvider.Cuda  // or DirectML, Cpu
-> };
-> ```
 
 ## Streaming
 
