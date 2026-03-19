@@ -41,4 +41,11 @@ public sealed record ModelDefinition
 
     /// <summary>Whether this model has native ONNX weights on HuggingFace.</summary>
     public bool HasNativeOnnx { get; init; }
+
+    /// <summary>
+    /// Subdirectory within the downloaded files that contains the model.
+    /// When set, the path returned by EnsureModelAsync points to this subdirectory.
+    /// Used for repos that store multiple variants (e.g., cpu, cuda) in separate folders.
+    /// </summary>
+    public string? ModelSubPath { get; init; }
 }
