@@ -81,6 +81,17 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
     /// </summary>
     public ChatClientMetadata Metadata { get; }
 
+    /// <summary>
+    /// The active execution provider selected by runtime initialization.
+    /// Returns configured value before initialization.
+    /// </summary>
+    public ExecutionProvider ActiveExecutionProvider => _model?.ActiveProvider ?? _options.ExecutionProvider;
+
+    /// <summary>
+    /// Details about provider fallback decisions during model initialization, when available.
+    /// </summary>
+    public string? ProviderSelectionDetails => _model?.ProviderSelectionDetails;
+
     /// <inheritdoc />
     public async Task<ChatResponse> GetResponseAsync(
         IEnumerable<ChatMessage> messages,

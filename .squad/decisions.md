@@ -247,13 +247,15 @@
 
 **Date:** 2026-03-17  
 **Author:** Trinity (Core Dev)  
-**Status:** Active
+**Status:** Superseded by Decision 28
 
 **Context:** `new Model(path)` defaults to CPU. GPU needs provider configuration.
 
 **Decision:** For CPU, use `new Model(path)` directly. For CUDA/DirectML, use `Config` class to configure providers before model creation.
 
 **Rationale:** Cleanest API path — CPU is the common case and stays simple. GPU configuration is explicit and extensible.
+
+**Superseded Notes:** Decision 28 keeps config-based provider wiring but changes defaults to `ExecutionProvider.Auto` and adds deterministic fallback order.
 
 ---
 
@@ -705,6 +707,90 @@ Bruno accepted the Meta Llama licenses on HuggingFace and asked for a retry of t
 1. **Bruno:** Check Llama 3.3 license status at https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct — it may need a separate acceptance from Llama 3.2.
 2. **When approved:** Retry conversion, but expect MemoryError. Document if it fails for the same reason as the 70B DeepSeek.
 3. **Alternative for 70B:** Consider `optimum` library, `llama.cpp` GGUF, or a higher-RAM machine if the builder fails.
+
+---
+
+### Decision 28: Auto Provider Default + GPU-First Fallback + Stable Console Progress
+
+**Date:** 2026-03-19  
+**Author:** Trinity (Core Dev)  
+**Status:** Active
+
+**Context:**
+
+- Console sample progress output was noisy and fragmented.
+- Runtime and model defaults were effectively CPU-biased for common paths.
+
+**Decision:**
+
+- Introduce `ExecutionProvider.Auto` as the default provider.
+- Resolve `Auto` provider at runtime in deterministic order: `Cuda -> DirectML -> Cpu`.
+- Keep explicit provider behavior unchanged (`Cpu`, `Cuda`, `DirectML` use only requested provider).
+- Update default Phi model definitions to GPU variant subpaths where available.
+- Render console download progress in-place using carriage return updates with one final newline.
+
+**Rationale:**
+
+- Better out-of-box performance while preserving CPU compatibility.
+- Deterministic fallback is easy to validate with tests.
+- GPU variant defaults prevent accidental CPU-variant selection when GPU paths exist.
+- Single-line progress output improves readability and avoids console spam.
+
+**Validation:**
+
+- `LocalLLMsOptionsTests` passed.
+- `ProviderSelectionTests` passed.
+- `samples/ConsoleAppDemo` build passed.
+
+**Consequences:**
+
+- New default path favors GPU acceleration automatically when available.
+- Samples can display requested vs active execution provider, including CPU fallback.
+- Existing explicit provider configurations remain backward-compatible.
+
+---
+
+### Decision 29: Model Management Scripts Safety and Operations Contract
+
+**Date:** 2026-03-19
+**Author:** Trinity (Core Dev), Tank (Tester/QA)
+**Status:** Active
+
+**Context:**
+
+- Model cache operations needed a full management flow beyond deletion only.
+- `scripts/manage-models.ps1` was introduced for inventory, locations, and deletion workflows.
+- QA updated `scripts/delete-models.ps1` to reinforce native WhatIf/Confirm behavior and safer output handling.
+- Script documentation in `scripts/README.md` was updated and must stay aligned with behavior.
+
+**Decision:**
+
+- Keep `scripts/manage-models.ps1` as the primary operational script with explicit parameter sets for list, locations, report, delete-one, and delete-all.
+- Keep `scripts/delete-models.ps1` for backward compatibility, but require native `SupportsShouldProcess` semantics for dry-run safety (`-WhatIf`/`-Confirm`) and explicit delete intent.
+- Preserve interactive confirmation for destructive actions unless force is explicitly provided.
+- Treat `scripts/README.md` as the canonical operator reference for both scripts.
+
+**Rationale:**
+
+- Separates daily model inventory/reporting from destructive cleanup operations.
+- Improves safety by standardizing around built-in PowerShell dry-run and confirmation patterns.
+- Reduces accidental deletion risk while preserving compatibility with existing automation.
+
+**Consequences:**
+
+- Users get a single discoverable model-management flow without losing legacy delete commands.
+- QA coverage should include both management and legacy delete script safety gates.
+- Documentation drift between scripts and `scripts/README.md` becomes a release risk and must be checked.
+
+---
+
+### Inbox Merge Note: 2026-03-19 Progress Rendering and Provider Fallback Proposal
+
+**Date:** 2026-03-19
+**Source:** `.squad/decisions/inbox/2026-03-19-progress-and-provider-fallback.md`
+**Disposition:** Merged into Decision 28
+
+The proposal content (Auto fallback scope, provider-unavailable-only fallback, and progress renderer behavior) was already captured by Decision 28 and related implementation/test updates. No separate decision was added to avoid duplication.
 
 ---
 

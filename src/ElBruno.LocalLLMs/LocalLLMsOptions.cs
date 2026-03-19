@@ -28,9 +28,9 @@ public sealed class LocalLLMsOptions
     public bool EnsureModelDownloaded { get; set; } = true;
 
     /// <summary>
-    /// Execution provider selection. Default: CPU.
+    /// Execution provider selection. Default: Auto (CUDA, then DirectML, then CPU).
     /// </summary>
-    public ExecutionProvider ExecutionProvider { get; set; } = ExecutionProvider.Cpu;
+    public ExecutionProvider ExecutionProvider { get; set; } = ExecutionProvider.Auto;
 
     /// <summary>
     /// GPU device ID for CUDA/DirectML. Default: 0.

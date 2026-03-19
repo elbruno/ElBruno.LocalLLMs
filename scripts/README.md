@@ -2,6 +2,74 @@
 
 Convert HuggingFace models to ONNX format for use with `ElBruno.LocalLLMs`.
 
+## Model Cache Management
+
+Use `manage-models.ps1` to inspect and manage downloaded models in cache roots.
+
+Default cache root:
+
+- `%LOCALAPPDATA%\ElBruno\LocalLLMs\models`
+
+### List downloaded models (default)
+
+```powershell
+.\manage-models.ps1
+```
+
+### Show model storage location(s)
+
+```powershell
+.\manage-models.ps1 -Locations
+```
+
+### Show model totals and sizes
+
+```powershell
+.\manage-models.ps1 -Report
+```
+
+### Preview delete-one without deleting anything (dry run)
+
+```powershell
+.\manage-models.ps1 -Delete -Model "phi-3.5" -DryRun
+```
+
+### Preview delete operations using native PowerShell WhatIf
+
+```powershell
+.\manage-models.ps1 -Delete -Model "phi-3.5" -WhatIf
+.\manage-models.ps1 -DeleteAll -WhatIf
+```
+
+### Delete one model by name/id/path fragment
+
+```powershell
+.\manage-models.ps1 -Delete -Model "phi-3.5"
+```
+
+### Delete all models safely
+
+```powershell
+# Interactive safety prompt
+.\manage-models.ps1 -DeleteAll
+
+# Non-interactive force mode
+.\manage-models.ps1 -DeleteAll -Force
+```
+
+### Optional empty-folder cleanup
+
+```powershell
+.\manage-models.ps1 -DeleteAll -Force -CleanupEmptyFolders
+```
+
+### Notes
+
+- Delete actions require explicit `-Delete` or `-DeleteAll`.
+- Use `-DryRun` or native `-WhatIf` to preview delete operations.
+- Use `-CacheDirectory` to target custom cache root(s).
+- `delete-models.ps1` remains available for legacy workflows.
+
 ## Prerequisites
 
 - Python 3.10+

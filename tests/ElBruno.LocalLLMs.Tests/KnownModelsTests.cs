@@ -162,6 +162,8 @@ public class KnownModelsTests
         Assert.Equal(ChatTemplateFormat.Phi3, model.ChatTemplate);
         Assert.Equal(ModelTier.Small, model.Tier);
         Assert.True(model.HasNativeOnnx);
+        Assert.Equal("gpu/gpu-int4-awq-block-128", model.ModelSubPath);
+        Assert.All(model.RequiredFiles, f => Assert.StartsWith("gpu/", f));
     }
 
     [Fact]
@@ -176,6 +178,8 @@ public class KnownModelsTests
         Assert.Equal(ChatTemplateFormat.Phi3, model.ChatTemplate);
         Assert.Equal(ModelTier.Medium, model.Tier);
         Assert.True(model.HasNativeOnnx);
+        Assert.Equal("gpu/gpu-int4-rtn-block-32", model.ModelSubPath);
+        Assert.All(model.RequiredFiles, f => Assert.StartsWith("gpu/", f));
     }
 
     [Fact]

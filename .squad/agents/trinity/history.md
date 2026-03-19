@@ -16,6 +16,20 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-03-19: Progress rendering + provider fallback hardening
+- `ConsoleDownloadProgressRenderer` centralizes console progress behavior with two modes: interactive single-line updates and redirected concise periodic lines.
+- Interactive rendering should throttle and state-filter updates, then always emit one final newline after completion to avoid prompt overlap.
+- `ExecutionProvider.Auto` fallback should only continue when failure text indicates provider unavailability; non-provider/model errors should fail fast instead of silently dropping to CPU.
+- Surface fallback reasoning (`LocalChatClient.ProviderSelectionDetails`) so samples can explain why CPU was selected.
+- Guard model-selection regressions for GPU-preferred defaults with tests that assert Phi model required paths remain under `gpu/`.
+
+### 2026-03-19: GPU-first defaults + stable progress output
+- Added `ExecutionProvider.Auto` as default option value; runtime fallback order is CUDA -> DirectML -> CPU
+- Exposed resolved runtime provider via `LocalChatClient.ActiveExecutionProvider` so samples can show when CPU fallback occurred
+- Updated Phi defaults to GPU subpaths in `KnownModels` (`gpu/gpu-int4-awq-block-128` and `gpu/gpu-int4-rtn-block-32`) to avoid CPU-pinned variant selection
+- Console progress rendering is most reliable with ASCII-only carriage-return updates (`\r`) plus one explicit final newline after completion
+- Net10 validation can be blocked by external file locks on `obj/Debug/net10.0/ElBruno.LocalLLMs.dll`; net8 build is a practical fallback for local verification
+
 ### 2026-03-18: Gemma ONNX conversions and Llama gating
 - Gemma v1 (2B) and v2 (2B, 9B) architectures are confirmed supported by ONNX Runtime GenAI builder — conversions succeeded cleanly
 - Meta Llama 3.2 and 3.3 have separate license gates from Llama 3.1 — each requires its own HuggingFace access request
@@ -61,3 +75,12 @@
 - `_resolvedModelPath` is private — use `Path.Combine(SpecialFolder.LocalApplicationData, "ElBruno", "LocalLLMs", "models")` to show expected cache path
 - Multi-turn conversation demo adds assistant response to `List<ChatMessage>` history between turns
 - Added to `ElBruno.LocalLLMs.slnx` under `/samples/` folder — builds clean (0 warnings)
+
+### 2026-03-19: Model manager script safety conventions
+- Added `scripts/manage-models.ps1` with advanced script parameter sets for list, locations, report, delete-one, and delete-all flows.
+- Matched library default cache root exactly: `%LOCALAPPDATA%\ElBruno\LocalLLMs\models`.
+- Destructive actions require explicit switches and interactive confirmation unless `-Force` is supplied.
+- `-DryRun` is implemented via PowerShell WhatIf semantics so delete flows can be previewed safely.
+- Report/list output uses table formatting with per-model size, file count, and total size summary.
+- Optional `-CleanupEmptyFolders` removes empty directories after delete operations.
+- QA hardening of `scripts/delete-models.ps1` should preserve native `SupportsShouldProcess` behavior so both scripts share consistent dry-run semantics.

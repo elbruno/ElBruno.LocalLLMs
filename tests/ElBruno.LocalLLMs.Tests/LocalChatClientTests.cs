@@ -152,6 +152,27 @@ public class LocalChatClientTests : IAsyncDisposable
         Assert.Equal(KnownModels.Phi35MiniInstruct.Id, client.Metadata.DefaultModelId);
     }
 
+    [Fact]
+    public void ActiveExecutionProvider_BeforeInitialization_DefaultsToAuto()
+    {
+        var downloader = Substitute.For<IModelDownloader>();
+        var client = new LocalChatClient(new LocalLLMsOptions(), downloader);
+        _disposables.Add(client);
+
+        Assert.Equal(ExecutionProvider.Auto, client.ActiveExecutionProvider);
+    }
+
+    [Fact]
+    public void ActiveExecutionProvider_BeforeInitialization_UsesExplicitConfiguredProvider()
+    {
+        var downloader = Substitute.For<IModelDownloader>();
+        var options = new LocalLLMsOptions { ExecutionProvider = ExecutionProvider.DirectML };
+        var client = new LocalChatClient(options, downloader);
+        _disposables.Add(client);
+
+        Assert.Equal(ExecutionProvider.DirectML, client.ActiveExecutionProvider);
+    }
+
     // ──────────────────────────────────────────────
     // GetService
     // ──────────────────────────────────────────────

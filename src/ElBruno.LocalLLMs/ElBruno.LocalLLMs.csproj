@@ -18,6 +18,12 @@
     <PackageReference Include="ElBruno.HuggingFace.Downloader" Version="0.6.0" />
     <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.4.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
+    <!-- 
+    NOTE: Standard NuGet packages are CPU-only. For GPU support (CUDA/DirectML):
+    1. Build ONNX Runtime GenAI from source with --use_cuda or --use_directml flags
+    2. Or install official GPU pre-built packages when available
+    See: https://github.com/microsoft/onnxruntime-genai
+    -->
     <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI" Version="0.8.3" />
   </ItemGroup>
 

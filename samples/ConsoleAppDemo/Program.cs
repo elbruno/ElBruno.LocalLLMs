@@ -28,6 +28,7 @@ var options = new LocalLLMsOptions
     Model = KnownModels.Phi35MiniInstruct,
     CacheDirectory = null,
     EnsureModelDownloaded = true,
+    ExecutionProvider = ExecutionProvider.Auto,
 };
 
 var defaultCachePath = Path.Combine(
@@ -41,6 +42,8 @@ Console.WriteLine();
 var loadStart = DateTime.Now;
 
 var downloadComplete = false;
+var isInteractiveOutput = Environment.UserInteractive && !Console.IsOutputRedirected;
+var progressRenderer = new ConsoleDownloadProgressRenderer(isInteractiveOutput);
 var progressLock = new object();
 var progress = new Progress<ModelDownloadProgress>(p =>
 {
@@ -50,31 +53,46 @@ var progress = new Progress<ModelDownloadProgress>(p =>
         if (Volatile.Read(ref downloadComplete)) return;
         try
         {
-            var filled = Math.Clamp((int)(p.PercentComplete / 100.0 * 30), 0, 30);
-            var bar = new string('█', filled);
-            var empty = new string('░', 30 - filled);
-            var fileName = Path.GetFileName(p.FileName);
-            if (fileName.Length > 30) fileName = fileName[..27] + "...";
-            var width = Math.Max(80, Console.WindowWidth);
-            var line = $"  ⬇️ [{bar}{empty}] {p.PercentComplete:F0}% {fileName}";
-            Console.CursorLeft = 0;
-            Console.Write(line.PadRight(width - 1)[..(width - 1)]);
+            var update = progressRenderer.BuildUpdate(p, DateTimeOffset.UtcNow);
+            if (!update.HasValue)
+            {
+                return;
+            }
+
+            var output = update.Value;
+            if (output.InPlace)
+            {
+                Console.Write("\r" + output.Text.PadRight(100));
+            }
+            else
+            {
+                Console.WriteLine(output.Text);
+            }
         }
         catch (IOException)
         {
-            // Redirected console — skip progress display
+            // Output stream unavailable — skip progress display.
         }
     }
 });
 
 using var client = await LocalChatClient.CreateAsync(options, progress);
 Volatile.Write(ref downloadComplete, true);
+if (progressRenderer.NeedsFinalNewLine)
+{
+    Console.WriteLine();
+}
 
 var loadTime = DateTime.Now - loadStart;
 Console.WriteLine();
-Console.WriteLine();
 Console.WriteLine($"  ✓ Model loaded in {loadTime.TotalSeconds:F1}s");
 Console.WriteLine();
+Console.WriteLine($"  Requested provider: {options.ExecutionProvider}");
+Console.WriteLine($"  Active provider:    {client.ActiveExecutionProvider}");
+if (!string.IsNullOrWhiteSpace(client.ProviderSelectionDetails))
+{
+    Console.WriteLine($"  Selection:          {client.ProviderSelectionDetails}");
+}
 Console.WriteLine($"  Provider:  {client.Metadata.ProviderName}");
 Console.WriteLine($"  Model ID:  {client.Metadata.DefaultModelId}");
 Console.WriteLine($"  URI:       {client.Metadata.ProviderUri}");

@@ -23,33 +23,136 @@ internal sealed class OnnxGenAIModel : IDisposable
     private readonly Tokenizer _tokenizer;
     private bool _disposed;
 
+    internal ExecutionProvider ActiveProvider { get; }
+    internal string? ProviderSelectionDetails { get; }
+
     internal OnnxGenAIModel(string modelPath, ExecutionProvider provider, int gpuDeviceId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(modelPath);
 
-        if (provider == ExecutionProvider.Cpu)
+        var selectedProvider = provider;
+        var providerFailures = new List<string>();
+        if (provider == ExecutionProvider.Auto)
         {
-            _model = new Model(modelPath);
-        }
-        else
-        {
-            var config = new Config(modelPath);
-            config.ClearProviders();
-
-            var providerName = provider switch
+            var candidates = GetProviderFallbackOrder(provider);
+            for (var i = 0; i < candidates.Count; i++)
             {
-                ExecutionProvider.Cuda => "cuda",
-                ExecutionProvider.DirectML => "dml",
-                _ => throw new ArgumentOutOfRangeException(nameof(provider))
-            };
+                var candidate = candidates[i];
+                try
+                {
+                    _model = CreateModel(modelPath, candidate, gpuDeviceId);
+                    selectedProvider = candidate;
+                    goto ModelInitialized;
+                }
+                catch (Exception ex) when (candidate != ExecutionProvider.Cpu && ShouldFallbackToNextProvider(candidate, ex))
+                {
+                    providerFailures.Add(BuildProviderFailureReason(candidate, ex));
+                }
+                catch (Exception ex) when (candidate != ExecutionProvider.Cpu)
+                {
+                    throw new InvalidOperationException(
+                        $"Failed to initialize model with provider {candidate}. This was treated as a hard error (no fallback).",
+                        ex);
+                }
+            }
 
-            config.AppendProvider(providerName);
-            config.SetProviderOption(providerName, "device_id", gpuDeviceId.ToString());
+            var details = providerFailures.Count > 0
+                ? " Failures: " + string.Join(" | ", providerFailures)
+                : string.Empty;
 
-            _model = new Model(config);
+            throw new InvalidOperationException("Unable to initialize model with any execution provider." + details);
         }
+
+        _model = CreateModel(modelPath, provider, gpuDeviceId);
+
+ModelInitialized:
+        ActiveProvider = selectedProvider;
+    if (provider == ExecutionProvider.Auto && providerFailures.Count > 0)
+    {
+        ProviderSelectionDetails =
+        $"Auto selected {selectedProvider} after provider fallbacks: {string.Join(" | ", providerFailures)}";
+    }
 
         _tokenizer = new Tokenizer(_model);
+    }
+
+    internal static IReadOnlyList<ExecutionProvider> GetProviderFallbackOrder(ExecutionProvider provider) =>
+        provider switch
+        {
+            ExecutionProvider.Auto => OperatingSystem.IsWindows()
+                ? [ExecutionProvider.DirectML, ExecutionProvider.Cuda, ExecutionProvider.Cpu]
+                : [ExecutionProvider.Cuda, ExecutionProvider.Cpu],
+            _ => [provider]
+        };
+
+    internal static bool ShouldFallbackToNextProvider(ExecutionProvider provider, Exception ex)
+    {
+        ArgumentNullException.ThrowIfNull(ex);
+
+        var message = ex.ToString();
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return false;
+        }
+
+        var providerToken = provider switch
+        {
+            ExecutionProvider.Cuda => "cuda",
+            ExecutionProvider.DirectML => "dml",
+            _ => provider.ToString().ToLowerInvariant()
+        };
+
+        var normalized = message.ToLowerInvariant();
+        var hasProviderContext = normalized.Contains(providerToken, StringComparison.Ordinal) ||
+            (provider == ExecutionProvider.DirectML && normalized.Contains("directml", StringComparison.Ordinal));
+
+        if (!hasProviderContext)
+        {
+            return false;
+        }
+
+        return normalized.Contains("failed to load", StringComparison.Ordinal) ||
+               normalized.Contains("not found", StringComparison.Ordinal) ||
+               normalized.Contains("not supported", StringComparison.Ordinal) ||
+               normalized.Contains("is unavailable", StringComparison.Ordinal) ||
+               normalized.Contains("provider is unavailable", StringComparison.Ordinal) ||
+               normalized.Contains("is not enabled", StringComparison.Ordinal) ||
+               normalized.Contains("not been built with", StringComparison.Ordinal) ||
+               normalized.Contains("could not be created", StringComparison.Ordinal);
+    }
+
+    private static string BuildProviderFailureReason(ExecutionProvider provider, Exception ex)
+    {
+        var message = ex.Message.Replace(Environment.NewLine, " ", StringComparison.Ordinal).Trim();
+        if (message.Length > 180)
+        {
+            message = message[..180] + "...";
+        }
+
+        return $"{provider}: {ex.GetType().Name}: {message}";
+    }
+
+    private static Model CreateModel(string modelPath, ExecutionProvider provider, int gpuDeviceId)
+    {
+        if (provider == ExecutionProvider.Cpu)
+        {
+            return new Model(modelPath);
+        }
+
+        var config = new Config(modelPath);
+        config.ClearProviders();
+
+        var providerName = provider switch
+        {
+            ExecutionProvider.Cuda => "cuda",
+            ExecutionProvider.DirectML => "dml",
+            _ => throw new ArgumentOutOfRangeException(nameof(provider))
+        };
+
+        config.AppendProvider(providerName);
+        config.SetProviderOption(providerName, "device_id", gpuDeviceId.ToString());
+
+        return new Model(config);
     }
 
     /// <summary>

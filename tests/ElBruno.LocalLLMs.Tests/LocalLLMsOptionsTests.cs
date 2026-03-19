@@ -44,11 +44,11 @@ public class LocalLLMsOptionsTests
     }
 
     [Fact]
-    public void Defaults_ExecutionProvider_IsCpu()
+    public void Defaults_ExecutionProvider_IsAuto()
     {
         var options = new LocalLLMsOptions();
 
-        Assert.Equal(ExecutionProvider.Cpu, options.ExecutionProvider);
+        Assert.Equal(ExecutionProvider.Auto, options.ExecutionProvider);
     }
 
     [Fact]
