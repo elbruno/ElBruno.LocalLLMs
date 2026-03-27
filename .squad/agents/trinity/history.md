@@ -8,9 +8,11 @@
 - **Target models:** Phi-3.5-mini, Qwen2.5-3B, Llama-3.2-3B (small); Qwen2.5-7B, Phi-4 (medium)
 - **Created:** 2026-03-17
 
-## Architecture Status
+## Architecture Status & RAG Plan
 
 **2026-03-17:** Morpheus completed full solution architecture. Blueprint in `docs/architecture.md`. 9 decisions merged to `.squad/decisions.md`. Trinity should implement core library using architecture.md as canonical reference.
+
+**2026-03-27:** RAG tool routing plan approved (`docs/plan-rag-tool-routing.md`). Trinity is owner for **Phase 2** (ToolSelectionService sample implementation) and **Phase 3** (optimization & GPU tuning). Phase 2 deliverable: `samples/ToolRoutingWithSlm/ToolSelectionService.cs` with graceful fallback chain. Phase 3: latency optimization, cross-encoder alternative, GPU testing.
 
 ## Learnings
 

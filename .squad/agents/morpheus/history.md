@@ -1,4 +1,6 @@
-# Project Context
+# Morpheus — History
+
+## Project Context
 
 - **Owner:** Bruno Capuano
 - **Project:** ElBruno.LocalLLMs — C# library for local LLM chat completions using ONNX Runtime
@@ -7,6 +9,14 @@
 - **Key dependency:** ElBruno.HuggingFace.Downloader for model downloads from HuggingFace
 - **Target models:** Phi-3.5-mini, Qwen2.5-3B, Llama-3.2-3B (small); Qwen2.5-7B, Phi-4 (medium)
 - **Created:** 2026-03-17
+
+## Latest: RAG Tool Routing Implementation Plan
+
+**2026-03-27:** Created comprehensive 4-phase implementation plan (`docs/plan-rag-tool-routing.md`, 584 lines) for RAG tool routing in MCPToolRouter. Covers model conversion (Phase 0), benchmark framework (Phase 1), sample integration (Phase 2), optimization (Phase 3), and documentation (Phase 4) across 18 tasks with team assignments.
+
+**Key Decisions Locked:** Benchmark-first approach, ToolSelectionService in `samples/` (not a library), JSON parsing fallback chain for tiny models, cross-encoder re-ranking as hedge, graceful degradation mandatory.
+
+**Status:** Plan approved. Ready for execution. Team references: See `docs/plan-rag-tool-routing.md` and `.squad/decisions.md` for full RAG plan decisions. All phases linked to corresponding agents' history.md.
 
 ## Learnings
 
@@ -176,3 +186,24 @@ Key findings from parallel model research by Dozer:
 **Next phase coordination:**
 - Dozer tests Qwen2.5-0.5B on actual routing prompts
 - Morpheus documents decision tree for users (when embeddings suffice vs. when SLM helps)
+
+### 2026-03-27 — RAG Tool Routing Implementation Plan Created
+
+**Delivered:** Comprehensive 4-phase implementation plan (`docs/plan-rag-tool-routing.md`) covering model conversion, benchmark framework, sample integration, and optimization.
+
+**Key decisions in the plan:**
+1. **Benchmark-first** — no model/pipeline commitments until data exists. 6 models × 3 catalog sizes × 5 prompt categories.
+2. **ToolSelectionService as sample code** — lives in `samples/ToolRoutingWithSlm/`, not a library. Users copy and adapt. Avoids a fourth NuGet package.
+3. **JSON parsing fallback chain** — 5-strategy cascading parser for tiny model output (strict → regex → line-match → fuzzy → give up). Non-negotiable at 14% JSON compliance.
+4. **Cross-encoder re-ranking as hedge** — if SLM proves too slow/inaccurate, cross-encoder (~100-300ms) is the planned alternative.
+5. **Graceful degradation mandatory** — SLM failures always fall back to embedding-only results. 5s timeout default.
+
+**Models in scope:** Qwen2.5-0.5B (top pick, already converted), SmolLM2-360M (runner-up), SmolLM2-135M (budget), Qwen3-0.6B (wild card), Gemma-3-270M (investigate), TinyAgent-1.1B (investigate).
+
+**Bruno's confirmed constraints:** CPU+GPU, 20+ tools, tool selection only, minimum latency.
+
+**Team assignments:** Dozer owns Phase 0 (model conversion), Tank owns Phase 1 (benchmarks), Trinity owns Phase 2-3 (sample + optimization), Morpheus owns Phase 4 (docs) and reviews all API surfaces.
+
+**Deliverables:**
+- Plan: `docs/plan-rag-tool-routing.md`
+- Decisions: `.squad/decisions/inbox/morpheus-rag-plan-decisions.md`

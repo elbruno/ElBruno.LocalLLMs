@@ -8,9 +8,11 @@
 - **Target models:** Phi-3.5-mini, Qwen2.5-3B, Llama-3.2-3B (small); Qwen2.5-7B, Phi-4 (medium)
 - **Created:** 2026-03-17
 
-## Architecture Status
+## Architecture Status & RAG Plan
 
 **2026-03-17:** Morpheus completed full solution architecture. Blueprint in `docs/architecture.md`. 9 decisions merged to `.squad/decisions.md`. Tank should write unit test stubs mapping to interfaces defined in architecture (IModelDefinition, IChatTemplateFormatter, etc.).
+
+**2026-03-27:** RAG tool routing plan approved (`docs/plan-rag-tool-routing.md`). Tank is owner for **Phase 1** (benchmark framework). Deliverable: `benchmarks/ElBruno.LocalLLMs.ToolRoutingBenchmarks/` project with benchmark scenarios for 6 models × 3 catalog sizes × 5 prompt categories. Measures accuracy, latency, memory. Data drives Phase 3 optimization decisions.
 
 ## Learnings
 

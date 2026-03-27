@@ -175,6 +175,9 @@ Key findings from parallel architecture evaluation by Morpheus:
 - Avoid over-engineering with 1.5B+ unless benchmarks prove it necessary
 
 **Cross-team alignment:**
-- Dozer handles model conversions and benchmarking
-- Morpheus owns architecture decisions (composition vs. integration)
-- Sample code will demonstrate optional SLM layer for advanced users
+- Dozer handles model conversions and benchmarking (Phase 0)
+- Tank handles benchmark framework (Phase 1)
+- Trinity handles sample code implementation (Phase 2) and optimization (Phase 3)
+- Morpheus owns architecture decisions (composition vs. integration) and documentation (Phase 4)
+
+**Full plan reference:** `docs/plan-rag-tool-routing.md` with 4 implementation phases and 18 tasks. See `.squad/decisions.md` for RAG plan decision memo.

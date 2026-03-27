@@ -8,9 +8,11 @@
 - **Target models:** Phi-3.5-mini, Qwen2.5-3B, Llama-3.2-3B (small); Qwen2.5-7B, Phi-4 (medium)
 - **Created:** 2026-03-17
 
-## Architecture Status
+## Architecture Status & RAG Plan
 
 **2026-03-17:** Morpheus completed full solution architecture. Blueprint in `docs/architecture.md`. 9 decisions merged to `.squad/decisions.md`. Build infra (csproj, Directory.Build.props) and CI/CD scripting depend on architecture choices (net8.0, net10.0, ONNX GenAI). Switch can now proceed with solution scaffolding.
+
+**2026-03-27:** RAG tool routing plan approved (`docs/plan-rag-tool-routing.md`). New deliverables: benchmark project (Phase 1, Tank owner) and sample project (Phase 2, Trinity owner). Switch should update `.slnx` to include these projects and configure CI/CD for benchmark runs if needed.
 
 ## Learnings
 
