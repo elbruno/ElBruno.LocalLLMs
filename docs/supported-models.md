@@ -6,37 +6,37 @@ ElBruno.LocalLLMs supports **29 LLMs** across 5 tiers. This guide details each m
 
 ## Complete Model Table
 
-| Tier | Model | Params | HuggingFace ID | ONNX Status | Chat Template | Recommended RAM | Speed |
-|------|-------|--------|----------------|----|---|---|---|
-| ⚪ Tiny | TinyLlama-1.1B-Chat | 1.1B | TinyLlama/TinyLlama-1.1B-Chat-v1.0 | ✅ Native | ChatML | 2–4 GB | ⚡⚡⚡ |
-| ⚪ Tiny | SmolLM2-1.7B-Instruct | 1.7B | HuggingFaceTB/SmolLM2-1.7B-Instruct | ✅ Native | ChatML | 2–4 GB | ⚡⚡⚡ |
-| ⚪ Tiny | Qwen2.5-0.5B-Instruct | 0.5B | Qwen/Qwen2.5-0.5B-Instruct | ✅ Native | Qwen | 1–2 GB | ⚡⚡⚡ |
-| ⚪ Tiny | Qwen2.5-1.5B-Instruct | 1.5B | Qwen/Qwen2.5-1.5B-Instruct | ✅ Native | Qwen | 2–4 GB | ⚡⚡⚡ |
-| ⚪ Tiny | Gemma-2B-IT | 2B | elbruno/Gemma-2B-IT-onnx | ✅ Native | ChatML | 4 GB | ⚡⚡⚡ |
-| ⚪ Tiny | StableLM-2-1.6B-Chat | 1.6B | stabilityai/stablelm-2-zephyr-1_6b | 🔄 Convert | ChatML | 3–4 GB | ⚡⚡⚡ |
-| 🟢 Small | Phi-3.5-mini-instruct | 3.8B | microsoft/Phi-3.5-mini-instruct-onnx | ✅ Native | Phi3 | 6–8 GB | ⚡⚡ |
-| 🟢 Small | Qwen2.5-3B-Instruct | 3B | Qwen/Qwen2.5-3B-Instruct | ✅ Native | Qwen | 6–8 GB | ⚡⚡ |
-| 🟢 Small | Llama-3.2-3B-Instruct | 3B | elbruno/Llama-3.2-3B-Instruct-onnx | ✅ Native | Llama3 | 6–8 GB | ⚡⚡ |
-| 🟢 Small | Gemma-2-2B-IT | 2.6B | elbruno/Gemma-2-2B-IT-onnx | ✅ Native | ChatML | 6 GB | ⚡⚡ |
-| 🟡 Medium | Qwen2.5-7B-Instruct | 7B | Qwen/Qwen2.5-7B-Instruct | ✅ Native | Qwen | 8–12 GB | ⚡ |
-| 🟡 Medium | Llama-3.1-8B-Instruct | 8B | meta-llama/Llama-3.1-8B-Instruct | ✅ Native | Llama3 | 8–12 GB | ⚡ |
-| 🟡 Medium | Mistral-7B-Instruct-v0.3 | 7B | mistralai/Mistral-7B-Instruct-v0.3 | ✅ Native | Mistral | 8–12 GB | ⚡ |
-| 🟡 Medium | Gemma-2-9B-IT | 9B | elbruno/Gemma-2-9B-IT-onnx | ✅ Native | ChatML | 12 GB | ⚡ |
-| 🟡 Medium | Phi-4 | 14B | microsoft/phi-4 | ✅ Native | Phi3 | 12–16 GB | ⚡ |
-| 🟡 Medium | DeepSeek-R1-Distill-Qwen-14B | 14B | deepseek-ai/DeepSeek-R1-Distill-Qwen-14B | ✅ Native | ChatML | 12–16 GB | ⚡ |
-| 🟡 Medium | Mistral-Small-24B-Instruct | 24B | mistralai/Mistral-Small-24B-Instruct-2501 | ✅ Native | Mistral | 16–20 GB | ⚡ |
-| 🔴 Large | Qwen2.5-14B-Instruct | 14B | Qwen/Qwen2.5-14B-Instruct | ✅ Native | Qwen | 16–24 GB | 🐢 |
-| 🔴 Large | Qwen2.5-32B-Instruct | 32B | Qwen/Qwen2.5-32B-Instruct | ✅ Native | Qwen | 24–32 GB | 🐢 |
-| 🔴 Large | Llama-3.3-70B-Instruct | 70B | elbruno/Llama-3.3-70B-Instruct-onnx | ✅ Native | Llama3 | 40+ GB | 🐢 |
-| 🔴 Large | Mixtral-8x7B-Instruct-v0.1 | 46.7B (MoE) | mistralai/Mixtral-8x7B-Instruct-v0.1 | 🔄 Convert | Mistral | 24–32 GB | 🐢 |
-| 🔴 Large | DeepSeek-R1-Distill-Llama-70B | 70B | deepseek-ai/DeepSeek-R1-Distill-Llama-70B | 🔄 Convert | Llama3 | 40+ GB | 🐢 |
-| 🔴 Large | Command-R (35B) | 35B | CohereForAI/c4ai-command-r-v01 | 🔄 Convert | ChatML | 24–32 GB | 🐢 |
-| 🟣 Next-Gen | Llama-4-Scout | ~17B (MoE) | meta-llama/Llama-4-Scout-17B-16E-Instruct | 🔄 Convert | Llama3 | 24–32 GB | ⚡ |
-| 🟣 Next-Gen | Llama-4-Maverick | ~17B (MoE) | meta-llama/Llama-4-Maverick-17B-128E-Instruct | 🔄 Convert | Llama3 | 64+ GB | 🐢 |
-| 🟣 Next-Gen | Qwen3-8B | 8B | Qwen/Qwen3-8B | 🔄 Convert | Qwen | 8–12 GB | ⚡ |
-| 🟣 Next-Gen | Qwen3-32B | 32B | Qwen/Qwen3-32B | 🔄 Convert | Qwen | 24–32 GB | 🐢 |
-| 🟣 Next-Gen | Gemma-3-12B-IT | 12B | google/gemma-3-12b-it | 🔄 Convert | ChatML | 12–16 GB | ⚡ |
-| 🟣 Next-Gen | DeepSeek-V3 | 671B (MoE) | deepseek-ai/DeepSeek-V3 | 🔄 Convert | ChatML | 128+ GB | 🐢 |
+| Tier | Model | Params | HuggingFace ID | ONNX Status | Chat Template | Tool Calling | Recommended RAM | Speed |
+|------|-------|--------|----------------|----|---|---|---|---|
+| ⚪ Tiny | TinyLlama-1.1B-Chat | 1.1B | TinyLlama/TinyLlama-1.1B-Chat-v1.0 | ✅ Native | ChatML | — | 2–4 GB | ⚡⚡⚡ |
+| ⚪ Tiny | SmolLM2-1.7B-Instruct | 1.7B | HuggingFaceTB/SmolLM2-1.7B-Instruct | ✅ Native | ChatML | — | 2–4 GB | ⚡⚡⚡ |
+| ⚪ Tiny | Qwen2.5-0.5B-Instruct | 0.5B | Qwen/Qwen2.5-0.5B-Instruct | ✅ Native | Qwen | ✅ | 1–2 GB | ⚡⚡⚡ |
+| ⚪ Tiny | Qwen2.5-1.5B-Instruct | 1.5B | Qwen/Qwen2.5-1.5B-Instruct | ✅ Native | Qwen | ✅ | 2–4 GB | ⚡⚡⚡ |
+| ⚪ Tiny | Gemma-2B-IT | 2B | elbruno/Gemma-2B-IT-onnx | ✅ Native | ChatML | — | 4 GB | ⚡⚡⚡ |
+| ⚪ Tiny | StableLM-2-1.6B-Chat | 1.6B | stabilityai/stablelm-2-zephyr-1_6b | 🔄 Convert | ChatML | — | 3–4 GB | ⚡⚡⚡ |
+| 🟢 Small | Phi-3.5-mini-instruct | 3.8B | microsoft/Phi-3.5-mini-instruct-onnx | ✅ Native | Phi3 | ✅ | 6–8 GB | ⚡⚡ |
+| 🟢 Small | Qwen2.5-3B-Instruct | 3B | Qwen/Qwen2.5-3B-Instruct | ✅ Native | Qwen | ✅ | 6–8 GB | ⚡⚡ |
+| 🟢 Small | Llama-3.2-3B-Instruct | 3B | elbruno/Llama-3.2-3B-Instruct-onnx | ✅ Native | Llama3 | — | 6–8 GB | ⚡⚡ |
+| 🟢 Small | Gemma-2-2B-IT | 2.6B | elbruno/Gemma-2-2B-IT-onnx | ✅ Native | ChatML | — | 6 GB | ⚡⚡ |
+| 🟡 Medium | Qwen2.5-7B-Instruct | 7B | Qwen/Qwen2.5-7B-Instruct | ✅ Native | Qwen | ✅ | 8–12 GB | ⚡ |
+| 🟡 Medium | Llama-3.1-8B-Instruct | 8B | meta-llama/Llama-3.1-8B-Instruct | ✅ Native | Llama3 | — | 8–12 GB | ⚡ |
+| 🟡 Medium | Mistral-7B-Instruct-v0.3 | 7B | mistralai/Mistral-7B-Instruct-v0.3 | ✅ Native | Mistral | — | 8–12 GB | ⚡ |
+| 🟡 Medium | Gemma-2-9B-IT | 9B | elbruno/Gemma-2-9B-IT-onnx | ✅ Native | ChatML | — | 12 GB | ⚡ |
+| 🟡 Medium | Phi-4 | 14B | microsoft/phi-4 | ✅ Native | Phi3 | ✅ | 12–16 GB | ⚡ |
+| 🟡 Medium | DeepSeek-R1-Distill-Qwen-14B | 14B | deepseek-ai/DeepSeek-R1-Distill-Qwen-14B | ✅ Native | ChatML | — | 12–16 GB | ⚡ |
+| 🟡 Medium | Mistral-Small-24B-Instruct | 24B | mistralai/Mistral-Small-24B-Instruct-2501 | ✅ Native | Mistral | — | 16–20 GB | ⚡ |
+| 🔴 Large | Qwen2.5-14B-Instruct | 14B | Qwen/Qwen2.5-14B-Instruct | ✅ Native | Qwen | ✅ | 16–24 GB | 🐢 |
+| 🔴 Large | Qwen2.5-32B-Instruct | 32B | Qwen/Qwen2.5-32B-Instruct | ✅ Native | Qwen | ✅ | 24–32 GB | 🐢 |
+| 🔴 Large | Llama-3.3-70B-Instruct | 70B | elbruno/Llama-3.3-70B-Instruct-onnx | ✅ Native | Llama3 | — | 40+ GB | 🐢 |
+| 🔴 Large | Mixtral-8x7B-Instruct-v0.1 | 46.7B (MoE) | mistralai/Mixtral-8x7B-Instruct-v0.1 | 🔄 Convert | Mistral | — | 24–32 GB | 🐢 |
+| 🔴 Large | DeepSeek-R1-Distill-Llama-70B | 70B | deepseek-ai/DeepSeek-R1-Distill-Llama-70B | 🔄 Convert | Llama3 | — | 40+ GB | 🐢 |
+| 🔴 Large | Command-R (35B) | 35B | CohereForAI/c4ai-command-r-v01 | 🔄 Convert | ChatML | — | 24–32 GB | 🐢 |
+| 🟣 Next-Gen | Llama-4-Scout | ~17B (MoE) | meta-llama/Llama-4-Scout-17B-16E-Instruct | 🔄 Convert | Llama3 | — | 24–32 GB | ⚡ |
+| 🟣 Next-Gen | Llama-4-Maverick | ~17B (MoE) | meta-llama/Llama-4-Maverick-17B-128E-Instruct | 🔄 Convert | Llama3 | — | 64+ GB | 🐢 |
+| 🟣 Next-Gen | Qwen3-8B | 8B | Qwen/Qwen3-8B | 🔄 Convert | Qwen | ✅ | 8–12 GB | ⚡ |
+| 🟣 Next-Gen | Qwen3-32B | 32B | Qwen/Qwen3-32B | 🔄 Convert | Qwen | ✅ | 24–32 GB | 🐢 |
+| 🟣 Next-Gen | Gemma-3-12B-IT | 12B | google/gemma-3-12b-it | 🔄 Convert | ChatML | — | 12–16 GB | ⚡ |
+| 🟣 Next-Gen | DeepSeek-V3 | 671B (MoE) | deepseek-ai/DeepSeek-V3 | 🔄 Convert | ChatML | — | 128+ GB | 🐢 |
 
 ---
 
@@ -231,6 +231,29 @@ Each model family uses a different **prompt format**. The library handles this a
 | **Mistral** | Mistral-7B+ | `[INST] Question [/INST]` | Mistral's format |
 
 **You don't need to worry about these** — the library applies the correct format automatically when you pass messages through `GetResponseAsync()`.
+
+---
+
+## Tool Calling Support
+
+Tool calling enables models to call functions/tools you define, enabling agent-like behavior. Not all models support this — it depends on the model's training data and chat template.
+
+### Recommended Models for Tool Calling
+
+| Priority | Model | Why |
+|----------|-------|-----|
+| 🥇 Best Starting Point | **Phi-3.5-mini-instruct** (3.8B) | Native ONNX, no conversion needed, good quality |
+| 🥈 Smallest Option | **Qwen2.5-0.5B-Instruct** (0.5B) | Only ~1-2 GB RAM, great for testing/demos |
+| 🥉 Best Quality/Size | **Qwen2.5-7B-Instruct** (7B) | Best tool calling accuracy among supported models |
+| 🏆 Best Overall | **Phi-4** (14B) | Highest accuracy, needs more RAM (12-16 GB) |
+
+> **Note:** Tool calling quality scales with model size. Smaller models may hallucinate tool calls or miss them. For production use, prefer 3B+ models.
+
+### How It Works
+
+Tool calling in local models is **prompt-based** — tools are described as JSON schemas in the system prompt, and the model responds with JSON tool call objects. The library handles all formatting and parsing automatically through `IChatClient`.
+
+See [Getting Started](getting-started.md#tool-calling) for usage examples.
 
 ---
 

@@ -15,5 +15,6 @@
     <Project Path="samples/MultiModelChat/MultiModelChat.csproj" />
     <Project Path="samples/DependencyInjection/DependencyInjection.csproj" />
     <Project Path="samples/ConsoleAppDemo/ConsoleAppDemo.csproj" />
+    <Project Path="samples/ToolCallingAgent/ToolCallingAgent.csproj" />
   </Folder>
 </Solution>
