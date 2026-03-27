@@ -24,6 +24,71 @@ The Colab notebook runs the entire pipeline end-to-end:
 
 ---
 
+## Windows Local Training 🖥️
+
+Train on a local Windows machine with an NVIDIA GPU (no WSL required).
+
+### Prerequisites
+
+- **GPU:** NVIDIA with ≥16 GB VRAM (tested on A10 24 GB, RTX 4090 24 GB)
+- **Python:** 3.10+ (miniconda recommended)
+- **CUDA:** NVIDIA drivers with CUDA 12.x support
+- **Disk:** ~10 GB free space
+
+### 1. Install Dependencies
+
+```powershell
+cd scripts\finetune
+.\install_windows.ps1
+```
+
+This installs PyTorch (CUDA 12.4), transformers, peft, trl, ONNX Runtime, and HuggingFace Hub.
+
+### 2. Train a Model
+
+```powershell
+# Tool calling variant (default)
+python train_windows.py --variant ToolCalling --skip-upload
+
+# RAG variant
+python train_windows.py --variant RAG --skip-upload
+
+# Full pipeline with HuggingFace upload
+$env:HF_TOKEN = "hf_your_token_here"
+python train_windows.py --variant ToolCalling
+
+# Custom settings
+python train_windows.py --variant Instruct --epochs 5 --batch-size 2 --skip-onnx --skip-upload
+```
+
+### How It Works
+
+Uses **standard `transformers` + `peft` + `trl`** instead of Unsloth (which is Linux-only). With 24 GB VRAM and a 0.5B model, full FP16 LoRA training fits comfortably — no 4-bit quantization needed.
+
+The pipeline runs end-to-end:
+1. Loads training data (ShareGPT → ChatML format)
+2. Fine-tunes Qwen2.5-0.5B with LoRA (FP16)
+3. Merges LoRA adapters into base model
+4. Converts to ONNX INT4 (optional, `--skip-onnx`)
+5. Validates ONNX output (optional, `--skip-validation`)
+6. Uploads to HuggingFace Hub (optional, `--skip-upload`)
+
+### CLI Reference
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--variant` | `ToolCalling` | `ToolCalling`, `RAG`, or `Instruct` |
+| `--epochs` | `3` | Training epochs |
+| `--batch-size` | `4` | Per-device batch size |
+| `--output-dir` | `./output` | Output directory |
+| `--data-dir` | auto-detect | Training data path |
+| `--hf-token` | `$HF_TOKEN` | HuggingFace token |
+| `--skip-upload` | — | Skip HF upload |
+| `--skip-onnx` | — | Skip ONNX conversion |
+| `--skip-validation` | — | Skip ONNX validation |
+
+---
+
 ## Local Validation
 
 Run the validation script to check for API compatibility before running on Colab:
@@ -151,8 +216,10 @@ python upload_to_hf.py \
 | Script | Purpose |
 |--------|---------|
 | `train.py` | **Full pipeline CLI** — train, merge, convert, validate, upload in one command |
+| `train_windows.py` | **Windows** end-to-end pipeline (train → merge → ONNX → upload, no Unsloth) |
+| `install_windows.ps1` | **Windows** dependency installer (PyTorch CUDA, peft, trl, ONNX) |
 | `prepare_training_data.py` | Download & convert external datasets, merge with custom data |
-| `train_qwen_*.py` | QLoRA fine-tuning for each model size |
+| `train_qwen_*.py` | QLoRA fine-tuning for each model size (Linux/Colab, uses Unsloth) |
 | `merge_lora.py` | Merge LoRA adapters into base model |
 | `convert_to_onnx.py` | Convert HuggingFace model to ONNX INT4 |
 | `validate_onnx.py` | Validate ONNX model output format |

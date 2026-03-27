@@ -1,0 +1,35 @@
+name: Validate Fine-Tuning Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/finetune/**"
+      - "training-data/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/finetune/**"
+      - "training-data/**"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install transformers datasets trl peft onnxruntime-genai onnx onnx-ir huggingface-hub
+
+      - name: Validate notebook and APIs
+        run: python scripts/finetune/validate_notebook.py
