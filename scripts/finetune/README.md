@@ -2,7 +2,29 @@
 
 Scripts for fine-tuning Qwen2.5 models to improve tool calling, RAG, and chat template adherence with the ElBruno.LocalLLMs library.
 
-## Quick Start
+## Quick Start with Google Colab ☁️
+
+**No local GPU required!** Open the notebook in Google Colab and train in the cloud for free:
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/elbruno/ElBruno.LocalLLMs/blob/main/scripts/finetune/train_and_publish.ipynb)
+
+The Colab notebook runs the entire pipeline end-to-end:
+1. Installs dependencies (Unsloth, TRL, ONNX Runtime)
+2. Downloads training data from this repo
+3. Fine-tunes Qwen2.5-0.5B with QLoRA (~15–30 min on a free T4 GPU)
+4. Merges LoRA adapters and converts to ONNX INT4
+5. Validates the model and uploads to HuggingFace
+
+**Steps:**
+1. Click the Colab badge above
+2. Set **Runtime → Change runtime type → T4 GPU**
+3. Add your `HF_TOKEN` in the 🔑 Secrets sidebar (or paste directly in the config cell)
+4. Choose a `MODEL_VARIANT`: `"ToolCalling"`, `"RAG"`, or `"Instruct"`
+5. Click **Runtime → Run all**
+
+---
+
+## Local Quick Start
 
 ### 1. Install Dependencies
 

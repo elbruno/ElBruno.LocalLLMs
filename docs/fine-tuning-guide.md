@@ -16,6 +16,24 @@ For advanced users, this guide also explains how to fine-tune your own models.
 
 The easiest path: download a fine-tuned model from HuggingFace and use it in your .NET app.
 
+### Train with Google Colab (No Local GPU Needed)
+
+If you want to train the models yourself, use the Google Colab notebook — it runs the
+full pipeline (train → merge → ONNX convert → upload) on a free cloud GPU:
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/elbruno/ElBruno.LocalLLMs/blob/main/scripts/finetune/train_and_publish.ipynb)
+
+1. Click the badge above to open in Colab
+2. Set **Runtime → Change runtime type → T4 GPU**
+3. Add your HuggingFace token (`HF_TOKEN`) in the 🔑 Secrets sidebar
+4. Pick a variant: `"ToolCalling"`, `"RAG"`, or `"Instruct"`
+5. Click **Runtime → Run all** — takes ~30 minutes total
+
+The notebook handles everything: installing Unsloth, downloading training data,
+QLoRA fine-tuning, LoRA merge, ONNX INT4 conversion, validation, and HuggingFace upload.
+See [`scripts/finetune/train_and_publish.ipynb`](../scripts/finetune/train_and_publish.ipynb)
+for the source.
+
 ### Available Models
 
 | Model | Size | Task | HuggingFace ID |
