@@ -141,13 +141,37 @@ None — this is the initial release.
 ## [Unreleased]
 
 ### Added
+
+**Phase 4a: Tool Calling**
 - **Tool/Function Calling** — `LocalChatClient` now supports tool calling via `IChatClient`. Define tools with `AIFunctionFactory.Create`, pass them in `ChatOptions.Tools`, and get `FunctionCallContent` in responses. Works with Phi-3.5, Phi-4, and all Qwen2.5 models.
 - `SupportsToolCalling` property on `ModelDefinition` to indicate which models support tool calling
 - `JsonToolCallParser` for parsing tool calls from model output (supports `<tool_call>` tags, raw JSON, and array formats)
 - Tool-aware `FormatMessages` overload on all chat template formatters
 - `ToolCallingAgent` sample demonstrating multi-turn agent loop with local tools
 - 41 new unit tests for tool calling (parser, formatter, integration)
+- `docs/tool-calling-guide.md` — comprehensive tool calling guide with model support matrix, quick start, defining tools, agent loop patterns, and error handling
 - Architecture plan at `docs/plan-rag-tool-routing.md` for Phase 4 (RAG + Tool Routing)
+
+**Phase 4b: RAG Pipeline**
+- **RAG Pipeline Support** — new `ElBruno.LocalLLMs.Rag` extension package for Retrieval-Augmented Generation
+- `IDocumentChunker` interface for splitting documents into chunks
+- `SlidingWindowChunker` implementation with configurable chunk size and overlap
+- `IDocumentStore` interface for vector storage and similarity search
+- `InMemoryDocumentStore` implementation with cosine similarity search (fast, in-memory)
+- `SqliteDocumentStore` implementation for persistent vector storage across runs
+- `IRagPipeline` interface orchestrating chunking, embedding, and retrieval workflows
+- `LocalRagPipeline` implementation integrating with `ElBruno.LocalEmbeddings` for vector embeddings
+- `RagContext` record containing retrieved chunks and formatted context for injection into chat
+- `RagIndexProgress` for progress reporting during document indexing
+- `RagServiceExtensions.AddLocalRag()` for dependency injection in ASP.NET Core
+- `RagChatbot` sample demonstrating end-to-end RAG pipeline (index documents, retrieve context, chat with grounding)
+- `docs/rag-guide.md` — comprehensive RAG guide with architecture overview, quick start, chunking strategies, vector stores, best practices, and limitations
+
+**Documentation**
+- Updated `docs/supported-models.md` with tool calling support matrix for Qwen2.5-0.5B, Phi-3.5-mini, Qwen-7B, Phi-4, Llama-3.2-3B, DeepSeek-R1
+- Updated `docs/getting-started.md` with tool calling section and reference to samples/ToolCallingAgent
+- `docs/tool-calling-guide.md` — 23KB guide covering model support, quick start, tool definitions, agent loops, multi-turn conversations, error handling, and limitations
+- `docs/rag-guide.md` — 24KB guide covering RAG architecture, chunking, vector stores, dependency injection, RAG + tool calling patterns, and best practices
 
 ### Planned
 

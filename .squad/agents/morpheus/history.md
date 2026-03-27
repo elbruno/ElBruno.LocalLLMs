@@ -47,6 +47,56 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-03-28 — Phase 4 Documentation Complete
+
+**Created comprehensive guides for Phase 4a (Tool Calling) and Phase 4b (RAG):**
+
+- **`docs/tool-calling-guide.md`** (22.7 KB) — 10 sections covering:
+  - Overview: what tool calling is and why it matters for local LLMs
+  - Supported Models table: Phi-3.5-mini, Qwen2.5-0.5B, Qwen-7B, Phi-4, Llama-3.2, DeepSeek-R1
+  - Quick Start: minimal 30-line example using AIFunctionFactory and tool agent loop
+  - Defining Tools: parameter types, tool return values, custom implementations
+  - Tool Calling Loop: standard multi-turn agent pattern with iteration limit
+  - Multi-turn Conversations: example of iterative information gathering (travel assistant)
+  - Error Handling: model doesn't support tools, malformed output, tool execution failures, infinite loops
+  - Model-Specific Notes: Qwen (`<tool_call>` tags), Phi (functools JSON), Llama (JSON arrays)
+  - Smallest Models: Qwen2.5-0.5B (1–2 GB) vs Phi-3.5-mini (6–8 GB) trade-offs
+  - Limitations: no streaming tool calls, prompt-based (not native), model accuracy varies, limited tool definitions, no function composition
+
+- **`docs/rag-guide.md`** (24.4 KB) — 12 sections covering:
+  - Overview: what RAG is and why it matters for on-device private data grounding
+  - When to Use RAG: comparison table vs plain chat vs tool calling vs fine-tuning
+  - Architecture: 7-stage pipeline from documents → chunks → embeddings → store → retrieve → inject → chat
+  - Installation: NuGet package reference for `ElBruno.LocalLLMs.Rag`
+  - Core Concepts: Document, DocumentChunk, IDocumentChunker, IDocumentStore, IRagPipeline, RagContext
+  - Quick Start: minimal working example indexing 3 documents and answering a question
+  - Document Chunking: SlidingWindowChunker with configurable size/overlap, chunk size selection guide, custom chunker implementation
+  - Vector Stores: InMemoryDocumentStore vs SqliteDocumentStore comparison, selection guide
+  - Dependency Injection: ASP.NET Core registration via AddLocalRag()
+  - RAG + Tool Calling: pattern combining tool-based document search with RAG context injection
+  - Best Practices: chunk size guidelines, embedding model selection, context window management, monitoring retrieval quality, incremental indexing, source attribution
+  - Limitations: no vector indices, no semantic chunking, SQLite brute-force search, no re-ranking, static embeddings, embedding dimension matching
+
+- **Updated `docs/CHANGELOG.md`** with Phase 4a and Phase 4b entries under `[Unreleased]`:
+  - Phase 4a section: tool calling support, ToolCallingAgent sample, tool calling tests
+  - Phase 4b section: RAG pipeline abstractions, chunker/store implementations, LocalRagPipeline, RagChatbot sample
+  - Documentation section: new guides and updated getting-started.md
+
+**Key Decisions:**
+- Tool calling guide emphasizes model-specific formatting (Qwen vs Phi vs Llama) but clarifies library handles conversion
+- RAG guide balances quick start with deep architectural understanding
+- Both guides include limitations and workarounds (not just happy paths)
+- Guides link to each other for RAG + tool calling patterns
+- Model selection tables help users choose right model for their use case
+
+**Structure and Consistency:**
+- Both guides follow getting-started.md style: clear headers, code examples with comments, tables for reference
+- Tool calling guide is user-centric (how to build agents) while RAG guide is systems-centric (how to build pipelines)
+- Cross-links: getting-started.md → tool-calling-guide.md and rag-guide.md for feature discovery
+- CHANGELOG entries are structured and detailed enough for release notes
+
+**Impact:** Users new to tool calling or RAG have comprehensive, self-contained guides with runnable examples. Development team has clear documentation of Phase 4 capabilities and limitations for maintenance and future work.
+
 ### 2026-03-28 — Documentation Updated for Phase 4a Tool Calling
 - Added "Tool Calling" column to `docs/supported-models.md` marking Qwen2.5-0.5B, Phi-3.5-mini, Qwen-7B with support
 - Created new "Tool Calling" section in `docs/getting-started.md` with feature overview and link to samples/ToolCallingAgent

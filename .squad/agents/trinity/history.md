@@ -164,3 +164,75 @@
 **Decision Merged:** Decision 6 (Project Structure Conventions) in `.squad/decisions.md`
 
 All 359 tests passing. Build clean. Ready for integration.
+
+### 2026-03-27: Phase 4b RAG Pipeline Implementation Complete
+
+**All components delivered and tested:**
+
+**Part 1: Formatter Tool Support**
+- Completed tool support for all 6 formatters: QwenFormatter, Llama3Formatter, Phi3Formatter, DeepSeekFormatter, MistralFormatter, GemmaFormatter
+- All formatters now implement full tool calling pattern: tool schema injection, FunctionCallContent formatting, FunctionResultContent handling
+- Followed ChatMLFormatter reference implementation pattern across all formats
+- Each formatter adapts to its specific token format (ChatML tags, Llama headers, Phi tags, DeepSeek markers, Mistral INST, Gemma turns)
+
+**Part 2: ElBruno.LocalLLMs.Rag Project**
+- Created new NuGet package project at `src/ElBruno.LocalLLMs.Rag/` targeting net8.0;net10.0
+- Core abstractions: `Document`, `DocumentChunk`, `RagContext`, `RagIndexProgress` (immutable records)
+- Interfaces: `IDocumentChunker`, `IDocumentStore`, `IRagPipeline` (clean abstraction layer)
+- Implementations:
+  - `SlidingWindowChunker` with configurable chunk size and overlap
+  - `InMemoryDocumentStore` using cosine similarity for semantic search
+  - `SqliteDocumentStore` for persistent storage using Microsoft.Data.Sqlite
+  - `LocalRagPipeline` orchestrating chunking → embedding → indexing → retrieval
+- DI extensions: `RagServiceExtensions` with fluent configuration API
+- `RagOptions` for configuration (chunk size, overlap, topK, minSimilarity defaults)
+- Uses `IEmbeddingGenerator<string, Embedding<float>>` from MEAI — fully pluggable embedding layer
+
+**Part 3: Test Coverage**
+- Created test project at `src/tests/ElBruno.LocalLLMs.Rag.Tests/` (net8.0, MSTest)
+- `ChunkerTests`: 13 tests covering edge cases (empty, whitespace, single char, various overlaps, boundary conditions)
+- `InMemoryStoreTests`: 7 tests for add/search/clear operations, topK filtering, similarity ordering
+- `CosineSimilarityTests`: 5 tests for mathematical correctness (identical=1, orthogonal=0, opposite=-1, scaling, zero vectors)
+- All 25 tests passing with 0 failures
+
+**Part 4: RagChatbot Sample**
+- Created demonstration sample at `src/samples/RagChatbot/` (net8.0, console app)
+- Shows end-to-end RAG workflow: document creation → chunking → embedding → indexing → semantic retrieval
+- Mock embedding generator for standalone demo (no external dependencies)
+- Sample company policy documents (vacation, remote work, expenses)
+- Example queries demonstrating context retrieval
+- README with integration examples for real LLMs
+- Builds and runs cleanly
+
+**Part 5: Solution Integration**
+- Updated `ElBruno.LocalLLMs.slnx` to include all 3 new projects
+- Total solution: 13 projects (was 10, added Rag lib + tests + sample)
+- Full solution builds clean: 0 errors, 0 warnings
+- All tests pass: 25/25 RAG tests + existing tests
+
+**Implementation Stats:**
+- 40 files created/modified
+- 6 formatters enhanced with tool support
+- 20 RAG library files (interfaces, implementations, DI)
+- 7 test files with comprehensive coverage
+- 6 sample files (demo + docs)
+- 1 solution file update
+- 13 total projects in solution
+- 25 new tests (100% passing)
+
+**Key Design Decisions:**
+- RAG library uses MEAI `IEmbeddingGenerator` abstraction (no hard dependency on ElBruno.LocalEmbeddings)
+- Cosine similarity implemented in both stores (in-memory and SQLite) for consistency
+- Chunking uses character-level sliding window (simple, predictable, language-agnostic)
+- SQLite store serializes embeddings as BLOB (float array → byte array)
+- DI extensions support both in-memory (default) and SQLite stores
+- Progress reporting via `IProgress<RagIndexProgress>` for long indexing operations
+
+**Files:**
+- `src/ElBruno.LocalLLMs.Rag/` — Complete RAG library package
+- `src/tests/ElBruno.LocalLLMs.Rag.Tests/` — Comprehensive test suite
+- `src/samples/RagChatbot/` — End-to-end demo sample
+- `src/ElBruno.LocalLLMs/Templates/*.cs` — All 6 formatters enhanced
+
+Ready for phase 4c documentation and publishing.
+
