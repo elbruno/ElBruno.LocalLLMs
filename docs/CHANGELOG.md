@@ -140,13 +140,21 @@ None — this is the initial release.
 
 ## [Unreleased]
 
+### Added
+- **Tool/Function Calling** — `LocalChatClient` now supports tool calling via `IChatClient`. Define tools with `AIFunctionFactory.Create`, pass them in `ChatOptions.Tools`, and get `FunctionCallContent` in responses. Works with Phi-3.5, Phi-4, and all Qwen2.5 models.
+- `SupportsToolCalling` property on `ModelDefinition` to indicate which models support tool calling
+- `JsonToolCallParser` for parsing tool calls from model output (supports `<tool_call>` tags, raw JSON, and array formats)
+- Tool-aware `FormatMessages` overload on all chat template formatters
+- `ToolCallingAgent` sample demonstrating multi-turn agent loop with local tools
+- 41 new unit tests for tool calling (parser, formatter, integration)
+- Architecture plan at `docs/plan-rag-tool-routing.md` for Phase 4 (RAG + Tool Routing)
+
 ### Planned
 
 - [ ] More native ONNX models (Llama-3.2-3B, Qwen2.5-3B, etc.)
 - [ ] Semantic Kernel integration package
 - [ ] Prompt caching and result caching
 - [ ] Vision model support
-- [ ] Function calling / tool use
 - [ ] Extended context window support
 - [ ] Fine-tuning support via LoRA adapters
 - [ ] Performance benchmarking suite

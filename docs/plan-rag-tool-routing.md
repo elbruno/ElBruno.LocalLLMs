@@ -1,747 +1,1567 @@
-# RAG Tool Routing — Implementation Plan
+# ElBruno.LocalLLMs — Phase 4: RAG + Tool Routing Architecture Plan
 
+> **Version:** 1.0 — Phase 4 Feature Plan  
 > **Author:** Morpheus (Lead/Architect)  
-> **Date:** 2026-03-27  
-> **Status:** Approved — ready for execution  
-> **Requested by:** Bruno Capuano
+> **Date:** 2026-03-18  
+> **Status:** Ready for implementation
 
 ---
 
-## Goal
+## 1. Overview
 
-Build a fully local RAG pipeline for MCP tool selection: user prompt → embedding search → optional SLM reasoning → tool(s) selected. The SLM selects which tool(s) to invoke from a large catalog (20–100+ tools). It does **not** generate arguments.
+Phase 4 adds two critical capabilities to ElBruno.LocalLLMs:
 
-## Constraints (Bruno-confirmed)
+### Phase 4a: Tool Calling (Tool Routing)
 
-| Constraint | Detail |
-|---|---|
-| **Compute** | Must work on CPU (portability) and GPU (speed) |
-| **Scale** | 20+ tools — designed for large catalogs, not trivial cases |
-| **Scope** | Tool selection only — SLM picks tool IDs, never generates arguments |
-| **Latency** | As low as possible for local execution |
+Enable `LocalChatClient` to support function/tool calling through **prompt-based tool routing**. Since ONNX Runtime GenAI doesn't have native function calling support, we implement this by:
 
-## Architecture Principles (from previous evaluation)
+- Injecting tool definitions into the chat template
+- Parsing the model's text output to detect tool call patterns
+- Converting detected tool calls into `FunctionCallContent` items
+- Handling `FunctionResultContent` in subsequent messages
 
-1. **MCPToolRouter stays pure** — no LLM dependency added to the existing package
-2. **Composition via MEAI interfaces** — `IEmbeddingGenerator<string, Embedding<float>>` + `IChatClient`
-3. **SLM layer is optional** — users compose explicitly; embedding-only is the default fast path
-4. **Graceful degradation** — if SLM fails or times out, fall back to embedding-only results
-5. **JSON schema enforcement** — tiny models need structured output constraints (14% strict JSON at 0.5B)
+### Phase 4b: RAG Pipeline
 
-## External Libraries
+Provide a clean integration path for Retrieval-Augmented Generation:
 
-| Library | Interface | Role |
-|---|---|---|
-| `ElBruno.LocalEmbeddings` | `IEmbeddingGenerator<string, Embedding<float>>` | Embed tool descriptions + user queries |
-| `ElBruno.ModelContextProtocol.MCPToolRouter` | — | Semantic search over MCP tool catalog |
-| `ElBruno.LocalLLMs` | `IChatClient` | Local SLM inference for tool re-ranking/selection |
+- Core abstractions for document storage, chunking, and retrieval
+- Integration with `ElBruno.LocalEmbeddings` for vector embeddings
+- Sample implementations (in-memory and pluggable stores)
+- Clear patterns for context injection into chat messages
+
+**Why this matters:** Tool calling enables agents to take actions (query databases, call APIs, perform calculations). RAG enables grounding LLM responses in private/domain-specific knowledge. Together, they unlock real-world agentic applications running entirely on-premises.
 
 ---
 
-## Models to Benchmark
+## 2. Phase 4a: Tool Calling Architecture
 
-| # | Model | Params | HuggingFace ID | ONNX Status | Est. Size (INT4) | Notes |
-|---|---|---|---|---|---|---|
-| 1 | **Qwen2.5-0.5B-Instruct** | 0.5B | `Qwen/Qwen2.5-0.5B-Instruct` | ✅ Already converted (`elbruno/Qwen2.5-0.5B-Instruct-onnx`) | ~825 MB | Native tool calling. **TOP PICK.** |
-| 2 | **SmolLM2-360M-Instruct** | 360M | `HuggingFaceTB/SmolLM2-360M-Instruct` | 🔄 Needs conversion | ~600 MB | Edge-optimized. **RUNNER-UP.** |
-| 3 | **SmolLM2-135M-Instruct** | 135M | `HuggingFaceTB/SmolLM2-135M-Instruct` | 🔄 Needs conversion | ~450 MB | Smallest viable. **BUDGET.** |
-| 4 | **Qwen3-0.6B-Instruct** | 0.6B | `Qwen/Qwen3-0.6B` | 🔄 Needs conversion | ~900 MB | Newest, thinking mode. **WILD CARD.** |
-| 5 | **Gemma-3-270M** | 270M | `google/gemma-3-270m-it` | 🔍 Investigate ONNX availability | ~500 MB | Google nano, native function calling. **INVESTIGATE.** |
-| 6 | **TinyAgent-1.1B** | 1.1B | `squeeze-ai-lab/TinyAgent-1.1B` | 🔍 Investigate ONNX availability | ~1.2 GB | Berkeley, specialized tool calling. **INVESTIGATE.** |
+### 2.1 Public API Changes
 
----
+#### ChatOptions Support
 
-## Phase 0: Model Conversion & Availability
+`LocalChatClient` currently ignores `ChatOptions.Tools`. We'll extract and use:
 
-**Owner:** Dozer (ML Engineer)  
-**Depends on:** Nothing — can start immediately  
-**Outputs:** ONNX INT4 model directories for each model, uploaded to HuggingFace under `elbruno/` namespace
-
-### Task 0.1 — Verify Qwen2.5-0.5B-Instruct ONNX
-
-**Who:** Dozer  
-**What:** Confirm the existing `elbruno/Qwen2.5-0.5B-Instruct-onnx` repo works with `Microsoft.ML.OnnxRuntimeGenAI 0.12.2`. Load it with `LocalChatClient`, send a simple tool-selection prompt, verify output. This is our reference model — everything else is compared against it.  
-**Where:** Run locally against `src/ElBruno.LocalLLMs/` using the existing `KnownModels.Qwen25_05BInstruct` definition.  
-**Why:** The model is already in `KnownModels` but hasn't been validated for tool-selection prompts specifically. Must confirm before building the benchmark suite on top of it.
-
-### Task 0.2 — Convert SmolLM2-360M-Instruct to ONNX INT4
-
-**Who:** Dozer  
-**What:** Convert `HuggingFaceTB/SmolLM2-360M-Instruct` to ONNX INT4 using the existing conversion pipeline:
-```bash
-python scripts/convert_to_onnx.py \
-    --model-id HuggingFaceTB/SmolLM2-360M-Instruct \
-    --output-dir ./models/smollm2-360m-instruct
-```
-Upload the result to `elbruno/SmolLM2-360M-Instruct-onnx` on HuggingFace. Record actual file size.  
-**Where:** `scripts/convert_to_onnx.py` for conversion. May need to update the script if SmolLM2-360M requires special handling (different architecture than SmolLM2-1.7B which is already converted).  
-**Why:** Runner-up model — smallest instruct model from HuggingFace with proven edge performance. Needed for benchmark comparison.
-
-### Task 0.3 — Convert SmolLM2-135M-Instruct to ONNX INT4
-
-**Who:** Dozer  
-**What:** Same process as Task 0.2 but for `HuggingFaceTB/SmolLM2-135M-Instruct`. Upload to `elbruno/SmolLM2-135M-Instruct-onnx`.  
-**Where:** `scripts/convert_to_onnx.py`  
-**Why:** Budget model. If 135M can do tool selection with acceptable accuracy, it enables deployment on extremely constrained devices.
-
-### Task 0.4 — Convert Qwen3-0.6B-Instruct to ONNX INT4
-
-**Who:** Dozer  
-**What:** Convert `Qwen/Qwen3-0.6B` to ONNX INT4. This model is newer than Qwen2.5; verify that `onnxruntime-genai` 0.12.2 supports its architecture. If Qwen3 uses a different tokenizer or attention pattern, document any required changes. Upload to `elbruno/Qwen3-0.6B-Instruct-onnx`.  
-**Where:** `scripts/convert_to_onnx.py` — may need architecture-specific flags.  
-**Why:** Wild card model — Qwen3 introduces "thinking mode" which could improve reasoning for ambiguous tool selection. Worth benchmarking even if conversion is harder.
-
-### Task 0.5 — Investigate Gemma-3-270M ONNX Availability
-
-**Who:** Dozer  
-**What:** Research whether `google/gemma-3-270m-it` has an official ONNX export or community conversion. Check:
-1. Does Google publish ONNX weights on HuggingFace?
-2. Is the architecture supported by `optimum[onnxruntime]`?
-3. Does `onnxruntime-genai` 0.12.2 support Gemma-3 architecture? (Gemma-2 is supported — check delta)
-4. Does native function calling survive ONNX conversion?
-
-Document findings in `.squad/decisions/inbox/dozer-gemma3-270m-investigation.md`. If viable, convert and upload to `elbruno/Gemma-3-270M-IT-onnx`.  
-**Where:** Research + `scripts/convert_to_onnx.py` if viable.  
-**Why:** Google's nano model with native function calling could be ideal for tool selection — but only if ONNX conversion preserves that capability.
-
-### Task 0.6 — Investigate TinyAgent-1.1B ONNX Availability
-
-**Who:** Dozer  
-**What:** Research Berkeley's `squeeze-ai-lab/TinyAgent-1.1B`:
-1. Is the model architecture standard (LLaMA-based? Custom?)?
-2. Can it be converted with `optimum`?
-3. Does `onnxruntime-genai` support its architecture?
-4. How does it represent tool-calling output? (Custom format? JSON? Function call tokens?)
-
-Document findings in `.squad/decisions/inbox/dozer-tinyagent-investigation.md`. If viable, convert to ONNX INT4.  
-**Where:** Research + conversion pipeline.  
-**Why:** A model specifically trained for tool calling could outperform general instruct models at this task, even if it needs special output parsing.
-
-### Task 0.7 — Add New ModelDefinitions to KnownModels
-
-**Who:** Trinity (Core Dev)  
-**Depends on:** Tasks 0.2–0.6 (as each model becomes available)  
-**What:** For each successfully converted model, add a `ModelDefinition` to `KnownModels.cs`:
 ```csharp
-public static readonly ModelDefinition SmolLM2_360MInstruct = new()
+// User code
+var options = new ChatOptions
 {
-    Id = "smollm2-360m-instruct",
-    DisplayName = "SmolLM2-360M-Instruct",
-    HuggingFaceRepoId = "elbruno/SmolLM2-360M-Instruct-onnx",
-    RequiredFiles = ["*"],
-    ModelType = OnnxModelType.GenAI,
-    ChatTemplate = ChatTemplateFormat.ChatML,  // verify per model
-    Tier = ModelTier.Tiny,
-    HasNativeOnnx = true
+    Tools = new List<AITool>
+    {
+        AIFunctionFactory.Create(GetWeather),
+        AIFunctionFactory.Create(GetTime)
+    },
+    ToolMode = ChatToolMode.Auto,  // or RequireAny, None, RequireSpecific
+    AllowMultipleToolCalls = true
 };
-```
-Also add corresponding unit tests in `tests/ElBruno.LocalLLMs.Tests/`.  
-**Where:** `src/ElBruno.LocalLLMs/Models/KnownModels.cs`, `tests/ElBruno.LocalLLMs.Tests/`  
-**Why:** Models must be registered before benchmarks can reference them by `KnownModels.*` instead of hardcoded paths.
 
----
+var response = await client.GetResponseAsync(messages, options);
 
-## Phase 1: Benchmark Framework
-
-**Owner:** Tank (Tester) — framework design; Morpheus (Lead) — scenario definition  
-**Depends on:** Phase 0 (at least Task 0.1 for Qwen2.5-0.5B; other models can be added incrementally)  
-**Outputs:** Reproducible benchmark suite with published results
-
-### Task 1.1 — Create Benchmark Project
-
-**Who:** Tank  
-**What:** Create a new benchmark project at `benchmarks/ElBruno.LocalLLMs.ToolRouting.Benchmarks/`. This is separate from the existing `ElBruno.LocalLLMs.Benchmarks` (which benchmarks chat templates and model definitions). The new project focuses specifically on tool routing accuracy and latency.
-
-Project structure:
-```
-benchmarks/ElBruno.LocalLLMs.ToolRouting.Benchmarks/
-├── ElBruno.LocalLLMs.ToolRouting.Benchmarks.csproj
-├── Program.cs
-├── Data/
-│   ├── ToolCatalogs.cs          // 20, 50, 100 tool definitions
-│   └── TestPrompts.cs           // categorized test prompts
-├── Scenarios/
-│   ├── EmbeddingOnlyBenchmark.cs
-│   ├── EmbeddingPlusSlmBenchmark.cs
-│   └── SlmOnlyBenchmark.cs
-├── Metrics/
-│   ├── AccuracyTracker.cs       // correct tool selection tracking
-│   └── MemoryTracker.cs         // peak memory measurement
-└── Results/
-    └── .gitkeep                 // benchmark results go here
+// Response may contain FunctionCallContent
+foreach (var item in response.Message.Contents)
+{
+    if (item is FunctionCallContent call)
+    {
+        // Execute tool, send result back
+        var result = await ExecuteToolAsync(call.Name, call.Arguments);
+        messages.Add(new ChatMessage(ChatRole.Tool, 
+            new FunctionResultContent(call.CallId, result)));
+    }
+}
 ```
 
-The `.csproj` should reference:
-- `BenchmarkDotNet 0.14.*`
-- `ElBruno.LocalLLMs` (project reference)
-- `ElBruno.LocalEmbeddings` (NuGet — latest)
-- `ElBruno.ModelContextProtocol.MCPToolRouter` (NuGet — latest)
+#### Model Capability Flags
 
-Target `net8.0` only (benchmarks don't need multi-target).  
-**Where:** `benchmarks/ElBruno.LocalLLMs.ToolRouting.Benchmarks/`  
-**Why:** Isolating tool-routing benchmarks from existing benchmarks keeps concerns separate and allows independent iteration.
+Add to `ModelDefinition`:
 
-### Task 1.2 — Define Tool Catalogs
-
-**Who:** Tank  
-**What:** Create synthetic but realistic MCP tool catalogs in `Data/ToolCatalogs.cs`. Three sizes:
-
-**20 tools** — represents a typical developer setup:
-- File operations (read, write, list, search, move)
-- Git operations (status, commit, diff, log, branch)
-- Web operations (fetch, search, screenshot)
-- Code operations (lint, format, compile, test)
-- System operations (env, process-list, disk-usage)
-
-**50 tools** — represents a power user / multi-server setup:
-- All 20 above, plus:
-- Database operations (query, insert, update, schema, migrate)
-- Docker operations (build, run, stop, logs, ps)
-- Cloud operations (deploy, status, logs, scale)
-- Communication (email-send, slack-post, calendar-create)
-- AI operations (summarize, translate, classify, embed)
-- Monitoring (metrics, alerts, healthcheck)
-
-**100 tools** — stress test:
-- All 50 above, duplicated across namespaces (e.g., `aws.deploy` vs `azure.deploy` vs `gcp.deploy`)
-- Intentionally confusable tools (e.g., `file.search` vs `code.search` vs `web.search`)
-- Tools with overlapping descriptions
-
-Each tool definition must include:
-- `name` (string, unique)
-- `description` (1-2 sentences, realistic)
-- `inputSchema` (JSON schema — for catalog realism, even though SLM won't generate args)
-
-**Where:** `benchmarks/ElBruno.LocalLLMs.ToolRouting.Benchmarks/Data/ToolCatalogs.cs`  
-**Why:** Realistic catalogs are critical — benchmarks on toy data produce misleading results. The 100-tool catalog with confusable tools specifically tests the value of SLM re-ranking over embedding-only search.
-
-### Task 1.3 — Define Test Prompts
-
-**Who:** Tank, reviewed by Morpheus  
-**What:** Create categorized test prompts in `Data/TestPrompts.cs`. Each prompt has a known expected tool (ground truth) for accuracy scoring.
-
-**Categories:**
-
-1. **Clear single-tool** (15 prompts) — unambiguous match  
-   Example: `"Show me the git log for the last 5 commits"` → `git.log`
-
-2. **Ambiguous single-tool** (15 prompts) — multiple tools could match  
-   Example: `"Find that error in the codebase"` → `code.search` (not `file.search` or `web.search`)
-
-3. **Multi-tool** (10 prompts) — query requires 2-3 tools  
-   Example: `"Run the tests and if they pass, commit the changes"` → `[code.test, git.commit]`
-
-4. **Adversarial** (10 prompts) — designed to confuse embeddings  
-   Example: `"Deploy the docker container to the cloud"` → `[docker.build, cloud.deploy]` (not `docker.deploy` which doesn't exist)
-
-5. **Out-of-scope** (5 prompts) — no matching tool exists  
-   Example: `"What's the weather in Seattle?"` → `[]` (empty — no tool should be selected)
-
-Each prompt is a record:
 ```csharp
-public record TestPrompt(
-    string Query,
-    string[] ExpectedTools,
-    PromptCategory Category,
-    string Rationale  // why this ground truth is correct
+public sealed record ModelDefinition
+{
+    // ... existing properties ...
+    
+    /// <summary>
+    /// Whether this model supports prompt-based tool calling.
+    /// </summary>
+    public bool SupportsToolCalling { get; init; }
+    
+    /// <summary>
+    /// Tool calling format variant (if supported).
+    /// </summary>
+    public ToolCallingFormat? ToolFormat { get; init; }
+}
+
+public enum ToolCallingFormat
+{
+    QwenHermes,      // <tool_call>...</tool_call>
+    Llama3Json,      // {"name":"...","arguments":{...}}
+    Llama3Pythonic,  // [func(param=value), ...]
+    Phi4Functools,   // functools[{...}]
+    ChatMLJson       // JSON blocks in ChatML
+}
+```
+
+#### Error Handling
+
+If `ChatOptions.Tools` is provided but `ModelDefinition.SupportsToolCalling` is false:
+
+```csharp
+throw new NotSupportedException(
+    $"Model '{model.Id}' does not support tool calling. " +
+    "Choose a tool-capable model like Qwen2.5-7B-Instruct, Llama-3.2-3B-Instruct, or Phi-4.");
+```
+
+### 2.2 Template Formatter Changes
+
+#### Updated Interface
+
+```csharp
+internal interface IChatTemplateFormatter
+{
+    /// <summary>
+    /// Formats messages into the model's prompt format.
+    /// </summary>
+    string FormatMessages(IList<ChatMessage> messages);
+    
+    /// <summary>
+    /// Formats messages with tool definitions injected.
+    /// Only implemented for tool-capable formatters.
+    /// </summary>
+    string FormatMessagesWithTools(
+        IList<ChatMessage> messages, 
+        IList<AITool> tools,
+        ChatToolMode toolMode);
+    
+    /// <summary>
+    /// Parses model output to detect tool call patterns.
+    /// Returns null if no tool calls detected.
+    /// </summary>
+    ToolCallParseResult? ParseToolCalls(string modelOutput);
+}
+
+internal sealed record ToolCallParseResult(
+    IReadOnlyList<ParsedToolCall> ToolCalls,
+    string? RemainingText  // Any text before/after tool calls
+);
+
+internal sealed record ParsedToolCall(
+    string Name,
+    string ArgumentsJson,
+    string CallId  // Generated if model doesn't provide one
 );
 ```
 
-**Where:** `benchmarks/ElBruno.LocalLLMs.ToolRouting.Benchmarks/Data/TestPrompts.cs`  
-**Why:** Ground-truth prompts enable automated accuracy scoring. The categories ensure we measure performance on the cases that matter (ambiguous queries are where SLM adds value over embeddings).
+#### Default Implementation (No Tool Support)
 
-### Task 1.4 — Implement Embedding-Only Benchmark
-
-**Who:** Tank  
-**What:** Create `Scenarios/EmbeddingOnlyBenchmark.cs` — the baseline. Uses `MCPToolRouter` directly (no SLM). For each test prompt:
-1. Call `MCPToolRouter.RouteAsync(prompt)` to get top-K tools (K = 1, 3, 5)
-2. Measure latency (P50, P95, P99)
-3. Score accuracy: does the top-K result contain the expected tool(s)?
-4. Record peak memory via `GC.GetTotalMemory()` and `Process.WorkingSet64`
-
-Use BenchmarkDotNet for latency. Use a custom `AccuracyTracker` for correctness (BenchmarkDotNet measures throughput, not accuracy).
-
-Parameters to vary:
-- Tool catalog size: 20, 50, 100
-- Top-K: 1, 3, 5
-- Prompt category: all five
-
-**Where:** `benchmarks/ElBruno.LocalLLMs.ToolRouting.Benchmarks/Scenarios/EmbeddingOnlyBenchmark.cs`  
-**Why:** This is the control group. Every SLM result is compared against this baseline. If embeddings alone achieve >95% on clear prompts, the SLM value proposition is specifically for ambiguous/multi-tool cases.
-
-### Task 1.5 — Implement Embedding+SLM Benchmark
-
-**Who:** Tank  
-**What:** Create `Scenarios/EmbeddingPlusSlmBenchmark.cs` — the two-stage RAG pipeline. For each test prompt:
-1. Call `MCPToolRouter.RouteAsync(prompt, topK: 10)` to get candidate tools
-2. Format a tool-selection prompt with the candidate tools and user query
-3. Call `IChatClient.GetResponseAsync()` with the formatted prompt
-4. Parse the SLM response to extract selected tool ID(s)
-5. Measure end-to-end latency (embedding + SLM combined)
-6. Score accuracy against ground truth
-
-Parameters to vary:
-- All embedding-only parameters, plus:
-- Model: each of the 6 benchmark models
-- Execution provider: CPU vs GPU (via `OnnxRuntimeGenAI` session options)
-- Prompt template: model-specific (see Task 2.3)
-
-The prompt template for the SLM stage follows this pattern:
-```
-You are a tool router. Given a user query and a list of available tools,
-select the tool(s) that best match the query.
-
-Available tools:
-{{#each candidateTools}}
-- {{name}}: {{description}}
-{{/each}}
-
-User query: {{userQuery}}
-
-Respond with ONLY a JSON array of tool names. Example: ["tool.name"]
-Do not explain. Do not add arguments.
+```csharp
+internal abstract class ChatTemplateFormatterBase : IChatTemplateFormatter
+{
+    public abstract string FormatMessages(IList<ChatMessage> messages);
+    
+    public virtual string FormatMessagesWithTools(
+        IList<ChatMessage> messages, 
+        IList<AITool> tools,
+        ChatToolMode toolMode)
+    {
+        throw new NotSupportedException(
+            $"{GetType().Name} does not support tool calling.");
+    }
+    
+    public virtual ToolCallParseResult? ParseToolCalls(string modelOutput)
+    {
+        return null;  // No tool calls detected
+    }
+}
 ```
 
-**Where:** `benchmarks/ElBruno.LocalLLMs.ToolRouting.Benchmarks/Scenarios/EmbeddingPlusSlmBenchmark.cs`  
-**Why:** This measures the core value proposition — does adding an SLM step improve accuracy enough to justify the latency cost? The per-model comparison identifies which tiny SLM is best for this specific task.
+### 2.3 Tool-Aware Formatters
 
-### Task 1.6 — Implement SLM-Only Benchmark (Control)
+#### Qwen Formatter (Hermes-Style)
 
-**Who:** Tank  
-**What:** Create `Scenarios/SlmOnlyBenchmark.cs` — gives the SLM the full tool catalog without embedding pre-filtering. This tests whether the SLM can handle large tool catalogs directly (likely poor — context window limits).
-
-For each prompt:
-1. Format prompt with ALL tools from the catalog (no embedding pre-filter)
-2. Call `IChatClient.GetResponseAsync()`
-3. Parse and score
-
-This will likely fail for 50+ tools (exceeds context window of 0.5B models). Document the failure point.  
-**Where:** `benchmarks/ElBruno.LocalLLMs.ToolRouting.Benchmarks/Scenarios/SlmOnlyBenchmark.cs`  
-**Why:** Proves that embedding pre-filtering is mandatory for large catalogs. Quantifies the context window limitation of tiny models.
-
-### Task 1.7 — Benchmark Runner and Results Format
-
-**Who:** Tank  
-**What:** Create `Program.cs` that orchestrates all benchmarks and produces a unified results file. The runner should:
-1. Accept CLI args: `--models` (comma-separated), `--catalogs` (20,50,100), `--gpu` (flag)
-2. Run BenchmarkDotNet for latency measurements
-3. Run custom accuracy suite separately (accuracy is not a BenchmarkDotNet metric)
-4. Output results as both:
-   - Markdown table (human-readable) → `Results/results-{timestamp}.md`
-   - CSV (machine-parseable) → `Results/results-{timestamp}.csv`
-
-Results columns:
+```csharp
+internal sealed class QwenFormatter : ChatTemplateFormatterBase
+{
+    public override string FormatMessagesWithTools(
+        IList<ChatMessage> messages, 
+        IList<AITool> tools,
+        ChatToolMode toolMode)
+    {
+        var sb = new StringBuilder();
+        
+        // System message with tool definitions
+        sb.Append("<|im_start|>system\n");
+        sb.Append("You are a function calling AI model. ");
+        sb.Append("You have access to the following tools:\n\n");
+        sb.Append("<tools>\n");
+        
+        foreach (var tool in tools)
+        {
+            var toolJson = SerializeToolToJson(tool);
+            sb.Append(toolJson).Append('\n');
+        }
+        
+        sb.Append("</tools>\n\n");
+        sb.Append("To call a function, respond with XML tags:\n");
+        sb.Append("<tool_call>\n");
+        sb.Append("{\"name\": \"function_name\", \"arguments\": {\"param\": \"value\"}}\n");
+        sb.Append("</tool_call>\n");
+        
+        if (toolMode == ChatToolMode.RequireAny)
+        {
+            sb.Append("You MUST call at least one tool.\n");
+        }
+        
+        sb.Append("<|im_end|>\n");
+        
+        // Format remaining messages
+        foreach (var message in messages.Where(m => m.Role != ChatRole.System))
+        {
+            sb.Append(FormatSingleMessage(message));
+        }
+        
+        sb.Append("<|im_start|>assistant\n");
+        return sb.ToString();
+    }
+    
+    public override ToolCallParseResult? ParseToolCalls(string modelOutput)
+    {
+        // Match: <tool_call>\n{...}\n</tool_call>
+        var pattern = @"<tool_call>\s*(\{.*?\})\s*</tool_call>";
+        var matches = Regex.Matches(modelOutput, pattern, RegexOptions.Singleline);
+        
+        if (matches.Count == 0)
+            return null;
+        
+        var calls = new List<ParsedToolCall>();
+        foreach (Match match in matches)
+        {
+            var json = match.Groups[1].Value;
+            var parsed = JsonSerializer.Deserialize<ToolCallJson>(json);
+            
+            calls.Add(new ParsedToolCall(
+                Name: parsed.Name,
+                ArgumentsJson: JsonSerializer.Serialize(parsed.Arguments),
+                CallId: GenerateCallId()
+            ));
+        }
+        
+        // Extract remaining text (text before/after tool calls)
+        var remainingText = Regex.Replace(
+            modelOutput, 
+            pattern, 
+            "", 
+            RegexOptions.Singleline).Trim();
+        
+        return new ToolCallParseResult(calls, remainingText);
+    }
+    
+    private record ToolCallJson(string Name, JsonElement Arguments);
+}
 ```
-Model, CatalogSize, PromptCategory, Pipeline (emb-only|emb+slm|slm-only),
-TopK, Accuracy%, LatencyP50ms, LatencyP95ms, PeakMemoryMB, ExecutionProvider (CPU|GPU)
+
+#### Llama3 Formatter (JSON Style)
+
+```csharp
+internal sealed class Llama3Formatter : ChatTemplateFormatterBase
+{
+    public override string FormatMessagesWithTools(
+        IList<ChatMessage> messages, 
+        IList<AITool> tools,
+        ChatToolMode toolMode)
+    {
+        // Inject into system message
+        var systemMsg = "You have access to the following functions:\n\n";
+        
+        foreach (var tool in tools)
+        {
+            systemMsg += $"- {tool.Metadata.Name}: {tool.Metadata.Description}\n";
+            systemMsg += $"  Parameters: {SerializeParameterSchema(tool)}\n\n";
+        }
+        
+        systemMsg += "To call a function, respond with JSON:\n";
+        systemMsg += "{\"name\": \"function_name\", \"parameters\": {\"param\": \"value\"}}\n";
+        
+        if (toolMode == ChatToolMode.RequireAny)
+        {
+            systemMsg += "You MUST call a function to answer.\n";
+        }
+        
+        // Build prompt
+        var sb = new StringBuilder();
+        sb.Append("<|begin_of_text|>");
+        sb.Append($"<|start_header_id|>system<|end_header_id|>\n\n{systemMsg}<|eot_id|>");
+        
+        // ... rest of messages ...
+        
+        return sb.ToString();
+    }
+    
+    public override ToolCallParseResult? ParseToolCalls(string modelOutput)
+    {
+        // Try to parse as JSON object or array
+        var trimmed = modelOutput.Trim();
+        
+        // Single call: {"name":"...","parameters":{...}}
+        if (TryParseJsonToolCall(trimmed, out var singleCall))
+        {
+            return new ToolCallParseResult(
+                new[] { singleCall },
+                RemainingText: null
+            );
+        }
+        
+        // Multiple calls: [{...}, {...}]
+        if (TryParseJsonToolCallArray(trimmed, out var multipleCalls))
+        {
+            return new ToolCallParseResult(multipleCalls, null);
+        }
+        
+        return null;
+    }
+}
 ```
 
-**Where:** `benchmarks/ElBruno.LocalLLMs.ToolRouting.Benchmarks/Program.cs`  
-**Why:** Reproducible results with standard format enable comparison across runs, machines, and future models.
+#### Phi4 Formatter (Functools Style)
+
+```csharp
+internal sealed class Phi4Formatter : ChatTemplateFormatterBase
+{
+    public override ToolCallParseResult? ParseToolCalls(string modelOutput)
+    {
+        // Match: functools[{...}] or functools[{...}, {...}]
+        var pattern = @"functools\[(.*?)\]";
+        var match = Regex.Match(modelOutput, pattern, RegexOptions.Singleline);
+        
+        if (!match.Success)
+            return null;
+        
+        var jsonArray = match.Groups[1].Value;
+        var parsed = JsonSerializer.Deserialize<ToolCallJson[]>($"[{jsonArray}]");
+        
+        var calls = parsed.Select(p => new ParsedToolCall(
+            Name: p.Name,
+            ArgumentsJson: JsonSerializer.Serialize(p.Arguments),
+            CallId: GenerateCallId()
+        )).ToList();
+        
+        var remainingText = modelOutput.Replace(match.Value, "").Trim();
+        
+        return new ToolCallParseResult(calls, remainingText);
+    }
+}
+```
+
+### 2.4 LocalChatClient Integration
+
+#### Modified GetResponseAsync
+
+```csharp
+public async Task<ChatResponse> GetResponseAsync(
+    IEnumerable<ChatMessage> messages,
+    ChatOptions? options = null,
+    CancellationToken cancellationToken = default)
+{
+    ObjectDisposedException.ThrowIf(_disposed, this);
+    ArgumentNullException.ThrowIfNull(messages);
+
+    await EnsureInitializedAsync(progress: null, cancellationToken).ConfigureAwait(false);
+
+    var messageList = messages as IList<ChatMessage> ?? messages.ToList();
+    var genParams = BuildGenerationParameters(options);
+    
+    // Check for tool calling
+    var hasTools = options?.Tools?.Count > 0;
+    
+    if (hasTools && !_options.Model.SupportsToolCalling)
+    {
+        throw new NotSupportedException(
+            $"Model '{_options.Model.Id}' does not support tool calling.");
+    }
+    
+    // Format prompt with or without tools
+    string prompt;
+    if (hasTools)
+    {
+        prompt = _formatter.FormatMessagesWithTools(
+            messageList, 
+            options.Tools, 
+            options.ToolMode ?? ChatToolMode.Auto);
+    }
+    else
+    {
+        prompt = _formatter.FormatMessages(messageList);
+    }
+
+    // Generate response
+    var responseText = await Task.Run(
+        () => _model!.Generate(prompt, genParams, cancellationToken),
+        cancellationToken).ConfigureAwait(false);
+
+    // Parse for tool calls
+    ChatMessage responseMessage;
+    
+    if (hasTools)
+    {
+        var parseResult = _formatter.ParseToolCalls(responseText);
+        
+        if (parseResult is not null)
+        {
+            // Build multi-content message
+            var contents = new List<AIContent>();
+            
+            if (!string.IsNullOrWhiteSpace(parseResult.RemainingText))
+            {
+                contents.Add(new TextContent(parseResult.RemainingText));
+            }
+            
+            foreach (var call in parseResult.ToolCalls)
+            {
+                contents.Add(new FunctionCallContent(
+                    callId: call.CallId,
+                    name: call.Name,
+                    arguments: ParseArgumentsAsDict(call.ArgumentsJson)
+                ));
+            }
+            
+            responseMessage = new ChatMessage(ChatRole.Assistant, contents);
+        }
+        else
+        {
+            // No tool calls detected - plain text response
+            responseMessage = new ChatMessage(ChatRole.Assistant, responseText.Trim());
+        }
+    }
+    else
+    {
+        responseMessage = new ChatMessage(ChatRole.Assistant, responseText.Trim());
+    }
+
+    return new ChatResponse(responseMessage)
+    {
+        ModelId = _options.Model.Id,
+        CreatedAt = DateTimeOffset.UtcNow,
+    };
+}
+```
+
+#### Handling Tool Results in Subsequent Messages
+
+Tool results come back as `ChatRole.Tool` messages with `FunctionResultContent`. The formatter must convert these into the model's expected format.
+
+```csharp
+// In formatter
+private string FormatSingleMessage(ChatMessage message)
+{
+    if (message.Role == ChatRole.Tool)
+    {
+        // Extract FunctionResultContent
+        var resultContent = message.Contents
+            .OfType<FunctionResultContent>()
+            .FirstOrDefault();
+        
+        if (resultContent is not null)
+        {
+            // Qwen format:
+            // <|im_start|>tool
+            // <tool_response>
+            // {"result": "..."}
+            // </tool_response>
+            // <|im_end|>
+            
+            var resultJson = JsonSerializer.Serialize(new { result = resultContent.Result });
+            return $"<|im_start|>tool\n<tool_response>\n{resultJson}\n</tool_response>\n<|im_end|>\n";
+        }
+    }
+    
+    // ... handle other roles ...
+}
+```
+
+### 2.5 Model Support Matrix (Phase 1)
+
+| Model                   | Tier       | Tool Support | Format          | Status        |
+|-------------------------|------------|--------------|-----------------|---------------|
+| Qwen2.5-3B-Instruct     | 🟢 Small   | ✅ Yes       | QwenHermes      | Phase 4a      |
+| Qwen2.5-7B-Instruct     | 🔵 Medium  | ✅ Yes       | QwenHermes      | Phase 4a      |
+| Llama-3.2-3B-Instruct   | 🟢 Small   | ✅ Yes       | Llama3Json      | Phase 4a      |
+| Phi-4                   | 🔵 Medium  | ✅ Yes       | Phi4Functools   | Phase 4a      |
+| Phi-3.5-mini-instruct   | ⚪ Tiny    | ❌ No        | -               | -             |
+| DeepSeek-R1-Distill-Qwen-7B | 🔵 Medium | ✅ Yes   | QwenHermes      | Phase 4a      |
+
+### 2.6 Streaming Support
+
+Streaming tool calls is complex because:
+
+1. Tool call patterns may span multiple tokens
+2. We need to buffer until we can parse a complete tool call
+3. Some models emit partial JSON that becomes valid later
+
+**Phase 4a decision:** Tool calling is **non-streaming only**. If `GetStreamingResponseAsync` is called with `ChatOptions.Tools`, we either:
+
+- Throw `NotSupportedException` (conservative)
+- Fall back to `GetResponseAsync` internally (user-friendly)
+
+Future enhancement: Add streaming tool call support with buffered parsing.
 
 ---
 
-## Phase 2: Sample / Integration Project
+## 3. Phase 4b: RAG Pipeline Architecture
 
-**Owner:** Trinity (Core Dev) — implementation; Morpheus (Lead) — API review  
-**Depends on:** Phase 0 Task 0.1 (at least one working model); Phase 1 not required  
-**Outputs:** Working sample demonstrating the composition pattern
+### 3.1 Package Structure Decision
 
-### Task 2.1 — Create ToolRoutingWithSlm Sample
+**Option A:** Core library (`ElBruno.LocalLLMs` includes basic RAG)  
+**Option B:** Extension package (`ElBruno.LocalLLMs.Rag`)
 
-**Who:** Trinity  
-**What:** Create a new sample project at `samples/ToolRoutingWithSlm/` that demonstrates the full composition pattern. This is the reference implementation that users will copy.
+**Decision:** Extension package `ElBruno.LocalLLMs.Rag`
 
-```
-samples/ToolRoutingWithSlm/
-├── ToolRoutingWithSlm.csproj
-├── Program.cs
-├── ToolSelectionService.cs
-├── ToolSelectionOptions.cs
-├── SampleTools.cs
-└── PromptTemplates.cs
-```
+**Rationale:**
 
-The `.csproj` should reference:
-- `ElBruno.LocalLLMs` (project reference)
-- `ElBruno.LocalEmbeddings` (NuGet)
-- `ElBruno.ModelContextProtocol.MCPToolRouter` (NuGet)
-- Target `net8.0`
+- RAG is optional — not all users need it
+- Keeps core library focused on chat completions
+- Allows separate versioning and dependencies
+- Follows pattern from LocalEmbeddings (`.VectorData`, `.KernelMemory`)
+- Users can plug in their own RAG implementations
 
-**Program.cs** should demonstrate three modes:
-```csharp
-// Mode 1: Embedding-only (fast path — ~40ms)
-var router = await McpToolRouter.CreateAsync(tools, embeddingGenerator);
-var results = await router.RouteAsync("run the tests");
-Console.WriteLine($"Fast path: {results[0].Name}"); // code.test
-
-// Mode 2: Embedding + SLM (reasoning path — ~1.2s)
-var service = new ToolSelectionService(router, chatClient, options);
-var selected = await service.SelectToolsAsync("run the tests and commit");
-Console.WriteLine($"Reasoning path: {string.Join(", ", selected)}"); // code.test, git.commit
-
-// Mode 3: DI registration
-services.AddLocalEmbeddings();
-services.AddLocalLLMs(opts => opts.Model = KnownModels.Qwen25_05BInstruct);
-services.AddSingleton<ToolSelectionService>();
-```
-
-**Where:** `samples/ToolRoutingWithSlm/`  
-**Why:** Users need a copy-pasteable reference. This sample proves the composition pattern works end-to-end without requiring any changes to existing libraries.
-
-### Task 2.2 — Implement ToolSelectionService
-
-**Who:** Trinity, reviewed by Morpheus  
-**What:** Implement `ToolSelectionService` — the composition layer that wires MCPToolRouter + LocalChatClient together. This is sample code, not a published library (users copy/adapt it).
+### 3.2 Core Abstractions
 
 ```csharp
-public class ToolSelectionService
+namespace ElBruno.LocalLLMs.Rag;
+
+/// <summary>
+/// Represents a document to be indexed for RAG.
+/// </summary>
+public sealed record Document(
+    string Id,
+    string Content,
+    IDictionary<string, object>? Metadata = null
+);
+
+/// <summary>
+/// Represents a chunk of a document with its embedding.
+/// </summary>
+public sealed record DocumentChunk(
+    string Id,
+    string DocumentId,
+    string Content,
+    ReadOnlyMemory<float> Embedding,
+    IDictionary<string, object>? Metadata = null
+);
+
+/// <summary>
+/// Chunks documents into smaller pieces for embedding.
+/// </summary>
+public interface IDocumentChunker
 {
-    private readonly McpToolRouter _router;
-    private readonly IChatClient _chatClient;
-    private readonly ToolSelectionOptions _options;
+    IEnumerable<DocumentChunk> ChunkDocument(
+        Document document,
+        int chunkSize = 512,
+        int overlapSize = 50);
+}
 
-    public ToolSelectionService(
-        McpToolRouter router,
-        IChatClient chatClient,
-        ToolSelectionOptions? options = null)
+/// <summary>
+/// Stores and retrieves document chunks with their embeddings.
+/// </summary>
+public interface IDocumentStore
+{
+    Task AddAsync(
+        IEnumerable<DocumentChunk> chunks,
+        CancellationToken cancellationToken = default);
+    
+    Task<IReadOnlyList<DocumentChunk>> SearchAsync(
+        ReadOnlyMemory<float> queryEmbedding,
+        int topK = 5,
+        float minSimilarity = 0.0f,
+        CancellationToken cancellationToken = default);
+    
+    Task ClearAsync(CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Orchestrates the RAG pipeline: chunking, embedding, storage, retrieval.
+/// </summary>
+public interface IRagPipeline
+{
+    Task IndexDocumentsAsync(
+        IEnumerable<Document> documents,
+        IProgress<RagIndexProgress>? progress = null,
+        CancellationToken cancellationToken = default);
+    
+    Task<RagContext> RetrieveContextAsync(
+        string query,
+        int topK = 5,
+        CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Context retrieved from RAG pipeline to inject into chat.
+/// </summary>
+public sealed record RagContext(
+    string Query,
+    IReadOnlyList<DocumentChunk> RetrievedChunks,
+    string FormattedContext  // Ready to inject into system/user message
+);
+```
+
+### 3.3 Default Implementations
+
+#### Simple Document Chunker
+
+```csharp
+public sealed class SlidingWindowChunker : IDocumentChunker
+{
+    public IEnumerable<DocumentChunk> ChunkDocument(
+        Document document,
+        int chunkSize = 512,
+        int overlapSize = 50)
     {
-        _router = router;
-        _chatClient = chatClient;
-        _options = options ?? new();
-    }
-
-    /// <summary>
-    /// Two-stage tool selection: embedding search → SLM re-ranking.
-    /// Falls back to embedding-only results if SLM fails.
-    /// </summary>
-    public async Task<IReadOnlyList<string>> SelectToolsAsync(
-        string userQuery,
-        CancellationToken cancellationToken = default)
-    {
-        // Stage 1: Embedding search (fast)
-        var candidates = await _router.RouteAsync(
-            userQuery,
-            topK: _options.EmbeddingTopK,
-            cancellationToken: cancellationToken);
-
-        if (!_options.UseSlmReasoning)
-            return candidates.Select(c => c.Name).ToList();
-
-        // Stage 2: SLM reasoning (slower, more accurate)
-        try
+        var content = document.Content;
+        var chunkIndex = 0;
+        var position = 0;
+        
+        while (position < content.Length)
         {
-            var prompt = FormatToolSelectionPrompt(userQuery, candidates);
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(_options.SlmTimeout);
-
-            var response = await _chatClient.GetResponseAsync(
-                prompt, cancellationToken: cts.Token);
-
-            var selected = ParseToolSelection(response.Text);
-            return selected.Count > 0 ? selected : FallbackToEmbeddings(candidates);
-        }
-        catch (OperationCanceledException)
-        {
-            // SLM timed out — fall back to embedding results
-            return FallbackToEmbeddings(candidates);
-        }
-        catch (Exception)
-        {
-            // SLM failed — fall back to embedding results
-            return FallbackToEmbeddings(candidates);
+            var end = Math.Min(position + chunkSize, content.Length);
+            var chunkContent = content.Substring(position, end - position);
+            
+            yield return new DocumentChunk(
+                Id: $"{document.Id}_chunk_{chunkIndex}",
+                DocumentId: document.Id,
+                Content: chunkContent,
+                Embedding: ReadOnlyMemory<float>.Empty,  // Set during indexing
+                Metadata: document.Metadata
+            );
+            
+            chunkIndex++;
+            position += (chunkSize - overlapSize);
         }
     }
 }
 ```
 
-Key design points:
-- **Timeout:** `ToolSelectionOptions.SlmTimeout` defaults to `TimeSpan.FromSeconds(5)` — if SLM is slower, fall back
-- **Parsing:** `ParseToolSelection()` uses multiple strategies (see Task 3.1)
-- **Fallback:** Always returns embedding results if SLM fails — never throws, never returns empty unless no tools match at all
+#### In-Memory Vector Store
 
-**Where:** `samples/ToolRoutingWithSlm/ToolSelectionService.cs`  
-**Why:** This is the architectural pattern we recommend. It demonstrates graceful degradation, timeout handling, and clean MEAI composition — all in ~100 lines of code.
-
-### Task 2.3 — Create Model-Specific Prompt Templates
-
-**Who:** Trinity  
-**What:** Create `PromptTemplates.cs` with optimized prompt templates for each model family. Tiny models need shorter, more constrained prompts.
-
-Templates to create:
-
-**Qwen-family (Qwen2.5-0.5B, Qwen3-0.6B):**
+```csharp
+public sealed class InMemoryDocumentStore : IDocumentStore
+{
+    private readonly List<DocumentChunk> _chunks = new();
+    private readonly SemaphoreSlim _lock = new(1, 1);
+    
+    public async Task AddAsync(
+        IEnumerable<DocumentChunk> chunks,
+        CancellationToken cancellationToken = default)
+    {
+        await _lock.WaitAsync(cancellationToken);
+        try
+        {
+            _chunks.AddRange(chunks);
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+    
+    public async Task<IReadOnlyList<DocumentChunk>> SearchAsync(
+        ReadOnlyMemory<float> queryEmbedding,
+        int topK = 5,
+        float minSimilarity = 0.0f,
+        CancellationToken cancellationToken = default)
+    {
+        await _lock.WaitAsync(cancellationToken);
+        try
+        {
+            var results = _chunks
+                .Select(chunk => new
+                {
+                    Chunk = chunk,
+                    Similarity = CosineSimilarity(queryEmbedding, chunk.Embedding)
+                })
+                .Where(r => r.Similarity >= minSimilarity)
+                .OrderByDescending(r => r.Similarity)
+                .Take(topK)
+                .Select(r => r.Chunk)
+                .ToList();
+            
+            return results;
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+    
+    public async Task ClearAsync(CancellationToken cancellationToken = default)
+    {
+        await _lock.WaitAsync(cancellationToken);
+        try
+        {
+            _chunks.Clear();
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+    
+    private static float CosineSimilarity(
+        ReadOnlyMemory<float> a, 
+        ReadOnlyMemory<float> b)
+    {
+        var spanA = a.Span;
+        var spanB = b.Span;
+        
+        if (spanA.Length != spanB.Length)
+            throw new ArgumentException("Vectors must have same dimension");
+        
+        float dot = 0, magA = 0, magB = 0;
+        
+        for (int i = 0; i < spanA.Length; i++)
+        {
+            dot += spanA[i] * spanB[i];
+            magA += spanA[i] * spanA[i];
+            magB += spanB[i] * spanB[i];
+        }
+        
+        return dot / (MathF.Sqrt(magA) * MathF.Sqrt(magB));
+    }
+}
 ```
-<|im_start|>system
-You select tools. Output ONLY a JSON array of tool names.
-<|im_end|>
-<|im_start|>user
-Tools:
-{{toolList}}
 
-Query: {{query}}
-<|im_end|>
-<|im_start|>assistant
+#### RAG Pipeline Implementation
+
+```csharp
+public sealed class LocalRagPipeline : IRagPipeline
+{
+    private readonly IEmbeddingGenerator<string, Embedding<float>> _embeddingGenerator;
+    private readonly IDocumentChunker _chunker;
+    private readonly IDocumentStore _store;
+    
+    public LocalRagPipeline(
+        IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator,
+        IDocumentChunker? chunker = null,
+        IDocumentStore? store = null)
+    {
+        _embeddingGenerator = embeddingGenerator;
+        _chunker = chunker ?? new SlidingWindowChunker();
+        _store = store ?? new InMemoryDocumentStore();
+    }
+    
+    public async Task IndexDocumentsAsync(
+        IEnumerable<Document> documents,
+        IProgress<RagIndexProgress>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        var documentList = documents.ToList();
+        var totalDocs = documentList.Count;
+        var processedDocs = 0;
+        
+        foreach (var doc in documentList)
+        {
+            // Chunk document
+            var chunks = _chunker.ChunkDocument(doc).ToList();
+            
+            // Generate embeddings for all chunks
+            var chunkTexts = chunks.Select(c => c.Content).ToList();
+            var embeddings = await _embeddingGenerator.GenerateAsync(
+                chunkTexts,
+                cancellationToken: cancellationToken);
+            
+            // Attach embeddings to chunks
+            var embeddedChunks = chunks
+                .Zip(embeddings, (chunk, embedding) => chunk with 
+                { 
+                    Embedding = embedding.Vector 
+                })
+                .ToList();
+            
+            // Store chunks
+            await _store.AddAsync(embeddedChunks, cancellationToken);
+            
+            processedDocs++;
+            progress?.Report(new RagIndexProgress(processedDocs, totalDocs));
+        }
+    }
+    
+    public async Task<RagContext> RetrieveContextAsync(
+        string query,
+        int topK = 5,
+        CancellationToken cancellationToken = default)
+    {
+        // Embed the query
+        var queryEmbedding = await _embeddingGenerator.GenerateEmbeddingAsync(
+            query,
+            cancellationToken: cancellationToken);
+        
+        // Retrieve similar chunks
+        var chunks = await _store.SearchAsync(
+            queryEmbedding.Vector,
+            topK,
+            minSimilarity: 0.3f,  // Configurable threshold
+            cancellationToken);
+        
+        // Format context for injection
+        var formattedContext = FormatRetrievedContext(chunks);
+        
+        return new RagContext(query, chunks, formattedContext);
+    }
+    
+    private static string FormatRetrievedContext(IReadOnlyList<DocumentChunk> chunks)
+    {
+        if (chunks.Count == 0)
+            return "No relevant context found.";
+        
+        var sb = new StringBuilder();
+        sb.AppendLine("Relevant context:");
+        sb.AppendLine();
+        
+        for (int i = 0; i < chunks.Count; i++)
+        {
+            sb.AppendLine($"[{i + 1}] {chunks[i].Content}");
+            sb.AppendLine();
+        }
+        
+        return sb.ToString();
+    }
+}
 ```
 
-**SmolLM2-family (360M, 135M):**
+### 3.4 Integration with LocalChatClient
+
+RAG pipeline is independent of `LocalChatClient`. Integration happens at the application level:
+
+```csharp
+// Setup
+var embeddingGenerator = new LocalEmbeddingGenerator();
+var ragPipeline = new LocalRagPipeline(embeddingGenerator);
+var chatClient = new LocalChatClient(new LocalLLMsOptions 
+{ 
+    Model = KnownModels.Qwen2_5_7B_Instruct 
+});
+
+// Index documents
+var documents = new[]
+{
+    new Document("doc1", "Company policy: Remote work is allowed 3 days per week."),
+    new Document("doc2", "Annual leave: 25 days per year, must be booked 2 weeks in advance."),
+};
+
+await ragPipeline.IndexDocumentsAsync(documents);
+
+// Query with RAG
+var userQuery = "What's the remote work policy?";
+
+var context = await ragPipeline.RetrieveContextAsync(userQuery, topK: 3);
+
+var messages = new List<ChatMessage>
+{
+    new(ChatRole.System, 
+        "You are a helpful assistant. Answer using the provided context.\n\n" + 
+        context.FormattedContext),
+    new(ChatRole.User, userQuery)
+};
+
+var response = await chatClient.GetResponseAsync(messages);
+Console.WriteLine(response.Message.Text);
 ```
-Select tools for the query. Reply with ONLY tool names in a JSON array.
 
-Tools: {{toolList}}
+### 3.5 Extension: Persistent Store with SQLite
 
-Query: {{query}}
+For production scenarios, an in-memory store isn't sufficient. We'll provide a SQLite-based implementation:
 
-Selected: [
+```csharp
+public sealed class SqliteDocumentStore : IDocumentStore, IAsyncDisposable
+{
+    private readonly string _connectionString;
+    
+    public SqliteDocumentStore(string databasePath)
+    {
+        _connectionString = $"Data Source={databasePath}";
+        InitializeDatabaseAsync().GetAwaiter().GetResult();
+    }
+    
+    private async Task InitializeDatabaseAsync()
+    {
+        using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        
+        var createTable = @"
+            CREATE TABLE IF NOT EXISTS document_chunks (
+                id TEXT PRIMARY KEY,
+                document_id TEXT NOT NULL,
+                content TEXT NOT NULL,
+                embedding BLOB NOT NULL,
+                metadata TEXT
+            );
+            
+            CREATE INDEX IF NOT EXISTS idx_document_id 
+                ON document_chunks(document_id);
+        ";
+        
+        using var command = new SqliteCommand(createTable, connection);
+        await command.ExecuteNonQueryAsync();
+    }
+    
+    public async Task AddAsync(
+        IEnumerable<DocumentChunk> chunks,
+        CancellationToken cancellationToken = default)
+    {
+        using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        
+        using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        
+        foreach (var chunk in chunks)
+        {
+            var insert = @"
+                INSERT OR REPLACE INTO document_chunks 
+                (id, document_id, content, embedding, metadata)
+                VALUES (@id, @documentId, @content, @embedding, @metadata)
+            ";
+            
+            using var command = new SqliteCommand(insert, connection, transaction);
+            command.Parameters.AddWithValue("@id", chunk.Id);
+            command.Parameters.AddWithValue("@documentId", chunk.DocumentId);
+            command.Parameters.AddWithValue("@content", chunk.Content);
+            command.Parameters.AddWithValue("@embedding", 
+                MemoryMarshal.AsBytes(chunk.Embedding.Span).ToArray());
+            command.Parameters.AddWithValue("@metadata", 
+                chunk.Metadata is not null 
+                    ? JsonSerializer.Serialize(chunk.Metadata) 
+                    : DBNull.Value);
+            
+            await command.ExecuteNonQueryAsync(cancellationToken);
+        }
+        
+        await transaction.CommitAsync(cancellationToken);
+    }
+    
+    public async Task<IReadOnlyList<DocumentChunk>> SearchAsync(
+        ReadOnlyMemory<float> queryEmbedding,
+        int topK = 5,
+        float minSimilarity = 0.0f,
+        CancellationToken cancellationToken = default)
+    {
+        // SQLite doesn't have native vector similarity
+        // Need to retrieve all and compute similarity in-memory
+        // For large datasets, use a proper vector DB or extension
+        
+        using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        
+        var select = "SELECT id, document_id, content, embedding, metadata FROM document_chunks";
+        using var command = new SqliteCommand(select, connection);
+        using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        
+        var results = new List<(DocumentChunk Chunk, float Similarity)>();
+        
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var embeddingBlob = (byte[])reader["embedding"];
+            var embedding = MemoryMarshal.Cast<byte, float>(embeddingBlob).ToArray();
+            
+            var chunk = new DocumentChunk(
+                Id: reader.GetString(0),
+                DocumentId: reader.GetString(1),
+                Content: reader.GetString(2),
+                Embedding: embedding,
+                Metadata: reader.IsDBNull(4) 
+                    ? null 
+                    : JsonSerializer.Deserialize<Dictionary<string, object>>(reader.GetString(4))
+            );
+            
+            var similarity = CosineSimilarity(queryEmbedding, chunk.Embedding);
+            
+            if (similarity >= minSimilarity)
+            {
+                results.Add((chunk, similarity));
+            }
+        }
+        
+        return results
+            .OrderByDescending(r => r.Similarity)
+            .Take(topK)
+            .Select(r => r.Chunk)
+            .ToList();
+    }
+    
+    // ... CosineSimilarity, ClearAsync, DisposeAsync ...
+}
 ```
-(Note: Pre-fill the opening bracket to nudge the model toward JSON output)
 
-**Gemma-family:**
+### 3.6 Dependency Injection Support
+
+```csharp
+public static class RagServiceExtensions
+{
+    public static IServiceCollection AddLocalRag(
+        this IServiceCollection services,
+        Action<RagOptions>? configure = null)
+    {
+        var options = new RagOptions();
+        configure?.Invoke(options);
+        
+        services.AddSingleton<IDocumentChunker>(
+            options.Chunker ?? new SlidingWindowChunker());
+        
+        services.AddSingleton<IDocumentStore>(sp =>
+        {
+            if (options.Store is not null)
+                return options.Store;
+            
+            if (options.UseSqlite && !string.IsNullOrEmpty(options.SqlitePath))
+                return new SqliteDocumentStore(options.SqlitePath);
+            
+            return new InMemoryDocumentStore();
+        });
+        
+        // Requires ElBruno.LocalEmbeddings to be registered separately
+        services.AddSingleton<IRagPipeline, LocalRagPipeline>();
+        
+        return services;
+    }
+}
+
+public sealed class RagOptions
+{
+    public IDocumentChunker? Chunker { get; set; }
+    public IDocumentStore? Store { get; set; }
+    public bool UseSqlite { get; set; }
+    public string? SqlitePath { get; set; }
+}
 ```
-<start_of_turn>user
-Select the best tool(s) for this query.
-Tools: {{toolList}}
-Query: {{query}}
-Reply with ONLY a JSON array of tool names.<end_of_turn>
-<start_of_turn>model
+
+Usage:
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddLocalEmbeddings();
+builder.Services.AddLocalLLMs();
+builder.Services.AddLocalRag(options =>
+{
+    options.UseSqlite = true;
+    options.SqlitePath = "rag_store.db";
+});
+
+var app = builder.Build();
+
+app.MapGet("/ask", async (
+    string query,
+    IRagPipeline rag,
+    IChatClient chat) =>
+{
+    var context = await rag.RetrieveContextAsync(query);
+    var messages = new List<ChatMessage>
+    {
+        new(ChatRole.System, "Answer using context:\n" + context.FormattedContext),
+        new(ChatRole.User, query)
+    };
+    var response = await chat.GetResponseAsync(messages);
+    return response.Message.Text;
+});
+
+app.Run();
 ```
-
-**Generic fallback** (for unknown models):
-```
-Given these tools and a query, select the matching tool(s).
-Reply with ONLY a JSON array of tool names like ["tool.name"].
-
-Tools:
-{{toolList}}
-
-Query: {{query}}
-
-Selected tools:
-```
-
-Each template should also include:
-- Maximum token budget for the tool list portion (based on model context window)
-- Tool list format: `"- name: description"` (one line per tool, truncated descriptions)
-
-**Where:** `samples/ToolRoutingWithSlm/PromptTemplates.cs`  
-**Why:** Prompt engineering is the #1 lever for tiny model quality. A prompt tuned for 0.5B parameters is very different from one for 7B. The pre-fill technique (starting the response with `[`) dramatically improves JSON compliance in tiny models.
-
-### Task 2.4 — Add Sample to Solution
-
-**Who:** Trinity  
-**What:** Add the new sample project to `ElBruno.LocalLLMs.slnx`:
-```xml
-<Project Path="samples/ToolRoutingWithSlm/ToolRoutingWithSlm.csproj" />
-```
-Also add the benchmark project from Phase 1:
-```xml
-<Project Path="benchmarks/ElBruno.LocalLLMs.ToolRouting.Benchmarks/ElBruno.LocalLLMs.ToolRouting.Benchmarks.csproj" />
-```
-Verify `dotnet build` succeeds for the full solution.  
-**Where:** `ElBruno.LocalLLMs.slnx`  
-**Why:** All projects must be in the solution file for CI/CD and IDE discovery.
 
 ---
 
-## Phase 3: Optimization
+## 4. Implementation Order
 
-**Owner:** Trinity (Core Dev) + Dozer (ML) — implementation; Morpheus (Lead) — design review  
-**Depends on:** Phase 1 results (need benchmark data to know what to optimize)  
-**Outputs:** Optimized parsing, caching, and loading strategies
+### Phase 4a: Tool Calling (2-3 weeks)
 
-### Task 3.1 — JSON Output Parsing Strategies
+**Week 1: Core Infrastructure**
 
-**Who:** Trinity  
-**What:** Implement robust JSON parsing in `ToolSelectionService.ParseToolSelection()` that handles the messy output of tiny models. The parser should try strategies in order:
+1. Add `SupportsToolCalling` and `ToolCallingFormat` to `ModelDefinition`
+2. Update `KnownModels` with tool support flags
+3. Extend `IChatTemplateFormatter` with tool methods
+4. Create `ChatTemplateFormatterBase` with default implementations
+5. Add `ToolCallParseResult` and `ParsedToolCall` types
 
-1. **Strict JSON** — `JsonSerializer.Deserialize<string[]>(response)`
-2. **Extract JSON array** — regex `\[.*?\]` to find a JSON array anywhere in the response
-3. **Line-by-line** — split response by newlines, match each line against known tool names
-4. **Fuzzy match** — for each token in the response, compute Levenshtein distance against known tool names (threshold: 2 edits)
-5. **Give up** — return empty list (trigger fallback to embeddings)
+**Week 2: Model-Specific Formatters**
+6. Implement `QwenFormatter.FormatMessagesWithTools` and `ParseToolCalls`
+7. Implement `Llama3Formatter` tool support
+8. Implement `Phi4Formatter` tool support
+9. Add tool result formatting for each formatter
 
-The parser should log which strategy succeeded (for benchmark telemetry).
+**Week 3: Integration & Testing**
+10. Update `LocalChatClient.GetResponseAsync` to handle tools
+11. Add `BuildGenerationParameters` support for tool mode
+12. Write unit tests for each formatter's tool parsing
+13. Write integration tests with real models
+14. Document tool calling in Getting Started guide
+15. Create `samples/ToolCallingAgent` sample
 
-Additionally, implement **constrained decoding** if the model supports it:
-- For OnnxRuntimeGenAI, investigate `LogitsProcessor` to constrain output tokens to valid JSON + tool name tokens only
-- This is an advanced optimization — implement as optional, gated behind `ToolSelectionOptions.UseConstrainedDecoding`
+### Phase 4b: RAG Pipeline (2 weeks)
 
-**Where:** `samples/ToolRoutingWithSlm/ToolSelectionService.cs` (parsing methods)  
-**Why:** At 0.5B parameters, only 14% of outputs are strict JSON. The fallback chain recovers valid tool selections from the other 86%. This is the difference between "works in demos" and "works in production."
+**Week 1: Core Abstractions**
 
-### Task 3.2 — Caching Strategy
+1. Create `ElBruno.LocalLLMs.Rag` project
+2. Define interfaces: `IDocumentChunker`, `IDocumentStore`, `IRagPipeline`
+3. Implement `SlidingWindowChunker`
+4. Implement `InMemoryDocumentStore`
+5. Implement `LocalRagPipeline`
 
-**Who:** Trinity  
-**What:** Implement a cache layer for repeated/similar queries in `ToolSelectionService`:
-
-1. **Exact-match cache** — `ConcurrentDictionary<string, IReadOnlyList<string>>` keyed by normalized query (lowercase, trimmed). TTL-based eviction.
-2. **Embedding-similarity cache** — for queries with cosine similarity > 0.95 to a cached query, return the cached result. Uses the same `IEmbeddingGenerator` already available.
-3. **Configuration:**
-   ```csharp
-   public class ToolSelectionOptions
-   {
-       public bool EnableCache { get; set; } = true;
-       public int MaxCacheEntries { get; set; } = 1000;
-       public TimeSpan CacheTtl { get; set; } = TimeSpan.FromMinutes(30);
-       public float SimilarityCacheThreshold { get; set; } = 0.95f;
-   }
-   ```
-
-The cache operates at the `ToolSelectionService` level (not inside MCPToolRouter or LocalChatClient — those are external libraries).  
-**Where:** `samples/ToolRoutingWithSlm/ToolSelectionService.cs`  
-**Why:** In interactive scenarios, users often rephrase similar queries. The embedding-similarity cache avoids re-running the SLM for "run tests" vs "execute the test suite" (which map to the same tool). The cache alone can reduce perceived latency from 1.2s to <5ms for repeated patterns.
-
-### Task 3.3 — Model Warm-Up and Lazy Loading
-
-**Who:** Trinity  
-**What:** Add model lifecycle management to the sample:
-
-1. **Lazy loading** — `LocalChatClient` is not created until the first SLM query. This avoids the ~2-5s model load time on startup if the user only uses the fast path.
-   ```csharp
-   private readonly Lazy<Task<IChatClient>> _chatClient;
-   ```
-
-2. **Warm-up** — optional explicit warm-up that sends a dummy prompt to force model loading + JIT compilation of ONNX Runtime kernels:
-   ```csharp
-   public async Task WarmUpAsync(CancellationToken ct = default)
-   {
-       var client = await _chatClient.Value;
-       await client.GetResponseAsync("ping", cancellationToken: ct);
-   }
-   ```
-
-3. **Disposal** — `ToolSelectionService` implements `IAsyncDisposable` and cleans up the `IChatClient` if it was created.
-
-**Where:** `samples/ToolRoutingWithSlm/ToolSelectionService.cs`  
-**Why:** First-query latency is 5-10x worse than steady-state due to model loading and kernel compilation. Lazy loading defers the cost; explicit warm-up lets users control when it happens (e.g., during app startup, not during first user interaction).
-
-### Task 3.4 — Cross-Encoder Re-Ranking (Alternative to SLM)
-
-**Who:** Dozer (model research) + Trinity (implementation)  
-**What:** Investigate and prototype cross-encoder re-ranking as a lighter alternative to full SLM reasoning:
-
-1. **Research:** Identify a small cross-encoder model suitable for ONNX (e.g., `cross-encoder/ms-marco-MiniLM-L-6-v2`, ~80MB). Check ONNX compatibility.
-2. **Prototype:** Create a `CrossEncoderReranker` class that:
-   - Takes (query, tool_description) pairs
-   - Scores relevance using the cross-encoder
-   - Re-ranks the embedding results
-   - Expected latency: 100-300ms (between embedding-only and full SLM)
-3. **Benchmark:** Add to the benchmark suite as a fourth pipeline option
-
-The cross-encoder approach is fundamentally different from the SLM approach:
-- **SLM**: Understands the query, reasons about which tools fit, outputs tool names
-- **Cross-encoder**: Scores (query, tool) pairs independently, no reasoning, just relevance scoring
-
-This is a potential "sweet spot" between accuracy and latency.  
-**Where:** New file in the sample project: `samples/ToolRoutingWithSlm/CrossEncoderReranker.cs`; benchmark addition in `benchmarks/ElBruno.LocalLLMs.ToolRouting.Benchmarks/Scenarios/CrossEncoderBenchmark.cs`  
-**Why:** If cross-encoder re-ranking achieves 90%+ of the SLM accuracy improvement at 10% of the latency cost, it becomes the recommended default over SLM for latency-sensitive applications. This was flagged in the architecture evaluation as a promising alternative.
+**Week 2: Persistence & Samples**
+6. Implement `SqliteDocumentStore`
+7. Add `RagServiceExtensions` for DI
+8. Write unit tests for chunking and similarity
+9. Write integration tests with LocalEmbeddings
+10. Create `samples/RagChatbot` sample
+11. Document RAG pipeline in docs
+12. Create `docs/rag-guide.md` with patterns
 
 ---
 
-## Phase 4: Documentation & Decision Tree
+## 5. File Inventory
 
-**Owner:** Morpheus (Lead)  
-**Depends on:** Phase 1 results (need data to write accurate guidance)  
-**Outputs:** User-facing documentation
+### New Files (Phase 4a: Tool Calling)
 
-### Task 4.1 — Write Tool Routing Guide
+```
+src/ElBruno.LocalLLMs/
+  Models/
+    ToolCallingFormat.cs          — Enum for tool calling variants
+  Templates/
+    ChatTemplateFormatterBase.cs  — Base class with default tool methods
+    ToolCallParseResult.cs         — Parse result types
+  Execution/
+    ToolCallParser.cs              — Shared parsing utilities
+    
+tests/ElBruno.LocalLLMs.Tests/
+  Templates/
+    QwenFormatterToolTests.cs
+    Llama3FormatterToolTests.cs
+    Phi4FormatterToolTests.cs
+    
+tests/ElBruno.LocalLLMs.IntegrationTests/
+  ToolCallingIntegrationTests.cs
+  
+samples/
+  ToolCallingAgent/
+    Program.cs
+    ToolCallingAgent.csproj
+    README.md
+    
+docs/
+  tool-calling-guide.md            — Tool calling documentation
+```
 
-**Who:** Morpheus  
-**What:** Create `docs/tool-routing-guide.md` — a user-facing guide that explains:
-1. What tool routing is and when to use it
-2. The three pipelines (embedding-only, embedding+SLM, embedding+cross-encoder) with tradeoffs
-3. Decision tree: "Which pipeline should I use?"
-   - <20 tools + clear prompts → embedding-only
-   - 20-50 tools + ambiguous prompts → cross-encoder re-ranking
-   - 50+ tools + multi-tool + complex queries → embedding+SLM
-4. Step-by-step setup for each pipeline
-5. Performance data from benchmarks (filled in after Phase 1 completes)
-6. Prompt template reference for each model
+### Modified Files (Phase 4a)
 
-**Where:** `docs/tool-routing-guide.md`  
-**Why:** Users need to make informed decisions about which pipeline to use. The decision tree prevents over-engineering (using SLM when embeddings suffice) or under-engineering (using embeddings when SLM is needed).
+```
+src/ElBruno.LocalLLMs/
+  Models/
+    ModelDefinition.cs             — Add SupportsToolCalling, ToolFormat
+    KnownModels.cs                 — Update models with tool flags
+  Templates/
+    IChatTemplateFormatter.cs      — Add tool methods
+    QwenFormatter.cs               — Implement tool support
+    Llama3Formatter.cs             — Implement tool support
+    Phi3Formatter.cs               — (remains no-op for tools)
+  LocalChatClient.cs               — Add tool handling logic
+  
+docs/
+  getting-started.md               — Add tool calling section
+  supported-models.md              — Add tool support column
+```
 
-### Task 4.2 — Update Architecture Doc
+### New Files (Phase 4b: RAG Pipeline)
 
-**Who:** Morpheus  
-**What:** Add a section to `docs/architecture.md` covering the optional SLM composition pattern. Include:
-- Component diagram showing the three pipelines
-- Interface boundaries (which MEAI interfaces are used where)
-- The "SLM is optional" principle and why it's important
-- Link to the tool routing guide
-
-**Where:** `docs/architecture.md` (append new section)  
-**Why:** The architecture doc is the source of truth for library design decisions. The composition pattern must be documented there.
+```
+src/ElBruno.LocalLLMs.Rag/
+  ElBruno.LocalLLMs.Rag.csproj
+  Document.cs
+  DocumentChunk.cs
+  IDocumentChunker.cs
+  IDocumentStore.cs
+  IRagPipeline.cs
+  RagContext.cs
+  RagIndexProgress.cs
+  Chunking/
+    SlidingWindowChunker.cs
+  Storage/
+    InMemoryDocumentStore.cs
+    SqliteDocumentStore.cs
+  LocalRagPipeline.cs
+  RagServiceExtensions.cs
+  
+tests/ElBruno.LocalLLMs.Rag.Tests/
+  ChunkerTests.cs
+  InMemoryStoreTests.cs
+  RagPipelineTests.cs
+  
+tests/ElBruno.LocalLLMs.Rag.IntegrationTests/
+  RagEndToEndTests.cs
+  
+samples/
+  RagChatbot/
+    Program.cs
+    RagChatbot.csproj
+    sample_documents/
+      policy1.txt
+      policy2.txt
+    README.md
+    
+docs/
+  rag-guide.md                     — RAG pipeline documentation
+```
 
 ---
 
-## Dependency Graph
+## 6. Sample Code
 
+### 6.1 Tool Calling Sample
+
+```csharp
+using ElBruno.LocalLLMs;
+using Microsoft.Extensions.AI;
+
+// Define tools
+var tools = new List<AITool>
+{
+    AIFunctionFactory.Create(GetWeather),
+    AIFunctionFactory.Create(GetTime)
+};
+
+// Create client with tool-capable model
+var client = await LocalChatClient.CreateAsync(new LocalLLMsOptions
+{
+    Model = KnownModels.Qwen2_5_7B_Instruct
+});
+
+var messages = new List<ChatMessage>
+{
+    new(ChatRole.System, "You are a helpful assistant with access to tools."),
+    new(ChatRole.User, "What's the weather in Paris and what time is it there?")
+};
+
+// Request with tools
+var response = await client.GetResponseAsync(messages, new ChatOptions
+{
+    Tools = tools,
+    ToolMode = ChatToolMode.Auto
+});
+
+// Handle tool calls
+while (HasToolCalls(response.Message))
+{
+    messages.Add(response.Message);  // Add assistant's tool call request
+    
+    foreach (var content in response.Message.Contents.OfType<FunctionCallContent>())
+    {
+        Console.WriteLine($"Calling tool: {content.Name}");
+        
+        var result = await ExecuteToolAsync(content);
+        
+        messages.Add(new ChatMessage(ChatRole.Tool, 
+            new FunctionResultContent(content.CallId, result)));
+    }
+    
+    // Continue conversation
+    response = await client.GetResponseAsync(messages, new ChatOptions { Tools = tools });
+}
+
+Console.WriteLine($"Final answer: {response.Message.Text}");
+
+// Tool implementations
+[Description("Get current weather for a city")]
+static string GetWeather(
+    [Description("City name")] string city)
+{
+    return $"The weather in {city} is sunny, 18°C";
+}
+
+[Description("Get current time for a timezone")]
+static string GetTime(
+    [Description("Timezone, e.g. 'Europe/Paris'")] string timezone)
+{
+    var time = TimeZoneInfo.ConvertTime(
+        DateTime.UtcNow, 
+        TimeZoneInfo.FindSystemTimeZoneById(timezone));
+    return time.ToString("HH:mm");
+}
+
+static bool HasToolCalls(ChatMessage message)
+{
+    return message.Contents.Any(c => c is FunctionCallContent);
+}
+
+static async Task<string> ExecuteToolAsync(FunctionCallContent call)
+{
+    // Use AIFunctionFactory to invoke or implement manually
+    return call.Name switch
+    {
+        "GetWeather" => GetWeather(call.Arguments["city"]?.ToString() ?? "Unknown"),
+        "GetTime" => GetTime(call.Arguments["timezone"]?.ToString() ?? "UTC"),
+        _ => "Tool not found"
+    };
+}
 ```
-Phase 0 (Model Conversion)
-├── Task 0.1 (Verify Qwen2.5-0.5B) ─────────────────────┐
-├── Task 0.2 (Convert SmolLM2-360M) ──┐                  │
-├── Task 0.3 (Convert SmolLM2-135M) ──┤                  │
-├── Task 0.4 (Convert Qwen3-0.6B) ────┤                  │
-├── Task 0.5 (Investigate Gemma-3) ────┤                  │
-├── Task 0.6 (Investigate TinyAgent) ──┤                  │
-└── Task 0.7 (Add KnownModels) ◄──────┘                  │
-                                                          │
-Phase 1 (Benchmarks)                                      │
-├── Task 1.1 (Create project) ◄───────────────────────────┘
-├── Task 1.2 (Tool catalogs) ◄── Task 1.1
-├── Task 1.3 (Test prompts) ◄── Task 1.1
-├── Task 1.4 (Embedding-only bench) ◄── Tasks 1.2, 1.3
-├── Task 1.5 (Embedding+SLM bench) ◄── Tasks 1.2, 1.3, 0.7
-├── Task 1.6 (SLM-only bench) ◄── Tasks 1.2, 1.3, 0.7
-└── Task 1.7 (Runner + results) ◄── Tasks 1.4, 1.5, 1.6
 
-Phase 2 (Sample)                    ◄── Task 0.1 (only needs 1 working model)
-├── Task 2.1 (Create sample project)
-├── Task 2.2 (ToolSelectionService) ◄── Task 2.1
-├── Task 2.3 (Prompt templates) ◄── Task 2.1
-└── Task 2.4 (Add to solution) ◄── Tasks 2.1, 1.1
+### 6.2 RAG Pipeline Sample
 
-Phase 3 (Optimization)             ◄── Phase 1 results
-├── Task 3.1 (JSON parsing)
-├── Task 3.2 (Caching)
-├── Task 3.3 (Warm-up / lazy load)
-└── Task 3.4 (Cross-encoder) ◄── Dozer research
+```csharp
+using ElBruno.LocalLLMs;
+using ElBruno.LocalLLMs.Rag;
+using ElBruno.LocalEmbeddings;
+using Microsoft.Extensions.AI;
 
-Phase 4 (Documentation)            ◄── Phase 1 results
-├── Task 4.1 (Tool routing guide)
-└── Task 4.2 (Architecture doc update)
+// Setup embedding generator and RAG pipeline
+var embeddingGenerator = await LocalEmbeddingGenerator.CreateAsync();
+var ragPipeline = new LocalRagPipeline(
+    embeddingGenerator,
+    store: new SqliteDocumentStore("company_kb.db")
+);
+
+// Index documents
+var documents = new[]
+{
+    new Document("policy-remote", 
+        "Remote Work Policy: Employees may work remotely up to 3 days per week. " +
+        "Must maintain availability during core hours 10am-4pm."),
+    new Document("policy-leave", 
+        "Annual Leave Policy: 25 days per year. Must be requested 2 weeks in advance. " +
+        "Maximum 10 consecutive days without manager approval."),
+    new Document("policy-expenses", 
+        "Expense Policy: All business expenses must be submitted within 30 days. " +
+        "Receipts required for amounts over $50. Manager approval needed for $500+.")
+};
+
+Console.WriteLine("Indexing documents...");
+await ragPipeline.IndexDocumentsAsync(documents);
+
+// Create chat client
+var chatClient = await LocalChatClient.CreateAsync(new LocalLLMsOptions
+{
+    Model = KnownModels.Qwen2_5_7B_Instruct
+});
+
+// Query loop
+while (true)
+{
+    Console.Write("\nAsk a question (or 'quit'): ");
+    var query = Console.ReadLine();
+    if (query?.ToLower() == "quit") break;
+    
+    // Retrieve relevant context
+    var context = await ragPipeline.RetrieveContextAsync(query!, topK: 3);
+    
+    Console.WriteLine($"\nRetrieved {context.RetrievedChunks.Count} relevant chunks");
+    
+    // Build messages with context
+    var messages = new List<ChatMessage>
+    {
+        new(ChatRole.System, 
+            "You are a helpful HR assistant. Answer questions using the provided company policy context. " +
+            "If the context doesn't contain relevant information, say so.\n\n" +
+            context.FormattedContext),
+        new(ChatRole.User, query!)
+    };
+    
+    // Get response
+    var response = await chatClient.GetResponseAsync(messages);
+    
+    Console.WriteLine($"\nAnswer: {response.Message.Text}");
+}
+
+Console.WriteLine("\nGoodbye!");
 ```
 
-## Parallelism Opportunities
+### 6.3 Combined RAG + Tool Calling Sample
 
-- **Phase 0 tasks 0.1–0.6** are all independent — Dozer can run them in parallel
-- **Phase 2** can start as soon as Task 0.1 completes (only needs Qwen2.5-0.5B)
-- **Phase 1 tasks 1.1–1.3** can start as soon as Task 0.1 completes
-- **Phase 1 tasks 1.4 and 1.5** can run in parallel once data and models are ready
-- **Phase 3 tasks 3.1–3.3** are independent of each other
-- **Phase 4** must wait for Phase 1 results to write accurate documentation
+```csharp
+using ElBruno.LocalLLMs;
+using ElBruno.LocalLLMs.Rag;
+using ElBruno.LocalEmbeddings;
+using Microsoft.Extensions.AI;
 
-## Success Criteria
+// Setup RAG
+var embeddingGenerator = await LocalEmbeddingGenerator.CreateAsync();
+var ragPipeline = new LocalRagPipeline(embeddingGenerator);
 
-| Metric | Target |
-|---|---|
-| Embedding-only accuracy (20 tools, clear prompts) | >90% |
-| Embedding+SLM accuracy (20 tools, ambiguous prompts) | >80% |
-| Embedding-only latency P95 | <100ms |
-| Embedding+SLM latency P95 (CPU, 0.5B model) | <3s |
-| Embedding+SLM latency P95 (GPU, 0.5B model) | <500ms |
-| Memory usage (0.5B model loaded) | <2 GB |
-| Sample builds and runs on `net8.0` | ✅ |
-| Graceful fallback when SLM fails | ✅ |
-| At least 3 of 6 models benchmarked | ✅ |
+await ragPipeline.IndexDocumentsAsync(new[]
+{
+    new Document("prod-api", "Product API endpoint: GET /api/products/{id}"),
+    new Document("user-api", "User API endpoint: POST /api/users with JSON body")
+});
 
-## Risk Register
+// Setup chat with tools
+var chatClient = await LocalChatClient.CreateAsync(new LocalLLMsOptions
+{
+    Model = KnownModels.Qwen2_5_7B_Instruct
+});
 
-| Risk | Impact | Mitigation |
-|---|---|---|
-| Qwen3-0.6B not supported by onnxruntime-genai 0.12.2 | Lose wild card model | Accept — Qwen2.5-0.5B is proven |
-| Gemma-3-270M / TinyAgent-1.1B ONNX conversion fails | Lose two candidates | Accept — they're investigation-only |
-| All 0.5B models <60% accuracy on ambiguous prompts | SLM value proposition weakened | Pivot to cross-encoder re-ranking (Task 3.4) as primary alternative |
-| JSON parsing too unreliable across models | Functional failure | Task 3.1 fallback chain + constrained decoding |
-| SmolLM2-135M too small for any useful tool selection | Lose budget model | Accept — still interesting as a data point |
+var tools = new List<AITool>
+{
+    AIFunctionFactory.Create(SearchDocumentation)
+};
+
+var messages = new List<ChatMessage>
+{
+    new(ChatRole.System, "You are a helpful assistant with access to documentation search."),
+    new(ChatRole.User, "How do I create a new user via the API?")
+};
+
+// Agent loop
+var maxTurns = 5;
+for (int turn = 0; turn < maxTurns; turn++)
+{
+    var response = await chatClient.GetResponseAsync(messages, new ChatOptions
+    {
+        Tools = tools,
+        ToolMode = ChatToolMode.Auto
+    });
+    
+    if (!HasToolCalls(response.Message))
+    {
+        Console.WriteLine($"Final answer: {response.Message.Text}");
+        break;
+    }
+    
+    messages.Add(response.Message);
+    
+    foreach (var call in response.Message.Contents.OfType<FunctionCallContent>())
+    {
+        Console.WriteLine($"Tool call: {call.Name}({call.Arguments["query"]})");
+        
+        var result = await SearchDocumentation(call.Arguments["query"]?.ToString() ?? "");
+        
+        messages.Add(new ChatMessage(ChatRole.Tool, 
+            new FunctionResultContent(call.CallId, result)));
+    }
+}
+
+[Description("Search technical documentation")]
+async Task<string> SearchDocumentation(
+    [Description("Search query")] string query)
+{
+    var context = await ragPipeline.RetrieveContextAsync(query, topK: 2);
+    return context.FormattedContext;
+}
+
+static bool HasToolCalls(ChatMessage message)
+{
+    return message.Contents.Any(c => c is FunctionCallContent);
+}
+```
+
+---
+
+## 7. Testing Strategy
+
+### Phase 4a: Tool Calling Tests
+
+**Unit Tests:**
+
+- Tool definition serialization to JSON schema
+- Tool call parsing for each format (Qwen, Llama3, Phi4)
+- Tool result formatting for each template
+- Multi-call parsing
+- Edge cases: malformed JSON, missing arguments, extra text
+
+**Integration Tests:**
+
+- Round-trip: tools → prompt → model → parse → FunctionCallContent
+- Tool result → format → model → final answer
+- Multi-turn tool calling loops
+- Models: Qwen2.5-7B, Llama-3.2-3B, Phi-4
+
+### Phase 4b: RAG Tests
+
+**Unit Tests:**
+
+- Document chunking with various sizes and overlaps
+- Cosine similarity calculations
+- In-memory store add/search operations
+- Context formatting
+
+**Integration Tests:**
+
+- End-to-end: index → embed → store → query → retrieve → format
+- SQLite store persistence across sessions
+- Large document sets (1000+ chunks)
+- Similarity threshold filtering
+
+---
+
+## 8. Documentation Plan
+
+### New Documents
+
+1. **`docs/tool-calling-guide.md`** — Comprehensive guide to tool calling
+   - Supported models
+   - Defining tools with AIFunctionFactory
+   - Tool calling loop patterns
+   - Debugging tool calls
+   - Model-specific formats
+
+2. **`docs/rag-guide.md`** — RAG pipeline guide
+   - When to use RAG vs fine-tuning
+   - Document chunking strategies
+   - Choosing embedding models
+   - In-memory vs persistent stores
+   - Context formatting best practices
+   - Combining RAG with tool calling
+
+### Updated Documents
+
+- **`docs/getting-started.md`** — Add tool calling quickstart section
+- **`docs/supported-models.md`** — Add "Tool Support" column
+- **`CONTRIBUTING.md`** — Add "Adding tool support to a model"
+
+---
+
+## 9. Future Enhancements (Post-Phase 4)
+
+1. **Streaming tool calls** — Buffer and parse partial tool call JSON
+2. **Native ONNX tool calling** — If/when ONNX GenAI adds native support
+3. **Advanced chunking** — Semantic chunking, recursive splitting, markdown-aware
+4. **Vector database integrations** — Qdrant, Milvus, Weaviate adapters
+5. **Hybrid search** — Combine vector similarity with keyword search (BM25)
+6. **Tool call caching** — Cache deterministic tool results
+7. **Parallel tool execution** — Execute multiple tool calls concurrently
+8. **Tool call validation** — JSON schema validation before execution
+
+---
+
+## 10. Open Questions
+
+1. **Tool mode enforcement:** If `ChatToolMode.RequireAny` is set but the model doesn't call a tool, do we:
+   - Return an error?
+   - Retry with stronger prompt injection?
+   - Fall back to normal response?
+
+2. **Tool result size limits:** If a tool returns 50KB of JSON, do we:
+   - Truncate automatically?
+   - Let the user handle it?
+   - Summarize with a secondary LLM call?
+
+3. **RAG context window management:** If retrieved context exceeds model's max tokens:
+   - Auto-summarize chunks?
+   - Use only top-K chunks that fit?
+   - Throw an error?
+
+4. **SQLite vs specialized vector DBs:** Should we recommend migration to Qdrant/Milvus at a certain scale, or optimize SQLite with extensions (e.g., sqlite-vss)?
+
+---
+
+## 11. Success Criteria
+
+**Phase 4a is complete when:**
+
+- [ ] At least 3 models support tool calling (Qwen2.5-7B, Llama-3.2-3B, Phi-4)
+- [ ] All formatters have >90% test coverage for tool parsing
+- [ ] Integration tests pass with real models making real tool calls
+- [ ] `samples/ToolCallingAgent` demonstrates multi-turn agent loop
+- [ ] Documentation explains tool calling clearly with examples
+
+**Phase 4b is complete when:**
+
+- [ ] RAG pipeline can index, embed, store, and retrieve documents
+- [ ] Both in-memory and SQLite stores work correctly
+- [ ] Integration tests verify end-to-end RAG with LocalEmbeddings
+- [ ] `samples/RagChatbot` demonstrates practical RAG usage
+- [ ] Documentation explains RAG patterns and best practices
+
+---
+
+**End of Plan**
+
+Questions or concerns? Bring them to Morpheus before implementation starts.

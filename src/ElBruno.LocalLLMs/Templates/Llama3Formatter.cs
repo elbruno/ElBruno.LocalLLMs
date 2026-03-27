@@ -11,6 +11,12 @@ internal sealed class Llama3Formatter : IChatTemplateFormatter
 {
     public string FormatMessages(IList<ChatMessage> messages)
     {
+        return FormatMessages(messages, tools: null);
+    }
+
+    public string FormatMessages(IList<ChatMessage> messages, IEnumerable<AITool>? tools)
+    {
+        // TODO: Implement tool support for Llama 3 format
         var sb = new StringBuilder();
         sb.Append("<|begin_of_text|>");
 

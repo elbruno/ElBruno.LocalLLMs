@@ -95,3 +95,33 @@
 - Report/list output uses table formatting with per-model size, file count, and total size summary.
 - Optional `-CleanupEmptyFolders` removes empty directories after delete operations.
 - QA hardening of `scripts/delete-models.ps1` should preserve native `SupportsShouldProcess` behavior so both scripts share consistent dry-run semantics.
+
+### 2026-03-27: Tool/Function calling implementation using prompt-based approach
+- Implemented full tool calling support for `LocalChatClient` via prompt-based approach (ONNX GenAI has no native function calling)
+- Created `ToolCalling/` namespace with `IToolCallParser`, `ParsedToolCall` record, `JsonToolCallParser`, and `ToolCallParserFactory`
+- `JsonToolCallParser` handles multiple formats: `<tool_call>` tags, raw JSON objects, arrays, with auto-generated CallId if not present
+- Extended `IChatTemplateFormatter` with `FormatMessages(messages, tools)` overload — backward compatible
+- Implemented full tool support in `ChatMLFormatter` — injects tool schemas into system message, formats `FunctionCallContent` in assistant messages, formats `FunctionResultContent` in user messages
+- Other formatters (Phi3, Qwen, Llama3, Gemma, Mistral, DeepSeek) have stub implementations that delegate to non-tool version (TODOs for future work)
+- Updated `LocalChatClient.GetResponseAsync` to parse tool calls from LLM output and build `FunctionCallContent` items
+- Updated `LocalChatClient.GetStreamingResponseAsync` to accumulate text, then parse tool calls and emit as separate updates at end
+- Added `ModelDefinition.SupportsToolCalling` property — enabled for Phi-3.5, Phi-4, and all Qwen2.5 models (0.5B, 1.5B, 3B, 7B)
+- Tool calling works via JSON schemas in prompt + JSON parsing from text output — no ONNX Runtime modifications needed
+- Key file paths: `src/ElBruno.LocalLLMs/ToolCalling/`, `Templates/IChatTemplateFormatter.cs`, `Templates/ChatMLFormatter.cs`, `LocalChatClient.cs`, `Models/ModelDefinition.cs`, `Models/KnownModels.cs`
+
+
+### 2026-03-27: Phase 4a Tool Calling Implementation Complete
+
+**All components delivered and tested:**
+- ToolCalling namespace fully integrated: IToolCallParser, ParsedToolCall, JsonToolCallParser, ToolCallParserFactory
+- Parser handles 3 output formats (Qwen tags, raw JSON, arrays) with auto-generated stable CallIds
+- Extended IChatTemplateFormatter with FormatMessages(messages, tools) — backward compatible
+- ChatMLFormatter fully implemented (tool injection, result formatting); other formatters stubbed
+- LocalChatClient routes tools through formatter → parser → FunctionCallContent
+- Streaming and non-streaming modes both work (parses at end, emits tool calls as final update)
+- 41 comprehensive tests (Tank): parser (29), formatter (12), integration (20) — all passing
+- 359/359 total tests passing (24 existing + 41 new)
+- Backward compatibility verified (non-tool code unaffected)
+- All 11 Phase 4 architectural decisions merged to canonical decisions.md
+
+**Ready for Phase 4b:** RAG pipeline architecture specified; Trinity ready to implement ElBruno.LocalLLMs.Rag extension package

@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using ElBruno.LocalLLMs.Internal;
+using ElBruno.LocalLLMs.ToolCalling;
 using Microsoft.Extensions.AI;
 
 namespace ElBruno.LocalLLMs;
@@ -13,6 +14,7 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
     private readonly LocalLLMsOptions _options;
     private readonly IModelDownloader _downloader;
     private readonly IChatTemplateFormatter _formatter;
+    private readonly IToolCallParser _toolCallParser;
 
     private OnnxGenAIModel? _model;
     private string? _resolvedModelPath;
@@ -43,6 +45,7 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _downloader = downloader ?? throw new ArgumentNullException(nameof(downloader));
         _formatter = ChatTemplateFactory.Create(options.Model.ChatTemplate);
+        _toolCallParser = ToolCallParserFactory.Create(options.Model.ChatTemplate);
 
         Metadata = new ChatClientMetadata(
             providerName: "elbruno-local-llms",
@@ -104,14 +107,22 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
         await EnsureInitializedAsync(progress: null, cancellationToken).ConfigureAwait(false);
 
         var messageList = messages as IList<ChatMessage> ?? messages.ToList();
-        var prompt = _formatter.FormatMessages(messageList);
+        var tools = options?.Tools;
+        var prompt = _formatter.FormatMessages(messageList, tools);
         var genParams = BuildGenerationParameters(options);
 
         var responseText = await Task.Run(
             () => _model!.Generate(prompt, genParams, cancellationToken),
             cancellationToken).ConfigureAwait(false);
 
-        var responseMessage = new ChatMessage(ChatRole.Assistant, responseText.Trim());
+        var trimmedResponse = responseText.Trim();
+
+        // Parse for tool calls if tools are available
+        var toolCalls = tools is { Count: > 0 } 
+            ? _toolCallParser.Parse(trimmedResponse) 
+            : [];
+
+        var responseMessage = BuildResponseMessage(trimmedResponse, toolCalls);
 
         return new ChatResponse(responseMessage)
         {
@@ -132,16 +143,44 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
         await EnsureInitializedAsync(progress: null, cancellationToken).ConfigureAwait(false);
 
         var messageList = messages as IList<ChatMessage> ?? messages.ToList();
-        var prompt = _formatter.FormatMessages(messageList);
+        var tools = options?.Tools;
+        var prompt = _formatter.FormatMessages(messageList, tools);
         var genParams = BuildGenerationParameters(options);
+
+        var fullText = new System.Text.StringBuilder();
 
         await foreach (var token in _model!.GenerateStreamingAsync(prompt, genParams, cancellationToken).ConfigureAwait(false))
         {
+            fullText.Append(token);
             yield return new ChatResponseUpdate(ChatRole.Assistant, token)
             {
                 ModelId = _options.Model.Id,
                 CreatedAt = DateTimeOffset.UtcNow,
             };
+        }
+
+        // After streaming completes, check for tool calls
+        if (tools is { Count: > 0 })
+        {
+            var toolCalls = _toolCallParser.Parse(fullText.ToString());
+            if (toolCalls.Count > 0)
+            {
+                // Send function call updates
+                foreach (var call in toolCalls)
+                {
+                    var funcCallContent = new FunctionCallContent(
+                        callId: call.CallId,
+                        name: call.FunctionName,
+                        arguments: call.Arguments);
+
+                    // ChatResponseUpdate requires role + content in constructor
+                    yield return new ChatResponseUpdate(ChatRole.Assistant, [funcCallContent])
+                    {
+                        ModelId = _options.Model.Id,
+                        CreatedAt = DateTimeOffset.UtcNow
+                    };
+                }
+            }
         }
     }
 
@@ -250,5 +289,44 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
             TopP: topP,
             TopK: topK,
             RepetitionPenalty: repetitionPenalty);
+    }
+
+    private static ChatMessage BuildResponseMessage(string responseText, IReadOnlyList<ParsedToolCall> toolCalls)
+    {
+        if (toolCalls.Count == 0)
+        {
+            return new ChatMessage(ChatRole.Assistant, responseText);
+        }
+
+        // Build message with both text and function calls
+        var contents = new List<AIContent>();
+
+        // Add text content if there's non-tool-call text
+        var textWithoutToolCalls = responseText;
+        foreach (var call in toolCalls)
+        {
+            if (call.RawText != null)
+            {
+                textWithoutToolCalls = textWithoutToolCalls.Replace(call.RawText, "");
+            }
+        }
+
+        textWithoutToolCalls = textWithoutToolCalls.Trim();
+        if (!string.IsNullOrWhiteSpace(textWithoutToolCalls))
+        {
+            contents.Add(new TextContent(textWithoutToolCalls));
+        }
+
+        // Add function call contents
+        foreach (var call in toolCalls)
+        {
+            var funcCallContent = new FunctionCallContent(
+                callId: call.CallId,
+                name: call.FunctionName,
+                arguments: call.Arguments);
+            contents.Add(funcCallContent);
+        }
+
+        return new ChatMessage(ChatRole.Assistant, contents);
     }
 }

@@ -19,3 +19,5 @@ Agent Scribe initialized and ready for work.
 ## Learnings
 
 Initial setup complete.
+
+v0.1.8 released — GPU fallback, OnnxRuntimeGenAI 0.12.2, 336 tests, GPU install docs in README.

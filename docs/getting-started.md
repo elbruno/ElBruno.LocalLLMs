@@ -464,6 +464,61 @@ For detailed ONNX conversion steps, see [scripts/README.md](../scripts/README.md
 
 ---
 
+## Tool Calling
+
+LocalChatClient supports tool/function calling through `IChatClient`. Define tools, pass them in `ChatOptions`, and the library handles prompt injection and response parsing automatically.
+
+### Quick Example
+
+```csharp
+using ElBruno.LocalLLMs;
+using Microsoft.Extensions.AI;
+using System.ComponentModel;
+
+// Use a model that supports tool calling
+var options = new LocalLLMsOptions
+{
+    Model = KnownModels.Phi35MiniInstruct  // or Qwen2.5-0.5B for smallest option
+};
+using var client = await LocalChatClient.CreateAsync(options);
+
+// Define a tool
+var tools = new List<AITool>
+{
+    AIFunctionFactory.Create(GetWeather)
+};
+
+var messages = new List<ChatMessage>
+{
+    new(ChatRole.User, "What's the weather in Seattle?")
+};
+
+var response = await client.GetResponseAsync(messages, new ChatOptions { Tools = tools });
+
+// Check for tool calls
+foreach (var content in response.Message.Contents)
+{
+    if (content is FunctionCallContent call)
+    {
+        Console.WriteLine($"Tool call: {call.Name}({string.Join(", ", call.Arguments ?? new Dictionary<string, object?>())})");
+    }
+}
+
+[Description("Get current weather for a city")]
+static string GetWeather([Description("City name")] string city) 
+    => $"Weather in {city}: Sunny, 72°F";
+```
+
+### Supported Models
+
+Not all models support tool calling. Check [Supported Models](supported-models.md#tool-calling-support) for the full list. The smallest option is **Qwen2.5-0.5B** (~1-2 GB RAM).
+
+### Full Agent Loop
+
+For a complete multi-turn tool calling agent, see the [ToolCallingAgent sample](../samples/ToolCallingAgent/).
+
+---
+
 ## Troubleshooting
 
 ### Model Not Found / Download Fails
