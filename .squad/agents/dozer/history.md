@@ -260,3 +260,23 @@ Key findings from parallel architecture evaluation by Morpheus:
 - ONNX INT4 quantization spec: https://onnx.ai/onnx/technical/int4.html
 - PyTorch PEFT → ONNX Runtime tutorial: https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/pytorch-peft-sft-and-convert-to-onnx-runtime/4271557
 - Research: TinyAgent (arXiv:2512.15943), SmolLM2 (arXiv:2502.02737), Qwen2.5 (arXiv:2412.15115), Gemma-3 (arXiv:2503.19786)
+
+### 2026-03-29 — Phase 3 & 4 Scripts Implemented (Fine-Tune Pipeline)
+
+**Created 5 production-ready scripts for ONNX conversion and model publishing.**
+
+- **`scripts/finetune/merge_lora.py`** — Merges LoRA adapters into base Qwen2.5 models using PEFT. Supports 0.5B/1.5B/3B. Handles tokenizer with extra special tokens, embedding resize, and optional `--verify` flag for smoke-testing tool call output after merge. Uses FP16 for merge (not 4-bit) to avoid precision loss.
+
+- **`scripts/finetune/convert_to_onnx.py`** — Wraps `onnxruntime_genai.models.builder` with full validation. INT4 default (accuracy level 4), INT8/FP16/FP32 options. Validates input HuggingFace checkpoint, checks ChatML token presence in tokenizer config, validates output genai_config.json structure. Supports `--execution-provider cuda` for 14B+ models (critical learning from 70B conversion experience).
+
+- **`scripts/finetune/validate_onnx.py`** — 12 test cases covering tool calling (basic, multi-tool, complex args, result handling), RAG (citation, multi-fact, no-answer edge case), instruction following, ChatML adherence, multi-turn memory, tokenizer round-trip, and gibberish detection. Each test has multiple check functions. Returns pass/fail with detailed diagnostics. Supports `--tags` filter and `--verbose` mode.
+
+- **`scripts/finetune/upload_to_hf.py`** — Creates/updates HuggingFace repos, uploads all ONNX files, generates model card from template or default. Token resolution: CLI arg → HF_TOKEN env → cached login. Sets proper tags (onnx, qwen2.5, tool-calling, dotnet, etc.). Supports `--capability` (ToolCalling/RAG/Instruct) and `--private` flags.
+
+- **`scripts/finetune/model-card-template.md`** — Full HuggingFace model card with YAML frontmatter (Apache 2.0, tags, base_model). Template variables: `{{MODEL_NAME}}`, `{{REPO_ID}}`, `{{BASE_MODEL}}`, `{{CAPABILITY}}`, `{{MODEL_SIZE}}`, `{{SIZE_MB}}`. Includes C# usage examples, hyperparameter table, training data summary, benchmark placeholder, limitations, and citation block.
+
+**Design decisions:**
+- Used PEFT library (not Unsloth) for merge — more reliable for production, Unsloth's merge API is less documented.
+- Validation script has 12 tests (not 10) for extra coverage on edge cases.
+- Model card template uses `{{placeholder}}` syntax instead of Python f-strings for broader tooling compatibility.
+- All scripts use argparse, logging, proper error handling, and are fully type-annotated.

@@ -236,3 +236,16 @@ All 359 tests passing. Build clean. Ready for integration.
 
 Ready for phase 4c documentation and publishing.
 
+### 2026-03-29: Phase 5 Fine-Tuned Model Integration
+
+**All deliverables completed:**
+- Added 3 fine-tuned model definitions to `KnownModels.cs`: `Qwen25_05B_ToolCalling`, `Qwen25_05B_RAG`, `Qwen25_05B_Instruct_FineTuned`
+- Created `src/samples/FineTunedToolCalling/` sample (Program.cs, .csproj, README.md)
+- Sample follows exact ToolCallingAgent pattern: agent loop, 3 tools (GetCurrentTime, Calculate, GetWeather), multi-turn demos
+- Uses `KnownModels.Qwen25_05B_ToolCalling` — fine-tuned variant for tool calling
+- Created `docs/fine-tuning-guide.md` — .NET-developer-friendly guide covering pre-fine-tuned model usage and custom fine-tuning
+- Updated `ElBruno.LocalLLMs.slnx` — FineTunedToolCalling added under `/src/samples/`
+- Updated `docs/CHANGELOG.md` with Phase 5 entries
+- Full solution builds clean: 0 errors, 0 warnings (15 projects total)
+- `ModelDefinition` does NOT have a `Description` property — plan suggested one but adding it would be a separate API change
+
