@@ -45,20 +45,20 @@ These benchmarks ensure the model registry stays fast even as more models are ad
 ### Run all benchmarks
 
 ```bash
-dotnet run -c Release --project benchmarks/ElBruno.LocalLLMs.Benchmarks
+dotnet run -c Release --project src/benchmarks/ElBruno.LocalLLMs.Benchmarks
 ```
 
 ### Run a specific benchmark class
 
 ```bash
-dotnet run -c Release --project benchmarks/ElBruno.LocalLLMs.Benchmarks -- --filter "*ChatTemplate*"
-dotnet run -c Release --project benchmarks/ElBruno.LocalLLMs.Benchmarks -- --filter "*ModelDefinition*"
+dotnet run -c Release --project src/benchmarks/ElBruno.LocalLLMs.Benchmarks -- --filter "*ChatTemplate*"
+dotnet run -c Release --project src/benchmarks/ElBruno.LocalLLMs.Benchmarks -- --filter "*ModelDefinition*"
 ```
 
 ### Run a specific benchmark method
 
 ```bash
-dotnet run -c Release --project benchmarks/ElBruno.LocalLLMs.Benchmarks -- --filter "*ChatML_3Messages*"
+dotnet run -c Release --project src/benchmarks/ElBruno.LocalLLMs.Benchmarks -- --filter "*ChatML_3Messages*"
 ```
 
 > **Important:** Always use `-c Release`. BenchmarkDotNet requires Release configuration for accurate results and will warn or refuse to run in Debug mode.
@@ -101,7 +101,7 @@ The benchmarks use these BenchmarkDotNet settings:
 
 ## Adding New Benchmarks
 
-1. Create a new class in `benchmarks/ElBruno.LocalLLMs.Benchmarks/`
+1. Create a new class in `src/benchmarks/ElBruno.LocalLLMs.Benchmarks/`
 2. Add `[MemoryDiagnoser]` and `[SimpleJob]` attributes
 3. Use `[Benchmark]` on each method to measure
 4. Run with `--filter` to test just your new benchmarks
