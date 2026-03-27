@@ -20,9 +20,34 @@
 
 ## Learnings
 
+### 2026-03-28 — README Aligned to Convention Format
+
+**Completed:** README.md updated to match `.github/copilot-instructions.md` requirements.
+
+**Changes made:**
+- Added tagline "## Run local LLMs in .NET through IChatClient 🧠" after badges row
+- Updated all sample links from `samples/{Name}` to `src/samples/{Name}` (6 updates)
+- Added ToolCallingAgent and ConsoleAppDemo to samples table (2 new entries)
+- Inserted "Building from Source" section before Documentation with git clone + dotnet restore/build/test
+- Reformatted Author section with proper emoji and link format (blog, YouTube @inthelabs, LinkedIn @inthelabs, Twitter @inthelabs, podcast inthelabs.dev)
+- Added Acknowledgments section with ONNX Runtime GenAI, Microsoft.Extensions.AI, and Hugging Face
+- Verified Installation uses only `dotnet add package` (no XML snippets) ✅
+- Verified doc links point to `docs/` and sample links point to `src/samples/` ✅
+- Kept CI badge as `ci.yml` (per Switch's decision) ✅
+
+**Convention compliance checklist:**
+- ✅ Tagline with emoji after badges
+- ✅ All links updated to new structure
+- ✅ Building from Source included
+- ✅ Author section formatted per convention
+- ✅ Acknowledgments section added
+- ✅ No breaking changes to existing content
+
+**Impact:** README is now consistent with ElBruno organization standards and discoverable on first-time user visit. Sample navigation points to correct `src/samples/` directory ahead of Trinity's folder move.
+
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
-### 2026-03-27: Documentation Updated for Phase 4a Tool Calling
+### 2026-03-28 — Documentation Updated for Phase 4a Tool Calling
 - Added "Tool Calling" column to `docs/supported-models.md` marking Qwen2.5-0.5B, Phi-3.5-mini, Qwen-7B with support
 - Created new "Tool Calling" section in `docs/getting-started.md` with feature overview and link to samples/ToolCallingAgent
 - Updated `docs/CHANGELOG.md` with unreleased features section documenting Phase 4a implementation

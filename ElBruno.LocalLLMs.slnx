@@ -2,19 +2,19 @@
   <Folder Name="/src/">
     <Project Path="src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj" />
   </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj" />
-    <Project Path="tests/ElBruno.LocalLLMs.IntegrationTests/ElBruno.LocalLLMs.IntegrationTests.csproj" />
+  <Folder Name="/src/tests/">
+    <Project Path="src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj" />
+    <Project Path="src/tests/ElBruno.LocalLLMs.IntegrationTests/ElBruno.LocalLLMs.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/ElBruno.LocalLLMs.Benchmarks/ElBruno.LocalLLMs.Benchmarks.csproj" />
   </Folder>
-  <Folder Name="/samples/">
-    <Project Path="samples/HelloChat/HelloChat.csproj" />
-    <Project Path="samples/StreamingChat/StreamingChat.csproj" />
-    <Project Path="samples/MultiModelChat/MultiModelChat.csproj" />
-    <Project Path="samples/DependencyInjection/DependencyInjection.csproj" />
-    <Project Path="samples/ConsoleAppDemo/ConsoleAppDemo.csproj" />
-    <Project Path="samples/ToolCallingAgent/ToolCallingAgent.csproj" />
+  <Folder Name="/src/samples/">
+    <Project Path="src/samples/HelloChat/HelloChat.csproj" />
+    <Project Path="src/samples/StreamingChat/StreamingChat.csproj" />
+    <Project Path="src/samples/MultiModelChat/MultiModelChat.csproj" />
+    <Project Path="src/samples/DependencyInjection/DependencyInjection.csproj" />
+    <Project Path="src/samples/ConsoleAppDemo/ConsoleAppDemo.csproj" />
+    <Project Path="src/samples/ToolCallingAgent/ToolCallingAgent.csproj" />
   </Folder>
 </Solution>

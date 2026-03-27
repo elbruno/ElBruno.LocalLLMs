@@ -9,6 +9,8 @@
 [![GitHub stars](https://img.shields.io/github/stars/elbruno/ElBruno.LocalLLMs?style=social)](https://github.com/elbruno/ElBruno.LocalLLMs)
 [![Twitter Follow](https://img.shields.io/twitter/follow/elbruno?style=social)](https://twitter.com/elbruno)
 
+## Run local LLMs in .NET through IChatClient 🧠
+
 Run local LLMs in .NET through `IChatClient` — the same interface you'd use for Azure OpenAI, Ollama, or any other provider. Powered by ONNX Runtime GenAI.
 
 ## Features
@@ -122,16 +124,28 @@ See the [Supported Models Guide](docs/supported-models.md) for detailed model ca
 
 | Sample | Description |
 |--------|-------------|
-| [HelloChat](samples/HelloChat) | Minimal console chat |
-| [StreamingChat](samples/StreamingChat) | Token-by-token streaming |
-| [MultiModelChat](samples/MultiModelChat) | Switch models at runtime |
-| [DependencyInjection](samples/DependencyInjection) | ASP.NET Core DI registration |
+| [HelloChat](src/samples/HelloChat) | Minimal console chat |
+| [StreamingChat](src/samples/StreamingChat) | Token-by-token streaming |
+| [MultiModelChat](src/samples/MultiModelChat) | Switch models at runtime |
+| [DependencyInjection](src/samples/DependencyInjection) | ASP.NET Core DI registration |
+| [ToolCallingAgent](src/samples/ToolCallingAgent) | Function calling and tool use |
+| [ConsoleAppDemo](src/samples/ConsoleAppDemo) | Interactive console application |
 
 ## Requirements
 
 - .NET 8.0 or .NET 10.0
 - CPU (default), NVIDIA GPU (CUDA), or Windows GPU (DirectML)
 - ~2-8 GB disk space per model (depending on size and quantization)
+
+## Building from Source
+
+```bash
+git clone https://github.com/elbruno/ElBruno.LocalLLMs.git
+cd ElBruno.LocalLLMs
+dotnet restore ElBruno.LocalLLMs.slnx
+dotnet build ElBruno.LocalLLMs.slnx
+dotnet test ElBruno.LocalLLMs.slnx --framework net8.0
+```
 
 ## Documentation
 
@@ -161,14 +175,16 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 ## 👋 About the Author
 
-Hi! I'm **ElBruno** 🧡, a passionate developer and content creator exploring AI, .NET, and modern development practices.
+**Made with ❤️ by [Bruno Capuano (ElBruno)](https://github.com/elbruno)**
 
-**Made with ❤️ by [ElBruno](https://github.com/elbruno)**
+- 📝 **Blog**: [elbruno.com](https://elbruno.com)
+- 📺 **YouTube**: [youtube.com/@inthelabs](https://youtube.com/@inthelabs)
+- 🔗 **LinkedIn**: [linkedin.com/in/inthelabs](https://linkedin.com/in/inthelabs)
+- 𝕏 **Twitter**: [twitter.com/inthelabs](https://twitter.com/inthelabs)
+- 🎙️ **Podcast**: [inthelabs.dev](https://inthelabs.dev)
 
-If you like this project, consider following my work across platforms:
+## 🙏 Acknowledgments
 
-- 📻 **Podcast**: [No Tienen Nombre](https://notienenombre.com) — Spanish-language episodes on AI, development, and tech culture
-- 💻 **Blog**: [ElBruno.com](https://elbruno.com) — Deep dives on embeddings, RAG, .NET, and local AI
-- 📺 **YouTube**: [youtube.com/elbruno](https://www.youtube.com/elbruno) — Demos, tutorials, and live coding
-- 🔗 **LinkedIn**: [@elbruno](https://www.linkedin.com/in/elbruno/) — Professional updates and insights
-- 𝕏 **Twitter**: [@elbruno](https://www.x.com/in/elbruno/) — Quick tips, releases, and tech news
+- [ONNX Runtime GenAI](https://github.com/microsoft/onnxruntime-genai) — inference engine
+- [Microsoft.Extensions.AI](https://learn.microsoft.com/dotnet/ai/microsoft-extensions-ai) — IChatClient interface
+- [Hugging Face](https://huggingface.co/) — model hosting and community

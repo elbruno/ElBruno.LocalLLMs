@@ -18,7 +18,9 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
-- **.NET 10.0.200 SDK available** — supports slnx format natively. No need for .sln migration.
+- **CI simplified to net8.0-only on ubuntu-latest** — Removed multi-OS matrix and net10.0 SDK install per copilot-instructions.md convention. CI runners only need `8.0.x` with `-p:TargetFrameworks=net8.0` for restore/build and `--framework net8.0` for test. Test path updated from per-project to solution-level.
+- **gitignore: glob `cache_dir/` replaces 80+ individual lock file entries** — Model download caches should never be committed. One glob line replaces 140+ lines of individual file paths.
+- **.NET 10.0.200 SDK available**— supports slnx format natively. No need for .sln migration.
 - **Microsoft.Extensions.AI.Abstractions 10.4.0 breaking changes:** IChatClient interface renamed methods: `CompleteAsync` → `GetResponseAsync`, `CompleteStreamingAsync` → `GetStreamingResponseAsync`. Return types changed: `ChatCompletion` → `ChatResponse`, `StreamingChatCompletionUpdate` → `ChatResponseUpdate`. `ChatClientMetadata` constructor parameter renamed `modelId` → `defaultModelId`. `ChatResponseUpdate.Text` is now read-only (use constructor).
 - **OnnxRuntimeGenAI 0.8.3 API change:** `Generator.GetNextTokens()` removed. Use `generator.GetSequence(0)[^1]` to get the latest token after `GenerateNextToken()`.
 - **ElBruno.HuggingFace.Downloader latest is 0.6.0** (not 0.5.0 as architecture doc stated).

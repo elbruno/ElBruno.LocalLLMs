@@ -141,3 +141,14 @@
 - Uses `Qwen25_05BInstruct` (smallest tool-capable model) with comments noting Phi-3.5/Qwen-7B for better quality
 - MEAI 10.x note: `AIFunction.InvokeAsync` takes `AIFunctionArguments?`, not raw `IDictionary` — must wrap with `new AIFunctionArguments(dict)`
 - Added to `ElBruno.LocalLLMs.slnx` under `/samples/` — full solution builds clean (0 warnings, 0 errors)
+
+### 2026-03-27: Project structure conventions applied (copilot-instructions.md)
+- Moved `tests/` → `src/tests/` and `samples/` → `src/samples/` to consolidate under `src/`
+- Renamed `images/icon.png` → `images/nuget_logo.png`; updated library csproj pack item
+- All test and sample projects retargeted from `net10.0` → `net8.0`; ProjectReference paths fixed for new layout (`..\..\ElBruno.LocalLLMs\`)
+- Test csprojs gained `<IsTestProject>true</IsTestProject>` and `coverlet.collector` 6.0.4
+- Library csproj added `<IncludeSymbols>`, `<SymbolPackageFormat>snupkg`, `<ContinuousIntegrationBuild>` for CI; removed `Authors`/`PackageLicenseExpression` (now in Directory.Build.props)
+- `Directory.Build.props` expanded with code analysis, repo info, package defaults (Authors, Company, Copyright, MIT license, nuget_logo icon)
+- Created `global.json` pinning SDK 8.0.0 with `rollForward: latestMajor`
+- Solution file (`slnx`) folder names updated (`/tests/` → `/src/tests/`, `/samples/` → `/src/samples/`)
+- Build: 11 projects, 0 warnings, 0 errors; 359/359 tests pass on net8.0
