@@ -18,6 +18,13 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2025-07-25: Colab Notebook Fixes (train_and_publish.ipynb)
+- `--no-deps` on pip install breaks transitive deps (`datasets`, `tokenizers`, etc.); Unsloth's simple `pip install unsloth` is the current recommended Colab install
+- `evaluation_strategy` is deprecated in newer transformers; use `eval_strategy` instead
+- `onnxruntime-genai` may not have Linux wheels; always guard imports with try/except and offer fallback install
+- Jupyter `.ipynb` files are JSON; cell indices shift when markdown headers are counted — always verify by content, not index
+- When editing `.ipynb` via Python, `json.dumps` with `ensure_ascii=False` preserves emoji readability in Colab
+
 ### 2026-03-27: Phase 4a Tool Calling Sample Implementation
 - Created `samples/ToolCallingAgent/` with canonical multi-turn agent loop pattern: send → check FunctionCallContent → invoke tools → send FunctionResultContent → repeat
 - Qwen2.5-0.5B-Instruct selected as sample default (smallest with tool support, ~1 GB download, good first-run UX)
