@@ -20,6 +20,41 @@
 
 ## Learnings
 
+### 2026-03-29 — Qwen2.5 Fine-Tuning Implementation Plan
+
+**Created:** `docs/plan-finetune-qwen.md` (56KB, 15 sections) — comprehensive implementation plan for fine-tuning Qwen2.5 models (0.5B, 1.5B, 3B) for ElBruno.LocalLLMs.
+
+**Strategic Shift:** Bruno's directive ("The .NET community really don't know about how to train and fine tune models") changes the approach from *evaluating existing models* (history.md 2026-03-28 assessment) to *creating and sharing fine-tuned models* for the community.
+
+**Plan Structure (6 phases):**
+1. **Phase 1: Training Data Creation** — 5K examples (tool calling, RAG, instruction following) matching QwenFormatter template exactly. Sources: Glaive, MS MARCO, Alpaca + custom examples.
+2. **Phase 2: Fine-Tuning Pipeline (0.5B)** — QLoRA training script using Unsloth, hyperparameters for RTX 4090 (rank 16, lr 2e-4, 3 epochs), 2-hour training time.
+3. **Phase 3: ONNX Conversion & Validation** — Merge LoRA adapters, convert to ONNX INT4, validate against QwenFormatter expectations.
+4. **Phase 4: Model Publishing** — HuggingFace repos (naming: `elbruno/Qwen2.5-{size}-LocalLLMs-{capability}`), model cards, pre-converted ONNX ready to download.
+5. **Phase 5: Library Integration** — Add to KnownModels, update docs, create FineTunedToolCalling sample, evaluation test suite.
+6. **Phase 6: Scale to 1.5B and 3B** — Repeat Phase 2–4, publish benchmarks comparing base vs fine-tuned.
+
+**Key Decisions:**
+- **Start with Qwen2.5** (not Phi or Llama) — ChatML format already supported, tiny models (0.5B/1.5B) benefit most from fine-tuning, native ONNX conversion path exists.
+- **Three model variants:** ToolCalling (optimized for function calls), RAG (grounded answering with citations), Instruct (general-purpose combined dataset).
+- **Consumer GPU first** — RTX 4090 can train 0.5B (2h) and 1.5B (4h). Only use cloud A100 for 3B (~$16).
+- **Pre-converted ONNX INT4** — No Python needed by consumers. Download and use in .NET immediately.
+- **Training data format:** ShareGPT format, validated against QwenFormatter's exact output (including `<tool_call>` tags, tool result format).
+
+**"Quick Start" Section:** Step-by-step weekend guide for .NET devs to fine-tune their first model (Saturday: setup + data prep; Sunday: train + convert + use in C#).
+
+**Success Metrics:**
+- 30% of users choose fine-tuned model over base
+- Fine-tuned 1.5B matches base 3B on tool calling accuracy
+- 100+ HuggingFace downloads in first month
+- 5+ community contributions
+
+**Effort Estimate:** 24 days (4–5 weeks) across all phases. Critical path: Phase 1 → 2 → 3 → 4. Parallelization can reduce to 3 weeks.
+
+**Agent Assignments:** Mouse (training data + fine-tuning), Dozer (ONNX conversion), Morpheus (publishing + docs), Trinity (library integration), Tank (validation + benchmarks).
+
+**Impact:** Positions ElBruno.LocalLLMs as the only .NET library that not only *supports* local LLMs but *provides optimized models* for the framework. Lowers barrier for .NET developers who lack ML expertise.
+
 ### 2026-03-28 — README Aligned to Convention Format
 
 **Completed:** README.md updated to match `.github/copilot-instructions.md` requirements.

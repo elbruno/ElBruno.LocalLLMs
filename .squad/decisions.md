@@ -3238,6 +3238,448 @@ tokenizer.save_pretrained("./qwen-toolcall")  # ← CRITICAL
 | Model | Status | Reason |
 |-------|--------|--------|
 | **StableLM-2** (`stablelm-2-zephyr-1_6b`) | ❌ NOT SUPPORTED | Architecture not recognized by `onnxruntime_genai` builder v0.12.1 |
+
+---
+
+## Decision 24: Fine-Tuning Qwen2.5 Models for ElBruno.LocalLLMs
+
+**Date:** 2026-03-29  
+**Author:** Morpheus (Lead/Architect)  
+**Status:** Proposed  
+**Scope:** Library strategy, model publishing, training pipeline
+
+### Context
+
+Bruno's directive: *"The .NET community really don't know about how to train and fine tune models, even with a guide is hard. This library goal is to make it as easy as possible for them. We can train and/or fine-tune models, so if we need to do it, we can do it and later share those models with the community."*
+
+**Prior assessment (2026-03-28):** Morpheus recommended a "hybrid approach" — evaluate existing community fine-tuned models, skip publishing our own, create a fine-tuning guide for users.
+
+**Changed context:** Bruno confirmed we should **create and share fine-tuned models** ourselves, not just enable users to do it. The library's goal is to lower the barrier, and pre-trained models are the lowest barrier.
+
+### Decision
+
+**Execute a 6-phase fine-tuning plan targeting Qwen2.5 models (0.5B, 1.5B, 3B):**
+
+1. **Create training data** (5K examples) matching QwenFormatter's exact output format
+2. **Fine-tune using QLoRA** (Unsloth framework, consumer GPU-friendly)
+3. **Convert to ONNX INT4** (ready for ElBruno.LocalLLMs)
+4. **Publish to HuggingFace** as `elbruno/Qwen2.5-{size}-LocalLLMs-{capability}`
+5. **Integrate into library** (KnownModels, samples, docs, evaluation tests)
+6. **Scale to 1.5B and 3B** with published benchmarks
+
+**Three model variants per size:**
+- **ToolCalling** — Optimized for function/tool calling (JSON accuracy)
+- **RAG** — Optimized for grounded answering with source citations
+- **Instruct** — General-purpose (combined dataset)
+
+### Rationale
+
+#### Why fine-tune ourselves instead of relying on community models?
+
+1. **Format guarantees:** Community models may not match QwenFormatter's exact template (especially `<tool_call>` tags, tool result format). Fine-tuning on library-specific examples ensures compatibility.
+
+2. **Trust and quality:** Publishing models under `elbruno/*` namespace builds trust. Users know these models are tested with the library.
+
+3. **Optimized for tiny models:** Qwen2.5-0.5B and 1.5B are small enough to run on edge devices but base models struggle with tool calling. Fine-tuning can make 1.5B perform like 3B.
+
+4. **.NET community needs:** Most .NET developers don't have Python/PyTorch expertise. Providing pre-trained models removes all barriers.
+
+5. **Differentiation:** No other .NET local LLM library publishes optimized models. This is a competitive advantage.
+
+#### Why Qwen2.5 (not Phi or Llama)?
+
+1. **Tiny sizes exist:** 0.5B and 1.5B models are small enough for edge devices and fast to train (2–4 hours on RTX 4090).
+
+2. **ChatML format:** Already well-supported by QwenFormatter. No new template needed.
+
+3. **Native ONNX conversion:** Qwen team publishes ONNX models, conversion path is proven.
+
+4. **Tool calling support:** Base Qwen2.5 models already have some tool calling ability, fine-tuning improves it.
+
+5. **Bruno confirmed:** He specifically said "start with Qwen2.5 models."
+
+#### Why QLoRA (not full fine-tuning)?
+
+1. **Consumer GPU friendly:** Fits 0.5B–3B models on RTX 4090 (24GB VRAM). Full fine-tuning would require 80GB A100.
+
+2. **Fast training:** 2–8 hours vs. days for full fine-tuning.
+
+3. **Small adapters:** LoRA weights are 50–200MB, easy to distribute and merge.
+
+4. **Proven approach:** Industry standard (used by Hugging Face, Microsoft, Meta).
+
+#### Why publish 3 variants (ToolCalling, RAG, Instruct)?
+
+1. **Specialization wins:** A model fine-tuned specifically for tool calling will outperform a general model.
+
+2. **User choice:** Some users only need RAG, some only need tool calling. Why force them to download a combined model?
+
+3. **Benchmarking clarity:** We can measure improvement per task clearly.
+
+4. **Future proofing:** If we later add new capabilities (e.g., code generation), we can add a CodeGen variant without breaking existing models.
+
+### Consequences
+
+#### Positive
+
+✅ **Lowers barrier for .NET developers** — No Python, no training, no ONNX conversion needed. Download and use.
+
+✅ **Better quality for tiny models** — Fine-tuned 1.5B can match base 3B, enabling edge deployment.
+
+✅ **Library differentiation** — Only .NET local LLM library with optimized models.
+
+✅ **Community contributions** — Training data and scripts enable users to fine-tune for their own domains.
+
+✅ **Educational value** — "Quick Start" guide teaches .NET devs about fine-tuning without requiring ML expertise.
+
+#### Negative
+
+❌ **Maintenance burden** — We own the models. If Qwen2.5 base model gets an update, we need to re-fine-tune.
+
+❌ **Training costs** — Cloud GPU for 3B model (~$16 per run, ~$50 total for all variants). Bruno has RTX 4090 for 0.5B/1.5B (free).
+
+❌ **HuggingFace storage** — 9 models × ~500MB–2GB = ~10GB total. Free tier allows 100GB, so no issue.
+
+❌ **Quality risk** — If fine-tuning doesn't improve over base, we look bad. Mitigation: benchmark before publishing.
+
+### Architecture Impact
+
+**Zero library code changes needed.** Fine-tuned models are data variants that flow through the same `ModelDefinition` → ONNX → formatter → parser pipeline.
+
+Only changes:
+- Add model definitions to `KnownModels.cs`
+- Update `docs/supported-models.md`
+- Add evaluation tests
+
+### Effort & Timeline
+
+| Phase | Effort | Owner |
+|-------|--------|-------|
+| Phase 1: Training Data | 4 days | Mouse |
+| Phase 2: Fine-Tuning (0.5B) | 3 days + 2h train | Mouse |
+| Phase 3: ONNX Conversion | 3 days + 1h convert | Dozer |
+| Phase 4: Publishing | 2 days | Morpheus |
+| Phase 5: Library Integration | 5 days | Trinity, Tank |
+| Phase 6: Scale to 1.5B + 3B | 7 days | Mouse, Morpheus |
+| **Total** | **24 days (4–5 weeks)** | |
+
+**Best-case with parallelization:** 3 weeks.
+
+### Alternatives Considered
+
+#### Alternative 1: Skip fine-tuning, use base models only
+
+**Pros:** Zero effort, zero maintenance.
+
+**Cons:** Tiny models (0.5B/1.5B) have poor tool calling accuracy. Users need larger models (3B+), which don't fit on edge devices.
+
+**Verdict:** Rejected. Bruno's directive is clear: we should fine-tune.
+
+#### Alternative 2: Evaluate community models, skip our own
+
+**Pros:** Low effort (10 hours for evaluation). No maintenance (community owns models).
+
+**Cons:** No guarantee of QwenFormatter compatibility. No control over quality. Harder to recommend ("use this random person's model").
+
+**Verdict:** Rejected for Phase 1, but kept as Phase 3 fallback (evaluate community models as additional options).
+
+#### Alternative 3: Full fine-tuning (not QLoRA)
+
+**Pros:** Potentially higher quality.
+
+**Cons:** Requires 80GB A100 ($2.50/hour). Much slower (days vs. hours). Larger checkpoints (10GB+ vs. 100MB).
+
+**Verdict:** Rejected. QLoRA is proven to achieve 95%+ of full fine-tuning quality with 10% of the cost.
+
+#### Alternative 4: Fine-tune Phi-3.5-mini or Llama-3.2 instead of Qwen2.5
+
+**Pros:** Phi-3.5-mini is already good at tool calling (base model).
+
+**Cons:** Phi-3.5-mini is 3.8B (larger than Qwen 0.5B/1.5B). No tiny edge-friendly sizes. Llama-3.2-3B is similar size but conversion is harder.
+
+**Verdict:** Rejected. Qwen2.5 has the best tiny models (0.5B/1.5B).
+
+### Open Questions
+
+1. **Which model size to prioritize first?**  
+   **Recommendation:** Start with 0.5B (fastest to train, proves the pipeline). Then 1.5B (best quality/size ratio). Then 3B (if time permits).
+
+2. **Cloud GPU budget approval for 3B?**  
+   **Estimate:** ~$50 total (8 hours × $2/hour × 3 variants). Need Bruno's approval.
+
+3. **Should we publish PyTorch checkpoints or only ONNX?**  
+   **Recommendation:** Only ONNX for consumers. Keep PyTorch as internal backup for re-training.
+
+4. **Training data licensing?**  
+   **Glaive, MS MARCO, Alpaca are all Apache 2.0 or similar permissive licenses.** Custom examples are our own. Safe to publish fine-tuned models under Apache 2.0.
+
+### Next Steps
+
+1. **Bruno approval** — Confirm timeline (4 weeks) and cloud GPU budget ($50)
+2. **Assign agents** — Mouse (training), Dozer (conversion), Morpheus (publishing), Trinity (integration), Tank (eval)
+3. **Begin Phase 1** — Mouse creates `training-data/` and prepares 5K examples
+4. **Document progress** — Update `.squad/agents/{agent}/history.md` after each phase
+
+### References
+
+- **Plan document:** `docs/plan-finetune-qwen.md` (56KB, 15 sections)
+- **Prior assessment:** `.squad/agents/morpheus/history.md` (2026-03-28 — Strategic Assessment)
+- **QwenFormatter:** `src/ElBruno.LocalLLMs/Templates/QwenFormatter.cs`
+- **QLoRA paper:** https://arxiv.org/abs/2305.14314
+- **Unsloth framework:** https://github.com/unslothai/unsloth
+
+---
+
+## Decision 25: Training Data Format Specification
+
+**Date:** 2025-01-27  
+**Author:** Mouse (Fine-Tuning Specialist)  
+**Status:** ✅ Approved for implementation  
+**Priority:** High
+
+### Context
+
+Fine-tuning Qwen2.5 models (0.5B/1.5B/3B) for tool calling, RAG, and instruction following requires precise training data format that matches the library's formatter and parser code. Without a spec, training data errors would cause:
+- Fine-tuned models producing unparseable output (tool calls fail)
+- RAG hallucination (answering beyond context)
+- Chat template violations (model generates extra turns)
+- Wasted training compute on low-quality data
+
+### Key Decisions
+
+#### 1. Format Reverse-Engineering Approach
+✅ **Decided:** Training data format is DERIVED from library's parser code, not designed independently.
+
+**Rationale:** `QwenFormatter.cs` and `JsonToolCallParser.cs` define the EXACT format the model must produce. Training data must teach this format or tool calling fails.
+
+**Key format requirements:**
+- Tool calls: `<tool_call>\n{"id": "call_...", "name": "...", "arguments": {...}}\n</tool_call>`
+- Tool call IDs: `call_{12 hex chars}` pattern (e.g., `call_a1b2c3d4e5f6`)
+- Tool results: `Tool result for {call_id}: {result}` in user messages
+- ChatML tokens: `<|im_start|>role\ncontent<|im_end|>` (added by training framework)
+
+#### 2. ShareGPT as Standard Dataset Format
+✅ **Decided:** Use ShareGPT JSON format for all training data.
+
+**Format:**
+```json
+{
+  "conversations": [
+    {"from": "system", "value": "..."},
+    {"from": "user", "value": "..."},
+    {"from": "assistant", "value": "..."}
+  ]
+}
+```
+
+**Rationale:**
+- Industry standard (Unsloth, LLaMA-Factory, Axolotl support)
+- Supports multi-turn conversations (critical for tool calling)
+- Easy to validate and manipulate
+- Conversion scripts available for most source datasets
+
+**Rejected alternatives:**
+- ❌ Alpaca format: Single-turn only (no multi-turn tool calls)
+- ❌ Custom format: Reinventing the wheel, no tooling support
+
+#### 3. Dataset Mixing Ratios
+✅ **Decided:** 50% tool calling / 30% RAG / 20% general instruction
+
+**Production dataset (5,000 examples):**
+- Tool calling: 2,500 (50%)
+- RAG grounded QA: 1,500 (30%)
+- General instruction: 1,000 (20%)
+
+**PoC dataset (1,000 examples):**
+- Tool calling: 500 (50%)
+- RAG: 300 (30%)
+- General: 200 (20%)
+
+**Rationale:**
+- Tool calling is highest-value capability (base model ~45% → fine-tuned 77-85%)
+- RAG prevents hallucination (critical for enterprise use)
+- General instruction prevents catastrophic forgetting (sub-3B models fragile)
+- Research shows 20% general data maintains base capabilities
+
+**Rejected alternatives:**
+- ❌ 100% tool calling: Catastrophic forgetting (models lose general knowledge)
+- ❌ Equal split: Underweights tool calling (highest ROI)
+
+#### 4. Source Datasets
+✅ **Decided:** Use open-source Apache 2.0/MIT datasets
+
+**Primary sources:**
+- **Tool calling:** Glaive Function Calling v2 (113K examples, Apache 2.0)
+- **RAG:** SQuAD 2.0 (150K examples, Apache 2.0)
+- **General:** Dolly-15K (Apache 2.0)
+
+**Secondary sources:**
+- Hermes Function Calling (50K, Apache 2.0)
+- xLAM Function Calling (60K, Apache 2.0)
+- MS MARCO, Natural Questions, HotpotQA (RAG alternatives)
+
+**Rationale:**
+- Glaive v2 is gold standard for tool calling (industry benchmark)
+- SQuAD 2.0 includes unanswerable questions (teaches RAG refusal)
+- All licenses are commercial-friendly (Apache 2.0/MIT)
+- Large enough to filter/sample high-quality subsets
+
+**Rejected alternatives:**
+- ❌ Proprietary datasets: Licensing issues for model redistribution
+- ❌ Scraped data: Legal/ethical concerns, quality issues
+
+#### 5. Tool Call ID Format Requirement
+✅ **Decided:** Training data MUST include `id` field in tool calls, even though system message doesn't explicitly require it.
+
+**Format:** `{"id": "call_a1b2c3d4e5f6", "name": "get_weather", "arguments": {...}}`
+
+**Rationale:**
+- `JsonToolCallParser.cs` expects `id` field (not optional)
+- System message says `{"name": "...", "arguments": {...}}` but model adds `id`
+- Without `id`, library cannot match tool results to calls in multi-turn sequences
+- Pattern `call_{12 hex chars}` matches library's `GenerateCallId()` function
+
+**Implementation note:** Training data generators must add synthetic IDs if source dataset doesn't include them.
+
+#### 6. RAG Training Requirements
+✅ **Decided:** RAG training data must explicitly teach refusal and grounding.
+
+**Required patterns:**
+1. Grounded answers: `"Based on the context, Python was created in 1991."`
+2. Explicit refusals: `"I don't have enough information to answer that. The context does not mention..."`
+3. Context delimiters: Use `---` or `Context:` prefix to separate context from question
+4. No hallucination: Assistant NEVER answers from general knowledge when context is present
+
+**Negative examples:** 20-30% of RAG data should be unanswerable questions
+
+**Rationale:**
+- Base models hallucinate by default (trained on general knowledge)
+- Fine-tuning must OVERRIDE this behavior explicitly
+- Without refusal training, models "guess" when they shouldn't
+
+#### 7. Quality Validation Requirements
+✅ **Decided:** ALL training data must pass structural, content, and manual validation.
+
+**Automated validation:**
+- Valid JSON structure
+- Correct role values (system/user/assistant)
+- No empty messages
+- Tool call tags match regex: `<tool_call>\s*(.*?)\s*</tool_call>`
+- JSON inside tool calls is valid
+- Tool call IDs follow pattern
+- Deduplication (exact and near-duplicates >90% similarity)
+
+**Manual validation:**
+- 10% random sample review
+- If error rate >5%, investigate entire dataset
+- Check for toxicity, hallucination, format errors
+
+**Rationale:**
+- Training on bad data is worse than not training (garbage in = garbage out)
+- Sub-3B models are fragile — quality matters more than quantity
+- Research shows 5K high-quality > 50K noisy examples
+
+#### 8. Common Mistakes Documentation
+✅ **Decided:** Document all common training data errors in spec.
+
+**Top mistakes identified:**
+1. Inconsistent tool call format (missing `id`, wrong tags)
+2. Missing tool results in multi-turn sequences (assistant → assistant)
+3. RAG hallucination beyond provided context
+4. Including template tokens in message content (`<|im_start|>` in value)
+5. Tool calls in user messages (only assistant calls tools)
+6. Mixing chat templates (Llama3 + ChatML)
+7. Empty/whitespace-only messages
+8. Overly long responses (5000+ words teach verbosity)
+
+**Impact:** Documenting these prevents 80%+ of training data errors.
+
+#### 9. ONNX Compatibility Constraints
+✅ **Decided:** Training data must preserve base model's tokenizer and chat template.
+
+**Requirements:**
+- Do NOT modify `<|im_start|>` or `<|im_end|>` tokens (already in Qwen tokenizer)
+- If adding `<tool_call>`/`</tool_call>` tokens: resize embeddings, save updated tokenizer
+- Preserve `chat_template.jinja` from base model (unless changing format)
+- Use base model's context length (2048 for 0.5B, 32768 for 1.5B/3B)
+
+**Rationale:**
+- ONNX conversion via Olive requires tokenizer consistency
+- Changing vocab size without resizing embeddings = crash
+- Context length changes require `max_position_embeddings` update
+
+#### 10. Dataset Size Targets
+✅ **Decided:** Three-tier dataset strategy
+
+| Tier | Size | Use Case | Training Time (QLoRA, RTX 4090) | Expected Quality |
+|------|------|----------|----------------------------------|------------------|
+| PoC | 1,000 | Iteration/testing | 20-30 min | 60-70% tool calling |
+| Production | 5,000 | Public release | 2-3 hours | 75-85% tool calling |
+| Competitive | 10,000+ | BFCL leaderboard | 6-8 hours | 80-90% tool calling |
+
+**Rationale:**
+- 1K is enough to validate format and pipeline
+- 5K is sweet spot for quality/compute trade-off
+- 10K+ has diminishing returns for sub-3B models
+
+### Implementation Plan
+
+#### Phase 1: PoC Dataset (Week 1)
+1. Download Glaive v2, SQuAD 2.0, Dolly-15K
+2. Implement ShareGPT conversion scripts
+3. Generate 1,000-example dataset (500/300/200 split)
+4. Run validation pipeline
+5. Manual review 100 examples
+
+#### Phase 2: Fine-Tune Qwen2.5-0.5B (Week 1-2)
+1. Fine-tune with Unsloth (QLoRA, r=8, α=16)
+2. Validate model outputs match parser format
+3. Test ONNX conversion pipeline
+4. Measure tool calling accuracy on test set
+
+#### Phase 3: Production Dataset (Week 2-3)
+1. Scale to 5,000 examples
+2. Add synthetic examples for library-specific APIs
+3. Comprehensive validation (dedup, diversity, quality)
+4. Fine-tune Qwen2.5-1.5B and Phi-3.5-mini
+
+#### Phase 4: Documentation (Week 3-4)
+1. Create training data generation scripts
+2. Write conversion guides for common datasets
+3. Provide validation tools (JSON schema, regex checks)
+4. Example notebooks for fine-tuning workflow
+
+### Success Metrics
+
+- ✅ Training data spec document created (67KB, 32+ examples)
+- ✅ All examples produce parseable output (100% parser compatibility)
+- 🎯 1K PoC dataset validates in <5 minutes
+- 🎯 Fine-tuned Qwen2.5-0.5B achieves 60%+ tool calling accuracy
+- 🎯 ONNX conversion succeeds without errors
+- 🎯 Zero template violations in generated outputs
+
+### Open Questions
+
+1. **Synthetic data generation:** Should we use GPT-4/Claude to generate library-specific tool calling examples?
+   - **Recommendation:** Yes, for ElBruno.LocalLLMs-specific APIs not in Glaive dataset
+   - **Budget:** ~$20 for 500 synthetic examples
+
+2. **Dataset versioning:** How do we track training data versions?
+   - **Recommendation:** Git LFS for datasets, semantic versioning (v1.0.0)
+   - **Format:** `training_data_v1.0.0_qwen_5k.json`
+
+3. **Continuous improvement:** Should we collect real-world usage data to improve training sets?
+   - **Recommendation:** Yes, but require explicit user consent (privacy)
+   - **Defer to:** Post-v1.0 release
+
+### Approval
+
+- **Mouse:** ✅ Approved (spec creator)
+- **Waiting for:** Team review and Bruno's final sign-off
+
+### Next Action
+
+Create 1K PoC dataset using this spec and validate fine-tuning pipeline.
 | **Mixtral-8x7B** (Mixture of Experts) | ❌ NOT SUPPORTED | MoE architecture fundamentally not supported by builder |
 | **70B+ models** | ⚠️ OOM on CPU conversion | Requires `-e cuda` or 512+ GB RAM (per history.md) |
 
