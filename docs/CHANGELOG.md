@@ -154,6 +154,11 @@ None — this is the initial release.
 
 **Phase 4b: RAG Pipeline**
 - **RAG Pipeline Support** — new `ElBruno.LocalLLMs.Rag` extension package for Retrieval-Augmented Generation
+
+**Phase 5: Fine-Tuned Model Integration**
+- **Fine-tuned Qwen2.5 models** — three new `KnownModels` entries for fine-tuned variants: `Qwen25_05B_ToolCalling`, `Qwen25_05B_RAG`, `Qwen25_05B_Instruct_FineTuned`
+- `FineTunedToolCalling` sample demonstrating improved tool calling accuracy with fine-tuned Qwen2.5-0.5B
+- `docs/fine-tuning-guide.md` — user-facing guide for using pre-fine-tuned models and fine-tuning your own
 - `IDocumentChunker` interface for splitting documents into chunks
 - `SlidingWindowChunker` implementation with configurable chunk size and overlap
 - `IDocumentStore` interface for vector storage and similarity search

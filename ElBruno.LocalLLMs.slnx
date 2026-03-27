@@ -7,6 +7,7 @@
     <Project Path="src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj" />
     <Project Path="src/tests/ElBruno.LocalLLMs.IntegrationTests/ElBruno.LocalLLMs.IntegrationTests.csproj" />
     <Project Path="src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj" />
+    <Project Path="src/tests/ElBruno.LocalLLMs.FineTuneEval/ElBruno.LocalLLMs.FineTuneEval.csproj" />
   </Folder>
   <Folder Name="/src/benchmarks/">
     <Project Path="src/benchmarks/ElBruno.LocalLLMs.Benchmarks/ElBruno.LocalLLMs.Benchmarks.csproj" />
@@ -18,6 +19,7 @@
     <Project Path="src/samples/DependencyInjection/DependencyInjection.csproj" />
     <Project Path="src/samples/ConsoleAppDemo/ConsoleAppDemo.csproj" />
     <Project Path="src/samples/ToolCallingAgent/ToolCallingAgent.csproj" />
+    <Project Path="src/samples/FineTunedToolCalling/FineTunedToolCalling.csproj" />
     <Project Path="src/samples/RagChatbot/RagChatbot.csproj" />
   </Folder>
 </Solution>

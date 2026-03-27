@@ -50,6 +50,49 @@ public static class KnownModels
         SupportsToolCalling = true
     };
 
+    // ── Fine-tuned Qwen2.5 models ──
+
+    /// <summary>Qwen2.5-0.5B fine-tuned for tool calling — improved JSON accuracy.</summary>
+    public static readonly ModelDefinition Qwen25_05B_ToolCalling = new()
+    {
+        Id = "qwen2.5-0.5b-localllms-toolcalling",
+        DisplayName = "Qwen2.5-0.5B-LocalLLMs-ToolCalling",
+        HuggingFaceRepoId = "elbruno/Qwen2.5-0.5B-LocalLLMs-ToolCalling",
+        RequiredFiles = ["*"],
+        ModelType = OnnxModelType.GenAI,
+        ChatTemplate = ChatTemplateFormat.Qwen,
+        Tier = ModelTier.Tiny,
+        HasNativeOnnx = true,
+        SupportsToolCalling = true
+    };
+
+    /// <summary>Qwen2.5-0.5B fine-tuned for RAG with source citations.</summary>
+    public static readonly ModelDefinition Qwen25_05B_RAG = new()
+    {
+        Id = "qwen2.5-0.5b-localllms-rag",
+        DisplayName = "Qwen2.5-0.5B-LocalLLMs-RAG",
+        HuggingFaceRepoId = "elbruno/Qwen2.5-0.5B-LocalLLMs-RAG",
+        RequiredFiles = ["*"],
+        ModelType = OnnxModelType.GenAI,
+        ChatTemplate = ChatTemplateFormat.Qwen,
+        Tier = ModelTier.Tiny,
+        HasNativeOnnx = true
+    };
+
+    /// <summary>Qwen2.5-0.5B general fine-tune — tool calling + RAG + instruction following.</summary>
+    public static readonly ModelDefinition Qwen25_05B_Instruct_FineTuned = new()
+    {
+        Id = "qwen2.5-0.5b-localllms-instruct",
+        DisplayName = "Qwen2.5-0.5B-LocalLLMs-Instruct",
+        HuggingFaceRepoId = "elbruno/Qwen2.5-0.5B-LocalLLMs-Instruct",
+        RequiredFiles = ["*"],
+        ModelType = OnnxModelType.GenAI,
+        ChatTemplate = ChatTemplateFormat.Qwen,
+        Tier = ModelTier.Tiny,
+        HasNativeOnnx = true,
+        SupportsToolCalling = true
+    };
+
     /// <summary>Qwen2.5-1.5B-Instruct — small Qwen model.</summary>
     public static readonly ModelDefinition Qwen25_15BInstruct = new()
     {
@@ -338,6 +381,9 @@ public static class KnownModels
         TinyLlama11BChat,
         SmolLM2_17BInstruct,
         Qwen25_05BInstruct,
+        Qwen25_05B_ToolCalling,
+        Qwen25_05B_RAG,
+        Qwen25_05B_Instruct_FineTuned,
         Qwen25_15BInstruct,
         Gemma2BIT,
         StableLM2_16BChat,
