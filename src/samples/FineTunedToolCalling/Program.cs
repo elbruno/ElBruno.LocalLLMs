@@ -15,7 +15,7 @@ Console.WriteLine("🎯 Fine-Tuned Tool Calling Demo");
 Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 Console.WriteLine("Comparing base vs fine-tuned Qwen2.5-0.5B for tool calling\n");
 
-// ── Load the fine-tuned model ──
+// ── Load the fine-tuned model (with fallback to base model) ──
 // This model was trained specifically for tool calling on
 // ElBruno.LocalLLMs' QwenFormatter chat template format.
 var fineTunedOptions = new LocalLLMsOptions
@@ -23,10 +23,32 @@ var fineTunedOptions = new LocalLLMsOptions
     Model = KnownModels.Qwen25_05B_ToolCalling
 };
 
-Console.WriteLine($"Model: {fineTunedOptions.Model.DisplayName}");
 Console.WriteLine("Loading fine-tuned model (first run downloads from HuggingFace)...\n");
 
-using var fineTunedClient = await LocalChatClient.CreateAsync(fineTunedOptions);
+LocalChatClient? fineTunedClient = null;
+bool usingFallback = false;
+
+try
+{
+    fineTunedClient = await LocalChatClient.CreateAsync(fineTunedOptions);
+}
+catch (InvalidOperationException ex) when (ex.Message.Contains("not found on HuggingFace"))
+{
+    Console.WriteLine($"⚠️  Fine-tuned model '{KnownModels.Qwen25_05B_ToolCalling.DisplayName}' is not available yet.");
+    Console.WriteLine("    This model will be published after fine-tuning is complete.");
+    Console.WriteLine($"    Falling back to base model: {KnownModels.Qwen25_05BInstruct.DisplayName}\n");
+
+    fineTunedOptions = new LocalLLMsOptions
+    {
+        Model = KnownModels.Qwen25_05BInstruct
+    };
+    fineTunedClient = await LocalChatClient.CreateAsync(fineTunedOptions);
+    usingFallback = true;
+}
+
+using var client = fineTunedClient;
+Console.WriteLine($"Model: {fineTunedOptions.Model.DisplayName}{(usingFallback ? " (fallback)" : "")}");
+Console.WriteLine();
 
 // ── Define tools using AIFunctionFactory ──
 // Same tools as the ToolCallingAgent sample — the fine-tuned model
@@ -52,7 +74,7 @@ var singleTurnMessages = new List<ChatMessage>
 
 Console.WriteLine($"👤 User: {singleTurnMessages[0].Text}");
 
-var singleResponse = await fineTunedClient.GetResponseAsync(
+var singleResponse = await client!.GetResponseAsync(
     singleTurnMessages,
     new ChatOptions { Tools = tools });
 
@@ -80,7 +102,7 @@ else
 // ══════════════════════════════════════════
 Console.WriteLine("\n═══ Demo 2: Multi-Turn Agent Loop ═══\n");
 
-await RunAgentLoop(fineTunedClient, tools,
+await RunAgentLoop(client, tools,
     "What's the weather like in Paris and what is 25 * 4 + 10?");
 
 // ══════════════════════════════════════════
@@ -88,7 +110,7 @@ await RunAgentLoop(fineTunedClient, tools,
 // ══════════════════════════════════════════
 Console.WriteLine("\n═══ Demo 3: Complex Multi-Tool Query ═══\n");
 
-await RunAgentLoop(fineTunedClient, tools,
+await RunAgentLoop(client, tools,
     "Get the current UTC time, then calculate 100 / 5, and check the weather in Tokyo.");
 
 Console.WriteLine("\n✅ Fine-tuned model demonstrates improved tool calling accuracy!");

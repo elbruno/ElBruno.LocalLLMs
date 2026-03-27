@@ -164,6 +164,15 @@ internal sealed class ModelDownloader : IModelDownloader
     {
         var url = $"https://huggingface.co/api/models/{repoId}";
         using var response = await s_apiClient.Value.GetAsync(url, cancellationToken).ConfigureAwait(false);
+
+        if (response.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.NotFound)
+        {
+            throw new InvalidOperationException(
+                $"Model '{repoId}' was not found on HuggingFace (HTTP {(int)response.StatusCode}). " +
+                "The model may not be published yet, the repository may be private, or the repo ID may be incorrect. " +
+                "If the repo is private, set the HF_TOKEN environment variable.");
+        }
+
         response.EnsureSuccessStatusCode();
 
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
