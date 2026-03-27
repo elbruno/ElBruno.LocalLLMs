@@ -152,3 +152,15 @@
 - Created `global.json` pinning SDK 8.0.0 with `rollForward: latestMajor`
 - Solution file (`slnx`) folder names updated (`/tests/` → `/src/tests/`, `/samples/` → `/src/samples/`)
 - Build: 11 projects, 0 warnings, 0 errors; 359/359 tests pass on net8.0
+
+## 2026-03-27: Convention Enforcement Session
+
+**Cross-Agent Update:** Switch and Morpheus completed their parts of convention enforcement:
+- **Switch (DevOps):** CI/CD workflows updated to net8.0-only ubuntu-latest with updated paths (src/tests/, src/samples/)
+- **Morpheus (Docs):** README.md updated with new sample links and building section
+
+**Your Orchestration Log:** `.squad/orchestration-log/2026-03-27T1711-trinity.md`
+
+**Decision Merged:** Decision 6 (Project Structure Conventions) in `.squad/decisions.md`
+
+All 359 tests passing. Build clean. Ready for integration.

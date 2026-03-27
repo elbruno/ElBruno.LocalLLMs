@@ -353,3 +353,15 @@ Key findings from parallel model research by Dozer:
 - Smallest model option highlighted for resource-constrained environments
 - Production models recommended with quality/size tradeoffs explained
 - Release transparency: tool calling moved from "Planned" to "Added" in CHANGELOG
+
+## 2026-03-27: Convention Enforcement Session
+
+**Cross-Agent Update:** Trinity and Switch completed their parts:
+- **Trinity (Core Dev):** Project structure restructured (tests/ → src/tests/, samples/ → src/samples/), csproj updated, build infra centralized
+- **Switch (DevOps):** CI/CD workflows updated to net8.0-only on ubuntu-latest with new path references
+
+**Your Orchestration Log:** `.squad/orchestration-log/2026-03-27T1711-morpheus.md`
+
+**Decision Merged:** Decision 8 (Documentation Updates) in `.squad/decisions.md`
+
+All conventions from `.github/copilot-instructions.md` now fully enforced. Team-wide convention compliance complete.

@@ -35,3 +35,15 @@
 - **Release chain: main → squad-release → publish** — Push to main triggers `squad-release.yml` which creates a GitHub Release via `gh release create`. The `release: published` event then triggers `publish.yml`. No manual tag creation needed.
 - **GITHUB_TOKEN suppresses most triggered events** — GitHub Actions prevents recursive loops by not creating new workflow runs for events triggered by `GITHUB_TOKEN`, with two exceptions: `workflow_dispatch` and `repository_dispatch`. This means `release: published` won't fire when `gh release create` uses `GITHUB_TOKEN`. Fix: explicitly trigger publish via `gh workflow run publish.yml` (workflow_dispatch), which IS allowed. Requires `actions: write` permission.
 
+
+## 2026-03-27: Convention Enforcement Session
+
+**Cross-Agent Update:** Trinity and Morpheus completed their parts:
+- **Trinity (Core Dev):** Project structure restructured (tests/ → src/tests/, samples/ → src/samples/), all csproj updated, Directory.Build.props centralized, global.json created
+- **Morpheus (Docs):** README.md updated with new paths and building instructions
+
+**Your Orchestration Log:** `.squad/orchestration-log/2026-03-27T1711-switch.md`
+
+**Decision Merged:** Decision 7 (CI/CD net8.0-only) in `.squad/decisions.md`
+
+All conventions from `.github/copilot-instructions.md` now fully applied across codebase, CI/CD, and docs.

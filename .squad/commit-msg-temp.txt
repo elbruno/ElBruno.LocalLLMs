@@ -1,11 +1,14 @@
-chore(squad): log sample+docs session, merge decisions
+chore(squad): log convention enforcement session
 
-- Added orchestration logs for Trinity (ToolCallingAgent sample) and Morpheus (docs updates)
-- Created session log for 2026-03-27T1701 sample-and-docs work
-- Merged Decision 6: ToolCallingAgent Sample Pattern from inbox to decisions.md
-- Deleted merged inbox file
-- Updated Trinity history with Phase 4a tool calling implementation learnings
-- Updated Morpheus history with Phase 4a documentation updates
-- Renumbered downstream decisions (RAG package moved from 6 to 8)
-
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+- Orchestration logs created for Trinity, Switch, Morpheus (2026-03-27T1711)
+- Session log: convention enforcement & team coordination 
+- Merged inbox decisions: project structure (Trinity), CI/CD (Switch), docs (Morpheus)
+- Cross-agent history updates propagated
+- All conventions from .github/copilot-instructions.md now applied:
+  * tests/ and samples/ moved to src/
+  * net8.0 target for all non-library projects
+  * CI runs on ubuntu-latest with 8.0.x SDK only
+  * Directory.Build.props centralized
+  * README.md updated with new paths and building section
+- Build status: 0 errors, 359 tests passing
+- All team agents synchronized

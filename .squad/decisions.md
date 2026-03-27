@@ -1648,3 +1648,83 @@ tests/ElBruno.LocalLLMs.Tests/ToolCalling/
 **Recommendation:** Merge decision after Trinity reviews test coverage and approach.
 
 
+
+---
+
+### Decision 6: Project Structure Conventions from copilot-instructions.md
+
+**Date:** 2026-03-27  
+**Author:** Trinity (Core Developer)  
+**Status:** Applied
+
+## Context
+
+Bruno's `.github/copilot-instructions.md` defines conventions for project structure (tests/samples under `src/`), TFM (net8.0), Directory.Build.props contents, global.json, icon naming, and CI build properties. The existing layout had tests/samples at repo root and targeted net10.0.
+
+## Decision
+
+Applied all conventions from copilot-instructions.md:
+- `tests/` and `samples/` moved under `src/`
+- All non-library projects retargeted to net8.0
+- Directory.Build.props centralized author, license, code analysis, repo info
+- global.json pins SDK 8.0.0 with latestMajor rollForward
+- NuGet icon renamed to `nuget_logo.png`
+- Library csproj gained symbol package and CI build properties
+
+## Consequences
+- All ProjectReference paths updated for new layout
+- Benchmark project path unchanged (still correct)
+- 359/359 tests pass; full solution builds with 0 warnings
+
+---
+
+### Decision 7: CI/CD targets net8.0 only on ubuntu-latest
+
+**Author:** Switch (DevOps)  
+**Date:** 2026-03-27  
+**Status:** Applied
+
+## Context
+
+The CI workflow (`ci.yml`) previously used a multi-OS matrix (ubuntu + windows) and installed both `8.0.x` and `10.0.x` SDKs. The publish workflow (`publish.yml`) also installed both SDKs and referenced the old `tests/` path.
+
+## Decision
+
+Per `.github/copilot-instructions.md` conventions:
+- CI runs on `ubuntu-latest` only (no matrix)
+- Only `8.0.x` SDK installed (CI runners may not have preview SDKs)
+- Restore/build use `-p:TargetFrameworks=net8.0`; test uses `--framework net8.0`
+- Test path updated from `tests/` to `src/tests/` to match Trinity's restructure
+- `.gitignore` cleaned: 80+ individual `cache_dir/` entries replaced with `cache_dir/` glob
+
+## Consequences
+
+- CI is faster (single OS) and won't break when net10.0 preview SDK isn't available on runners
+- Library still multi-targets `net8.0;net10.0` in csproj — only CI is pinned to net8.0
+- Model cache directories fully excluded from git tracking
+
+---
+
+### Decision 8: Documentation Updates per Convention
+
+**Author:** Morpheus (Documentation)  
+**Date:** 2026-03-27  
+**Status:** Applied
+
+## Context
+
+With Trinity's restructure (tests/ to src/tests/, samples/ to src/samples/), documentation references were stale. README.md contained outdated links and lacked building instructions.
+
+## Decision
+
+Updated README.md per convention:
+- Sample links updated from `samples/` to `src/samples/`
+- Added "Building from Source" section with instructions
+- Clarified author URLs
+- Updated acknowledgments section
+- All references now point to correct paths
+
+## Consequences
+- Documentation aligns with actual project structure
+- Readers can easily find code examples and build instructions
+- Contributors can onboard quickly
