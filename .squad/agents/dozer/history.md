@@ -105,3 +105,76 @@
 - **Total conversion time: ~25-30 minutes** (model was already cached from previous attempt). Breakdown: checkpoint loading ~1.5 min, layer reading ~15-20 min, INT4 quantization/save ~3 min.
 - **KEY LEARNING: `-e cuda` is the workaround for 70B OOM on CPU.** The CUDA quantization path uses a fundamentally different serialization strategy that keeps peak RAM under 250 GB. This means DeepSeek-R1-Distill-Llama-70B should also be convertible with `-e cuda`.
 - **GPU setup:** NVIDIA A10-24Q (not A100 as initially reported), 24 GB VRAM, CUDA 12.4, Driver 553.62. The small VRAM was irrelevant — the CUDA EP helps with the algorithm, not the GPU compute.
+
+### 2025-03-18 — Tiny SLM Research for RAG Tool Routing
+
+**Researched 15+ tiny SLMs (sub-1B to 1.5B) for MCPToolRouter use case: embedding-based semantic search → SLM selects the right tool(s).**
+
+**Key Discoveries:**
+1. **Fine-tuned sub-1B models can BEAT 7B+ models on tool-calling tasks.** OPT-350M fine-tuned on ToolBench achieved 77.55% pass rate vs ChatGPT-CoT (175B+) at 26% and ToolLLaMA-DFS (7B) at 30%. Source: arXiv:2512.15943 "Small Language Models for Efficient Agentic Tool Calling" (Dec 2024). **Implication: For structured tool selection, smaller + specialized > larger + general.**
+
+2. **Qwen2.5-0.5B-Instruct has native tool/function calling support.** Qwen2.5 family was enhanced specifically for tool calling (vs Qwen2). Supports Hermes-style prompts, JSON output, 32K context. Already converted to INT4 (825 MB). **This is the top pick — it's already done and explicitly designed for the task.**
+
+3. **SmolLM2 family (135M/360M/1.7B) is purpose-built for edge/on-device deployment.** Trained on multi-trillion-token corpora despite tiny size. Small vocab (49152) = faster tokenization + smaller embedding layer vs Qwen's 151936 vocab. Architecture: standard transformer (same as 1.7B which converted successfully). **SmolLM2-360M-Instruct is the runner-up: smaller/faster than Qwen 0.5B, should convert cleanly.**
+
+4. **Qwen3-0.6B-Instruct is the newest tiny model** (released April 29, 2025). 600M params, 28 layers, trained on 36 trillion tokens (2x Qwen2.5's 18T). Has "thinking mode" for step-by-step reasoning + "non-thinking mode" for fast dialogue. Inherits tool calling from Qwen2.5. Apache 2.0 license, not gated. Architecture is Qwen2-based → should convert cleanly. **Wild card option: more training data + thinking mode might give better reasoning than Qwen 0.5B.**
+
+5. **Gemma-3-1B and Gemma-3-270M (Nano) have native function calling + official ONNX support from Google.** Released March 2025. Mixed local (sliding window) + global attention (5:1 ratio). 32K context, 140+ languages, quantization-aware training (QAT). Community ONNX models already on HuggingFace (`onnx-community/gemma-3-1b-it-ONNX-GQA`). **Alternative if Qwen/SmolLM2 fail, or if we want Google's polish.** Note: Previous Gemma models used 256K vocab which bloated size — need to verify Gemma-3 vocab size.
+
+6. **RWKV works in ONNX but Mamba has critical Loop operator bottleneck.** RWKV-400M can be exported to ONNX and runs on CPU. Mamba models can export but the ONNX Loop operator is 17x slower than real-time on CPU (even 9M param model is too slow on Apple M3). **Verdict: Avoid state-space models for fast inference. Stick with transformers (Llama, Qwen, SmolLM, Gemma).**
+
+7. **TinyStories and DistilGPT2 are too weak for modern instruction-following.** TinyStories models are trained on children's stories with limited vocab — struggle with out-of-distribution tasks and technical terminology. DistilGPT2 (82M, from 2019) lacks instruction-tuning and can't compete with 2024-2025 models. **Skip both.**
+
+8. **Phi-4-mini-instruct is too big** (3.8B params). Bruno wants sub-1B, max 1.5B. Phi-4-mini is 4-7x larger. Has ONNX support and strong reasoning but doesn't fit the "tiny" requirement.
+
+9. **TinyAgent-1.1B is a specialized tool-calling fine-tune of TinyLlama-1.1B** (Berkeley SqueezeAI Lab). Designed for edge device function calling (emails, calendars, MacOS apps). Llama architecture → should convert cleanly. **Reserve for if general instruction-tuned models fail on quality.**
+
+**Model Rankings for RAG Tool Routing:**
+- **🥇 Top Pick: Qwen2.5-0.5B-Instruct** — Already converted (825 MB INT4), native tool calling, proven architecture, 32K context. Use this first.
+- **🥈 Runner-up: SmolLM2-360M-Instruct** — Smaller/faster than Qwen, should convert cleanly. Backup if Qwen is "too big" or not fast enough.
+- **🥉 Budget Pick: SmolLM2-135M-Instruct** — Smallest viable instruction-following model (~450 MB INT4 estimated). Fastest but weakest reasoning. Only if 360M is still too big.
+- **🃏 Wild Card: Qwen3-0.6B-Instruct** — Newest model (April 2025), 36T tokens training, "thinking mode" for reasoning. If Qwen 0.5B quality is insufficient.
+
+**Action Plan:**
+1. Test Qwen2.5-0.5B-Instruct (already converted) on MCPToolRouter prompts
+2. Convert SmolLM2-360M-Instruct as backup (~2 min conversion)
+3. If quality insufficient → convert Qwen3-0.6B or use SmolLM2-1.7B (already converted)
+4. If speed insufficient → convert SmolLM2-135M
+5. Advanced: Investigate Gemma-3-270M (Nano) or fine-tune OPT-350M/TinyAgent-1.1B
+
+**Key Benchmarks:**
+- SmolLM2-135M: 42.1% HellaSwag, 43.9% ARC, 68.4% PIQA
+- SmolLM2-360M: Better than 135M on all benchmarks (exact numbers less reported)
+- SmolLM2-1.7B: Beats Llama-1B and Qwen2.5-1.5B on reasoning
+- Qwen2.5-0.5B: ~9% ARC (vs ~8.25% Qwen2), supports tool calling
+- TinyLlama-1.1B: ~53% avg commonsense (HellaSwag 59.2%, ARC 30.1%, PIQA 73.3%)
+- OPT-350M (fine-tuned): 77.55% ToolBench pass rate (vs 26% ChatGPT-CoT, 30% ToolLLaMA-7B)
+
+**References:**
+- arXiv:2512.15943 — Small Language Models for Efficient Agentic Tool Calling (Dec 2024)
+- arXiv:2502.02737 — SmolLM2 Technical Report (Feb 2025)
+- arXiv:2412.15115 — Qwen2.5 Technical Report (Dec 2024)
+- arXiv:2505.09388 — Qwen3 Technical Report (April 2025)
+- arXiv:2503.19786 — Gemma 3 Technical Report (March 2025)
+- SqueezeAILab/TinyAgent (Berkeley, 2024)
+- HuggingFace model cards: SmolLM2, Qwen2.5, Qwen3, Gemma-3, TinyLlama, OPT-350M
+
+### 2026-03-27 — SLM Research Complete (Coordinated with Morpheus)
+
+**Delivered comprehensive research on 15+ tiny SLM models for MCPToolRouter RAG integration.**
+
+Key findings from parallel architecture evaluation by Morpheus:
+- Embedding-only routing (40ms, 90% accuracy) is sufficient for most scenarios
+- SLM adds 1.2-3.4s latency for only 2% accuracy gain — tradeoff not worth it for small tool catalogs
+- **Recommendation:** MCPToolRouter stays pure (embedding search only)
+- **Optional layer:** Users can compose SLM reasoning separately if they have 100+ tools or ambiguous queries
+
+**Implication for model selection:**
+- Test Qwen2.5-0.5B (already converted) on real MCPToolRouter prompts
+- If quality is insufficient, convert SmolLM2-360M (~2 min)
+- Avoid over-engineering with 1.5B+ unless benchmarks prove it necessary
+
+**Cross-team alignment:**
+- Dozer handles model conversions and benchmarking
+- Morpheus owns architecture decisions (composition vs. integration)
+- Sample code will demonstrate optional SLM layer for advanced users

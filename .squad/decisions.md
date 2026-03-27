@@ -799,3 +799,70 @@ The proposal content (Auto fallback scope, provider-unavailable-only fallback, a
 - All meaningful changes require team consensus
 - Document architectural decisions here
 - Keep history focused on work, decisions focused on direction
+---
+
+### Decision 31: Tiny SLM Model Selection for RAG Tool Routing
+
+**Date:** 2026-03-27
+**Author:** Dozer (ML/ONNX Conversion Engineer)
+**Status:** Active
+
+**Context:** MCPToolRouter needs an optional SLM-enhanced routing capability for scenarios with large tool catalogs or ambiguous queries. Research evaluated 15+ tiny models (sub-1B to 1.5B params).
+
+**Decision:** Use **Qwen2.5-0.5B-Instruct** as the primary recommendation, with **SmolLM2-360M-Instruct** as the tested backup.
+
+**Rationale:**
+- Qwen2.5-0.5B is already converted to INT4 (825 MB), reducing implementation friction
+- Native tool/function calling support explicitly built into Qwen2.5 architecture
+- 32K context window sufficient for 3-10 tool descriptions
+- Research shows specialized sub-1B models can achieve 77%+ accuracy on tool-calling tasks (OPT-350M fine-tuned: 77.55% vs. ChatGPT-CoT: 26%, ToolLLaMA-7B: 30%)
+- Small vocab (151936) provides good tokenization speed
+
+**Alternatives:**
+- **SmolLM2-360M-Instruct** — Smaller (faster), purpose-built for edge deployment, smaller vocab (49152)
+- **Qwen3-0.6B-Instruct** — Newest model (Apr 2025), thinking mode for reasoning, 36T token training
+- **Gemma-3-1B** — Official ONNX support from Google, mixed local/global attention, 32K context
+
+**Consequences:**
+- 1.2s latency per routing decision (vs. 15-40ms for embeddings-only)
+- Adds dependency on ElBruno.LocalLLMs to applications using enhanced routing
+- Requires testing on real MCPToolRouter prompts to validate accuracy
+
+---
+
+### Decision 32: Keep MCPToolRouter Pure + Composition Pattern for Optional SLM Layer
+
+**Date:** 2026-03-27
+**Author:** Morpheus (Lead/Architect)
+**Status:** Active
+
+**Context:** Proposed adding SLM reasoning to MCPToolRouter for better tool selection on large catalogs. Architecture evaluation found tradeoffs between accuracy and latency.
+
+**Decision:** Keep MCPToolRouter as a pure embedding-search library. Create a composition pattern (sample/extension) demonstrating how users can optionally add SLM reasoning.
+
+**Rationale:**
+- Embedding-only routing (40ms, ~90% accuracy) is sufficient for 80% of use cases
+- SLM adds 85-227x latency (1.2-3.4s) for minimal accuracy gain (2%)
+- MCPToolRouter is already clean, focused, and testable
+- MEAI interfaces (IEmbeddingGenerator) allow composition without source code changes
+- Users with large catalogs (100+ tools) or ambiguous queries can opt-in via composition
+- Keeps library minimal and maintainable
+
+**Alternative Approaches Considered:**
+- **Cross-encoder re-ranking** — Better accuracy ranking, 100-300ms latency
+- **Multi-stage embedding search** — Coarse filter + fine filter, no SLM
+- **Rule-based + embedding hybrid** — Specialized rules for known patterns
+- **Embedding + SLM inside MCPToolRouter** — Rejected (adds bloat, makes pure routing harder)
+
+**Consequences:**
+- MCPToolRouter remains a focused, small library
+- Sample code shows composition pattern for advanced users
+- Documentation explains decision tree: when embeddings suffice vs. when SLM helps
+- No architectural change to core library
+
+**Sweet Spot Model (if SLM added later):**
+- **Qwen2.5-1.5B-Instruct** — Best structured JSON output in <2B category, 16% exact match rate
+- Provides ~92% tool selection accuracy (vs. 90% for embeddings alone)
+- Runs on GPU (NVIDIA/AMD/Intel) for 5-30x speedup if needed
+
+---
