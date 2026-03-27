@@ -258,3 +258,10 @@ Ready for phase 4c documentation and publishing.
 - Full solution builds clean: 0 errors, 0 warnings (15 projects total)
 - `ModelDefinition` does NOT have a `Description` property — plan suggested one but adding it would be a separate API change
 
+
+### 2026-03-28: HuggingFace 401/404 error handling for unpublished models
+- `ModelDownloader.ListRepoFilesAsync` now catches HTTP 401 and 404 from HuggingFace API and throws `InvalidOperationException` with a clear message (repo not found, possibly private, suggest HF_TOKEN)
+- Previously it threw a generic `HttpRequestException` via `EnsureSuccessStatusCode()` which gave no guidance to users
+- `FineTunedToolCalling` sample now has try/catch fallback: if fine-tuned model repo doesn't exist, falls back to `KnownModels.Qwen25_05BInstruct` (base model) and continues the demo
+- Pattern: catch `InvalidOperationException` with `ex.Message.Contains("not found on HuggingFace")` to distinguish model-not-found from other failures
+- Fine-tuned model repos (e.g. `elbruno/Qwen2.5-0.5B-LocalLLMs-ToolCalling`) are placeholders until training is complete
