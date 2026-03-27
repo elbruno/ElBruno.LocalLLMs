@@ -1,0 +1,11 @@
+chore(squad): log sample+docs session, merge decisions
+
+- Added orchestration logs for Trinity (ToolCallingAgent sample) and Morpheus (docs updates)
+- Created session log for 2026-03-27T1701 sample-and-docs work
+- Merged Decision 6: ToolCallingAgent Sample Pattern from inbox to decisions.md
+- Deleted merged inbox file
+- Updated Trinity history with Phase 4a tool calling implementation learnings
+- Updated Morpheus history with Phase 4a documentation updates
+- Renumbered downstream decisions (RAG package moved from 6 to 8)
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>

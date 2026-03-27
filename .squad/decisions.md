@@ -1023,7 +1023,38 @@ foreach (var parsedCall in parseResult.ToolCalls)
 
 ---
 
-## Decision 6: RAG as Extension Package (ElBruno.LocalLLMs.Rag)
+## Decision 6: ToolCallingAgent Sample Pattern
+
+**Date:** 2026-03-27  
+**Author:** Trinity  
+**Status:** Active
+
+**Context:** Phase 4a tool calling feature needed reference implementation to demonstrate agent patterns and tool design.
+
+**Decisions:**
+
+1. **Model default: Qwen2.5-0.5B-Instruct** — smallest model with `SupportsToolCalling = true`. Fast to download (~1 GB), low RAM, good for first-run experience. Comments suggest Phi-3.5-mini/Qwen-7B for production quality.
+
+2. **Agent loop pattern** — the sample demonstrates the canonical multi-turn pattern: send message with tools → check for `FunctionCallContent` → invoke tools → send `FunctionResultContent` back → repeat until text response. This is the recommended pattern for users to follow.
+
+3. **Tool invocation via `AIFunctionArguments`** — MEAI 10.x requires wrapping `call.Arguments` in `new AIFunctionArguments(dict)` for `AIFunction.InvokeAsync`. Documented in history for future samples.
+
+4. **Three orthogonal tool types** — time (real system call), math (pure computation), weather (mock data) — covers the typical tool categories users will implement.
+
+**Rationale:**
+- Sample provides concrete working code users can reference and run immediately
+- Multi-turn loop is the fundamental pattern for tool use
+- Demonstrates real, synthetic, and mock tool categories
+- Qwen2.5-0.5B balances model quality with accessibility for first-time users
+
+**Consequences:**
+- New `samples/ToolCallingAgent/` directory created and integrated into solution
+- Feature documented in supported-models.md, getting-started.md, CHANGELOG.md
+- Reference implementation available for users exploring Phase 4a
+
+---
+
+## Decision 7: RAG as Extension Package (ElBruno.LocalLLMs.Rag)
 
 **Decision:** Create a separate NuGet package `ElBruno.LocalLLMs.Rag` instead of adding RAG to the core library.
 
@@ -1479,4 +1510,5 @@ tests/ElBruno.LocalLLMs.Tests/ToolCalling/
 ---
 
 **Recommendation:** Merge decision after Trinity reviews test coverage and approach.
+
 

@@ -16,6 +16,13 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-03-27: Phase 4a Tool Calling Sample Implementation
+- Created `samples/ToolCallingAgent/` with canonical multi-turn agent loop pattern: send → check FunctionCallContent → invoke tools → send FunctionResultContent → repeat
+- Qwen2.5-0.5B-Instruct selected as sample default (smallest with tool support, ~1 GB download, good first-run UX)
+- Tool invocation in MEAI 10.x requires wrapping `call.Arguments` in `new AIFunctionArguments(dict)` before passing to `AIFunction.InvokeAsync`
+- Three tool types in sample: time (real system calls), math (pure computation), weather (mock data) — covers user implementation patterns
+- Sample integrated into solution file; Morpheus updated docs (supported-models.md, getting-started.md, CHANGELOG.md) to surface feature
+
 ### 2026-03-19: GPU/CPU NuGet package strategy
 - Main library keeps CPU-only `Microsoft.ML.OnnxRuntimeGenAI` — GPU is additive via app-level package refs
 - GPU NuGet packages for v0.12.2: `Microsoft.ML.OnnxRuntimeGenAI.Cuda` and `.DirectML` (no .NET packages for QNN or WinML)
@@ -123,3 +130,12 @@
 - All 11 Phase 4 architectural decisions merged to canonical decisions.md
 
 **Ready for Phase 4b:** RAG pipeline architecture specified; Trinity ready to implement ElBruno.LocalLLMs.Rag extension package
+
+### 2026-03-27: ToolCallingAgent sample created
+- Created `samples/ToolCallingAgent/` — demonstrates tool/function calling with multi-turn agent loop pattern
+- Defines 3 tools via `AIFunctionFactory.Create`: `GetCurrentTime(timezone)`, `Calculate(a, op, b)`, `GetWeather(city)`
+- Demo 1: single-turn tool call showing `FunctionCallContent` inspection
+- Demo 2 & 3: full agent loop — sends user message, executes tool calls, feeds `FunctionResultContent` back, repeats until text response
+- Uses `Qwen25_05BInstruct` (smallest tool-capable model) with comments noting Phi-3.5/Qwen-7B for better quality
+- MEAI 10.x note: `AIFunction.InvokeAsync` takes `AIFunctionArguments?`, not raw `IDictionary` — must wrap with `new AIFunctionArguments(dict)`
+- Added to `ElBruno.LocalLLMs.slnx` under `/samples/` — full solution builds clean (0 warnings, 0 errors)

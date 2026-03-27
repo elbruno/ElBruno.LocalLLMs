@@ -12,6 +12,13 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-03-27: Documentation Updated for Phase 4a Tool Calling
+- Added "Tool Calling" column to `docs/supported-models.md` marking Qwen2.5-0.5B, Phi-3.5-mini, Qwen-7B with support
+- Created new "Tool Calling" section in `docs/getting-started.md` with feature overview and link to samples/ToolCallingAgent
+- Updated `docs/CHANGELOG.md` with unreleased features section documenting Phase 4a implementation
+- Trinity created reference implementation in samples/ simultaneously; documentation now provides entry point for feature discovery
+- Coordinated with Trinity on sample model default (Qwen2.5-0.5B) and multi-turn loop pattern documentation
+
 ### 2026-03-17 — Architecture Design Complete
 
 **Architecture decisions made:**
@@ -178,3 +185,41 @@
 - Unlocks enterprise use cases (RAG = grounding in private knowledge)
 - Maintains architectural consistency (extensions by concern, not by model)
 - Positions ElBruno.LocalLLMs competitively with Ollama, LM Studio, vLLM
+
+### 2026-03-28 — Documentation Updated: Tool Calling Guidance
+
+**Documentation enhancements:**
+
+- **supported-models.md:**
+  - Added "Tool Calling" column to Complete Model Table
+  - ✅ marks models with tool calling support (Qwen2.5-0.5B/1.5B/3B/7B/14B/32B, Phi-3.5-mini, Phi-4, Qwen3-8B/32B)
+  - — marks models without tool calling support
+  - New "Tool Calling Support" section with:
+    - Recommended models table (Best Starting Point: Phi-3.5-mini; Best Overall: Phi-4)
+    - Size/quality tradeoffs for tool calling (scales with model size)
+    - Brief explanation of prompt-based tool calling mechanism
+    - Link to Getting Started tool calling example
+
+- **getting-started.md:**
+  - New "Tool Calling" section before Troubleshooting
+  - Quick example demonstrating `AIFunctionFactory.Create()`, `ChatOptions.Tools`, and `FunctionCallContent` parsing
+  - Reference to supported models with smallest option highlighted (Qwen2.5-0.5B)
+  - Link to ToolCallingAgent sample for multi-turn agent loop
+
+- **CHANGELOG.md:**
+  - Moved "Function calling / tool use" from Planned to Added under [Unreleased]
+  - Documented all tool calling components:
+    - Core feature (define tools, pass in ChatOptions, get FunctionCallContent)
+    - SupportsToolCalling property on ModelDefinition
+    - JsonToolCallParser (three formats: `<tool_call>`, raw JSON, array)
+    - Tool-aware FormatMessages overloads
+    - ToolCallingAgent sample
+    - 41 unit tests for tool calling
+    - Architecture plan reference
+
+**Impact on users:**
+- Users can quickly identify which models support tool calling
+- Clear entry point with working example (5-minute setup)
+- Smallest model option highlighted for resource-constrained environments
+- Production models recommended with quality/size tradeoffs explained
+- Release transparency: tool calling moved from "Planned" to "Added" in CHANGELOG
