@@ -47,3 +47,23 @@
 **Decision Merged:** Decision 7 (CI/CD net8.0-only) in `.squad/decisions.md`
 
 All conventions from `.github/copilot-instructions.md` now fully applied across codebase, CI/CD, and docs.
+
+## 2026-03-27: Phase 4a/4b Completion
+
+**Cross-Agent Update:** Trinity and Morpheus completed Phases 4a (tool calling) and 4b (RAG pipeline):
+
+- **Trinity (Core Dev):** 
+  - Phase 4a: 6 formatters enhanced with tool support (Qwen, Llama3, Phi3, DeepSeek, Mistral, Gemma)
+  - Phase 4b: New `ElBruno.LocalLLMs.Rag` NuGet package with pluggable embeddings, dual storage backends, 25 tests, RagChatbot sample
+  - Total: 34 files created, +3,677 lines, 13 projects in solution, 0 build errors, 384 tests passing
+
+- **Morpheus (Docs):** 
+  - Created `docs/tool-calling-guide.md` (744 lines) and `docs/rag-guide.md` (853 lines)
+  - Updated `docs/CHANGELOG.md` with Phase 4a/4b entries
+  - Total: 2 guides, ~1,600 lines added
+
+**Your Updates:** `.slnx` already includes all Phase 4 projects (ElBruno.LocalLLMs.Rag, tests, samples). No additional CI/CD benchmark configuration needed yet (Tank will own Phase 1 benchmark framework next).
+
+**Decisions Merged:** Decision 33 (Phase 4b RAG architecture) with 8 sub-decisions in `.squad/decisions.md`
+
+**Commit:** 8344eb6 pushed to origin/main
