@@ -280,3 +280,20 @@ Key findings from parallel architecture evaluation by Morpheus:
 - Validation script has 12 tests (not 10) for extra coverage on edge cases.
 - Model card template uses `{{placeholder}}` syntax instead of Python f-strings for broader tooling compatibility.
 - All scripts use argparse, logging, proper error handling, and are fully type-annotated.
+
+### 2025-07-26 — Google Colab Training Notebook
+
+**Created `scripts/finetune/train_and_publish.ipynb` — a self-contained Colab notebook that runs the entire fine-tuning pipeline.**
+
+- Notebook has 21 cells (10 markdown + 11 code) covering: setup, config, data download, data prep, training, LoRA merge, ONNX conversion, validation, and HuggingFace upload.
+- Uses `unsloth/Qwen2.5-0.5B-Instruct` as base model (Unsloth's optimized variant for faster training).
+- All hyperparameters match `train_qwen_05b.py` exactly: rank=16, alpha=32, lr=2e-4, batch=4, grad_accum=4, epochs=3.
+- Supports all 3 variants via a single `MODEL_VARIANT` config: ToolCalling, RAG, Instruct — each maps to the correct training JSON.
+- Uses Colab-specific patterns: `google.colab.userdata` for secrets, `!pip install`, `accelerator: GPU` in metadata.
+- Sparse git checkout to download only `training-data/` and `scripts/finetune/` (model card template) — avoids cloning the entire repo.
+- Uses Unsloth's `save_pretrained_merged()` instead of our `merge_lora.py` — cleaner in notebook context since the model is already in memory.
+- ONNX conversion uses `onnxruntime_genai.models.builder` with INT4 + accuracy_level=4, same as `convert_to_onnx.py`.
+- Validation cell loads ONNX model with `onnxruntime_genai`, runs variant-specific test prompts, checks for expected output patterns.
+- Upload cell uses `model-card-template.md` from the repo with fallback to an inline card if template is unavailable.
+- Updated `scripts/finetune/README.md` with Colab badge and quick start section at the top.
+- Updated `docs/fine-tuning-guide.md` with Colab section under "Using Pre-Fine-Tuned Models".
