@@ -63,7 +63,26 @@ internal sealed class OnnxGenAIModel : IDisposable
             throw new InvalidOperationException("Unable to initialize model with any execution provider." + details);
         }
 
-        _model = CreateModel(modelPath, provider, gpuDeviceId);
+        try
+        {
+            _model = CreateModel(modelPath, provider, gpuDeviceId);
+        }
+        catch (Exception ex) when (provider != ExecutionProvider.Cpu && IsProviderNotInstalledError(provider, ex))
+        {
+            var packageName = provider switch
+            {
+                ExecutionProvider.Cuda => "Microsoft.ML.OnnxRuntimeGenAI.Cuda",
+                ExecutionProvider.DirectML => "Microsoft.ML.OnnxRuntimeGenAI.DirectML",
+                _ => $"Microsoft.ML.OnnxRuntimeGenAI.{provider}"
+            };
+
+            throw new InvalidOperationException(
+                $"The {provider} execution provider is not available. " +
+                $"Add the '{packageName}' NuGet package to your application project and ensure the required runtime is installed. " +
+                $"Replace 'Microsoft.ML.OnnxRuntimeGenAI' with '{packageName}' — do not reference both packages simultaneously. " +
+                $"Inner error: {ex.Message}",
+                ex);
+        }
 
 ModelInitialized:
         ActiveProvider = selectedProvider;
@@ -123,6 +142,17 @@ ModelInitialized:
                normalized.Contains("unable to find", StringComparison.Ordinal) ||
                normalized.Contains("cannot load", StringComparison.Ordinal) ||
                normalized.Contains("not available", StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Returns <see langword="true"/> when the exception indicates the requested execution
+    /// provider's native runtime is not present (e.g. the GPU NuGet package is missing or
+    /// the wrong variant is installed).
+    /// </summary>
+    internal static bool IsProviderNotInstalledError(ExecutionProvider provider, Exception ex)
+    {
+        ArgumentNullException.ThrowIfNull(ex);
+        return ShouldFallbackToNextProvider(provider, ex);
     }
 
     internal static string BuildProviderFailureReason(ExecutionProvider provider, Exception ex)

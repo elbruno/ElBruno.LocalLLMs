@@ -4,6 +4,10 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI" Version="0.12.2" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\ElBruno.LocalLLMs\ElBruno.LocalLLMs.csproj" />
   </ItemGroup>
 </Project>
