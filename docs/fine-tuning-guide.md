@@ -21,7 +21,7 @@ The easiest path: download a fine-tuned model from HuggingFace and use it in you
 If you want to train the models yourself, use the Google Colab notebook — it runs the
 full pipeline (train → merge → ONNX convert → upload) on a free cloud GPU:
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/elbruno/ElBruno.LocalLLMs/blob/main/scripts/finetune/train_and_publish.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/elbruno/ElBruno.LocalLLMs/blob/main/src/fine-tuning/scripts/train_and_publish.ipynb)
 
 1. Click the badge above to open in Colab
 2. Set **Runtime → Change runtime type → T4 GPU**
@@ -31,7 +31,7 @@ full pipeline (train → merge → ONNX convert → upload) on a free cloud GPU:
 
 The notebook handles everything: installing Unsloth, downloading training data,
 QLoRA fine-tuning, LoRA merge, ONNX INT4 conversion, validation, and HuggingFace upload.
-See [`scripts/finetune/train_and_publish.ipynb`](../scripts/finetune/train_and_publish.ipynb)
+See [`src/fine-tuning/scripts/train_and_publish.ipynb`](../src/fine-tuning/scripts/train_and_publish.ipynb)
 for the source.
 
 ### Available Models

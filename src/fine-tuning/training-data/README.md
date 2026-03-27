@@ -43,8 +43,8 @@ Tool calls use `<tool_call>` tags matching the library's `QwenFormatter`:
 To download external datasets and regenerate combined data:
 
 ```bash
-pip install -r ../scripts/finetune/requirements.txt
-python ../scripts/finetune/prepare_training_data.py --output-dir .
+pip install -r ../scripts/requirements.txt
+python ../scripts/prepare_training_data.py --output-dir .
 ```
 
 ## Sources

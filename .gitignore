@@ -39,6 +39,9 @@ venv/
 cache_dir/
 converted_models/
 
+# Training output
+output/
+
 # Squad generated logs
 .squad/orchestration-log/
 .squad/log/

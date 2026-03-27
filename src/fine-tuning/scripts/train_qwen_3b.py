@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
-Fine-tune Qwen2.5-1.5B-Instruct for ElBruno.LocalLLMs using QLoRA.
+Fine-tune Qwen2.5-3B-Instruct for ElBruno.LocalLLMs using QLoRA.
 
-Larger model with better baseline capabilities. Uses higher LoRA rank
-and lower learning rate than the 0.5B variant for better quality.
+Largest model in the fine-tuning pipeline. Requires careful memory
+management — may need cloud A100 GPU for comfortable training.
 
 Usage:
-    python train_qwen_15b.py --output-dir ./output/qwen25-15b-finetuned
+    python train_qwen_3b.py --output-dir ./output/qwen25-3b-finetuned
 
 Hardware Requirements:
-    - GPU: RTX 4090 (24 GB VRAM) — tight fit, or A100 (40/80 GB)
-    - RAM: 32 GB system memory
-    - Disk: 80 GB free space
+    - GPU: RTX 4090 (24 GB, very tight) or A100 (40/80 GB recommended)
+    - RAM: 64 GB system memory recommended
+    - Disk: 100 GB free space
 """
 
 import argparse
@@ -26,10 +26,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-MODEL_NAME = "Qwen/Qwen2.5-1.5B-Instruct"
+MODEL_NAME = "Qwen/Qwen2.5-3B-Instruct"
 MAX_SEQ_LENGTH = 2048
 
-# QLoRA hyperparameters (optimized for Qwen2.5-1.5B)
+# QLoRA hyperparameters (optimized for Qwen2.5-3B)
 LORA_R = 32
 LORA_ALPHA = 64
 LORA_DROPOUT = 0.05
@@ -57,21 +57,21 @@ def format_sharegpt_to_chatml(example: dict, tokenizer) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Fine-tune Qwen2.5-1.5B-Instruct with QLoRA"
+        description="Fine-tune Qwen2.5-3B-Instruct with QLoRA"
     )
     parser.add_argument(
         "--output-dir",
-        default="./output/qwen25-15b-finetuned",
+        default="./output/qwen25-3b-finetuned",
         help="Directory to save the fine-tuned LoRA adapters",
     )
     parser.add_argument(
         "--data-path",
-        default="./training-data/combined-train.json",
+        default="../training-data/combined-train.json",
         help="Path to training data (ShareGPT JSON format)",
     )
     parser.add_argument(
         "--val-path",
-        default="./training-data/validation.json",
+        default="../training-data/validation.json",
         help="Path to validation data (ShareGPT JSON format)",
     )
     parser.add_argument(
@@ -80,14 +80,14 @@ def main():
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=2,
-        help="Per-device batch size (smaller for 1.5B)",
+        default=1,
+        help="Per-device batch size (minimal for 3B on 24GB)",
     )
     parser.add_argument(
         "--learning-rate",
         type=float,
         default=1e-4,
-        help="Learning rate (lower for larger model)",
+        help="Learning rate",
     )
     parser.add_argument(
         "--lora-r", type=int, default=LORA_R, help="LoRA rank"
@@ -156,18 +156,20 @@ def main():
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # 3B needs aggressive gradient accumulation to compensate
+    # for the small batch size
     training_args = TrainingArguments(
         output_dir=str(output_dir),
         num_train_epochs=args.epochs,
         per_device_train_batch_size=args.batch_size,
-        gradient_accumulation_steps=8,
+        gradient_accumulation_steps=16,
         learning_rate=args.learning_rate,
         fp16=True,
-        logging_steps=25,
-        save_steps=250,
+        logging_steps=10,
+        save_steps=200,
         save_total_limit=2,
         evaluation_strategy="steps" if val_dataset else "no",
-        eval_steps=250 if val_dataset else None,
+        eval_steps=200 if val_dataset else None,
         warmup_steps=100,
         lr_scheduler_type="cosine",
         optim="paged_adamw_8bit",
@@ -175,6 +177,7 @@ def main():
         load_best_model_at_end=bool(val_dataset),
         metric_for_best_model="eval_loss" if val_dataset else None,
         report_to="none",
+        gradient_checkpointing=True,
     )
 
     trainer = SFTTrainer(
@@ -187,11 +190,12 @@ def main():
         args=training_args,
     )
 
-    logger.info("Starting QLoRA fine-tuning (1.5B model)...")
+    logger.info("Starting QLoRA fine-tuning (3B model)...")
     logger.info(f"  Model: {MODEL_NAME}")
     logger.info(f"  Epochs: {args.epochs}")
-    logger.info(f"  Batch size: {args.batch_size} (effective: {args.batch_size * 8})")
+    logger.info(f"  Batch size: {args.batch_size} (effective: {args.batch_size * 16})")
     logger.info(f"  LoRA rank: {args.lora_r}")
+    logger.info("  NOTE: 3B on RTX 4090 is tight. If OOM, use cloud A100.")
 
     trainer.train(resume_from_checkpoint=args.resume_from)
 
@@ -215,7 +219,7 @@ def main():
         json.dump(config, f, indent=2)
 
     logger.info("Training complete!")
-    logger.info(f"Next: python merge_lora.py --base-model {MODEL_NAME} --adapter-path {output_dir} --output-dir ./output/qwen25-15b-merged")
+    logger.info(f"Next: python merge_lora.py --base-model {MODEL_NAME} --adapter-path {output_dir} --output-dir ./output/qwen25-3b-merged")
 
 
 if __name__ == "__main__":

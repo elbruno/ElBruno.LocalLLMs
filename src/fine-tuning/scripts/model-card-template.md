@@ -169,7 +169,7 @@ Qwen2.5 Base → QLoRA Fine-tune → Merge LoRA → ONNX Export (INT4)
 4. **Validate** against QwenFormatter test suite (`validate_onnx.py`)
 5. **Upload** to HuggingFace (`upload_to_hf.py`)
 
-All scripts are available at: [`scripts/finetune/`](https://github.com/elbruno/ElBruno.LocalLLMs/tree/main/scripts/finetune)
+All scripts are available at: [`src/fine-tuning/`](https://github.com/elbruno/ElBruno.LocalLLMs/tree/main/src/fine-tuning)
 
 ## Intended Use
 

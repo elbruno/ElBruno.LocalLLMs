@@ -7,13 +7,13 @@ ShareGPT format matching QwenFormatter's expected output, merges
 all categories, and creates train/validation splits.
 
 Usage:
-    python prepare_training_data.py --output-dir ./training-data
-    python prepare_training_data.py --skip-download --output-dir ./training-data
+    python prepare_training_data.py --output-dir ../training-data
+    python prepare_training_data.py --skip-download --output-dir ../training-data
 
 Sources:
     - Glaive Function Calling v2 (tool calling)
     - Stanford Alpaca (instruction following)
-    - Custom examples (in training-data/*.json)
+    - Custom examples (in ../training-data/*.json)
 """
 
 import argparse
@@ -217,7 +217,7 @@ def main():
     )
     parser.add_argument(
         "--output-dir",
-        default="./training-data",
+        default="../training-data",
         help="Directory to write output files",
     )
     parser.add_argument(

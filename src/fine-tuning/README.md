@@ -6,7 +6,7 @@ Scripts for fine-tuning Qwen2.5 models to improve tool calling, RAG, and chat te
 
 **No local GPU required!** Open the notebook in Google Colab and train in the cloud for free:
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/elbruno/ElBruno.LocalLLMs/blob/main/scripts/finetune/train_and_publish.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/elbruno/ElBruno.LocalLLMs/blob/main/src/fine-tuning/scripts/train_and_publish.ipynb)
 
 The Colab notebook runs the entire pipeline end-to-end:
 1. Installs dependencies (Unsloth, TRL, ONNX Runtime)
@@ -38,7 +38,7 @@ Train on a local Windows machine with an NVIDIA GPU (no WSL required).
 ### 1. Install Dependencies
 
 ```powershell
-cd scripts\finetune
+cd src\fine-tuning\scripts
 .\install_windows.ps1
 ```
 
@@ -94,7 +94,7 @@ The pipeline runs end-to-end:
 Run the validation script to check for API compatibility before running on Colab:
 
 ```bash
-python scripts/finetune/validate_notebook.py
+python src/fine-tuning/scripts/validate_notebook.py
 ```
 
 This catches common issues (deprecated parameters, missing packages, removed APIs) that would otherwise only surface at runtime on Colab.
@@ -107,16 +107,16 @@ For running the full pipeline on **any machine with a GPU** (not just Colab):
 
 ```bash
 # Train ToolCalling variant and upload to HuggingFace
-python scripts/finetune/train.py --variant ToolCalling --hf-token YOUR_TOKEN
+python src/fine-tuning/scripts/train.py --variant ToolCalling --hf-token YOUR_TOKEN
 
 # Train locally without uploading
-python scripts/finetune/train.py --variant RAG --skip-upload
+python src/fine-tuning/scripts/train.py --variant RAG --skip-upload
 
 # Custom epochs, skip ONNX conversion
-python scripts/finetune/train.py --variant Instruct --epochs 5 --skip-onnx
+python src/fine-tuning/scripts/train.py --variant Instruct --epochs 5 --skip-onnx
 
 # See all options
-python scripts/finetune/train.py --help
+python src/fine-tuning/scripts/train.py --help
 ```
 
 The CLI script replicates the Colab notebook as a single command. It runs:
@@ -147,24 +147,24 @@ pip install -r requirements.txt
 
 ### 2. Prepare Training Data
 
-Custom training data is already in `training-data/`. To also include external datasets (Glaive, Alpaca):
+Custom training data is already in `src/fine-tuning/training-data/`. To also include external datasets (Glaive, Alpaca):
 
 ```bash
-python prepare_training_data.py --output-dir ../../training-data
+python prepare_training_data.py --output-dir ../training-data
 ```
 
 Skip external datasets (use custom only):
 
 ```bash
-python prepare_training_data.py --skip-download --output-dir ../../training-data
+python prepare_training_data.py --skip-download --output-dir ../training-data
 ```
 
 ### 3. Fine-Tune Qwen2.5-0.5B (PoC)
 
 ```bash
 python train_qwen_05b.py \
-    --data-path ../../training-data/combined-train.json \
-    --val-path ../../training-data/validation.json \
+    --data-path ../training-data/combined-train.json \
+    --val-path ../training-data/validation.json \
     --output-dir ./output/qwen25-05b-finetuned
 ```
 

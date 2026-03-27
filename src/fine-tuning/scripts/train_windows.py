@@ -69,7 +69,7 @@ def _find_repo_root() -> Path:
     """Walk up from this script's directory to find the repo root."""
     current = Path(__file__).resolve().parent
     for _ in range(10):
-        if (current / "training-data").is_dir():
+        if (current / "src" / "fine-tuning" / "training-data").is_dir():
             return current
         current = current.parent
     return Path(__file__).resolve().parent
@@ -636,7 +636,7 @@ def main() -> None:
     if args.data_dir:
         data_dir = Path(args.data_dir)
     else:
-        data_dir = repo_root / "training-data"
+        data_dir = repo_root / "src" / "fine-tuning" / "training-data"
     if not data_dir.is_dir():
         log.error("Training data directory not found: %s", data_dir)
         sys.exit(1)

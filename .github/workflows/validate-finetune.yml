@@ -4,13 +4,11 @@ on:
   push:
     branches: [main]
     paths:
-      - "scripts/finetune/**"
-      - "training-data/**"
+      - "src/fine-tuning/**"
   pull_request:
     branches: [main]
     paths:
-      - "scripts/finetune/**"
-      - "training-data/**"
+      - "src/fine-tuning/**"
 
 permissions:
   contents: read
@@ -32,4 +30,4 @@ jobs:
           pip install transformers datasets trl peft onnxruntime-genai onnx onnx-ir huggingface-hub
 
       - name: Validate notebook and APIs
-        run: python scripts/finetune/validate_notebook.py
+        run: python src/fine-tuning/scripts/validate_notebook.py

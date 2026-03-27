@@ -7,7 +7,7 @@ answering, and chat template adherence with the library's QwenFormatter.
 
 Usage:
     python train_qwen_05b.py --output-dir ./output/qwen25-05b-finetuned
-    python train_qwen_05b.py --data-path ./training-data/combined-train.json
+    python train_qwen_05b.py --data-path ../training-data/combined-train.json
 
 Hardware Requirements:
     - GPU: RTX 4090 (24 GB VRAM) or A100 (40/80 GB)
@@ -68,12 +68,12 @@ def main():
     )
     parser.add_argument(
         "--data-path",
-        default="./training-data/combined-train.json",
+        default="../training-data/combined-train.json",
         help="Path to training data (ShareGPT JSON format)",
     )
     parser.add_argument(
         "--val-path",
-        default="./training-data/validation.json",
+        default="../training-data/validation.json",
         help="Path to validation data (ShareGPT JSON format)",
     )
     parser.add_argument(

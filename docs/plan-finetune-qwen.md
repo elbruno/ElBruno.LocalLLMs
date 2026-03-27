@@ -224,18 +224,18 @@ We'll use **ShareGPT format** (used by most fine-tuning tools):
 
 ### 3.4 Dataset Preparation Script
 
-**Location:** `scripts/finetune/prepare_training_data.py`
+**Location:** `src/fine-tuning/scripts/prepare_training_data.py`
 
 **Input:**
 - Raw datasets from HuggingFace
 - Custom examples in JSON files
 
 **Output:**
-- `training-data/tool-calling-train.json` (2,000 examples)
-- `training-data/rag-grounded-train.json` (1,500 examples)
-- `training-data/chat-template-train.json` (1,500 examples)
-- `training-data/combined-train.json` (5,000 examples, shuffled)
-- `training-data/validation.json` (500 examples, 10% split)
+- `src/fine-tuning/training-data/tool-calling-train.json` (2,000 examples)
+- `src/fine-tuning/training-data/rag-grounded-train.json` (1,500 examples)
+- `src/fine-tuning/training-data/chat-template-train.json` (1,500 examples)
+- `src/fine-tuning/src/fine-tuning/training-data/combined-train.json` (5,000 examples, shuffled)
+- `src/fine-tuning/src/fine-tuning/training-data/validation.json` (500 examples, 10% split)
 
 **Key Operations:**
 1. Download source datasets
@@ -247,10 +247,10 @@ We'll use **ShareGPT format** (used by most fine-tuning tools):
 
 ### 3.5 Deliverables
 
-- [ ] `training-data/` folder created
-- [ ] `scripts/finetune/prepare_training_data.py` implemented
+- [ ] `src/fine-tuning/training-data/` folder created
+- [ ] `src/fine-tuning/scripts/prepare_training_data.py` implemented
 - [ ] All 6 training data files generated
-- [ ] `training-data/README.md` documenting sources and format
+- [ ] `src/fine-tuning/training-data/README.md` documenting sources and format
 - [ ] Validation script confirming format compliance
 
 **Owner:** Mouse (Fine-Tuning/Training Specialist)  
@@ -348,7 +348,7 @@ training_args = {
 
 ### 4.5 Training Script
 
-**Location:** `scripts/finetune/train_qwen_05b.py`
+**Location:** `src/fine-tuning/scripts/train_qwen_05b.py`
 
 ```python
 #!/usr/bin/env python3
@@ -368,8 +368,8 @@ from transformers import TrainingArguments
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-dir", default="./output/qwen25-05b-finetuned")
-    parser.add_argument("--data-path", default="./training-data/combined-train.json")
-    parser.add_argument("--val-path", default="./training-data/validation.json")
+    parser.add_argument("--data-path", default="../src/fine-tuning/training-data/combined-train.json")
+    parser.add_argument("--val-path", default="../src/fine-tuning/training-data/validation.json")
     args = parser.parse_args()
     
     # Load base model
@@ -480,9 +480,9 @@ These adapters must be **merged into the base model** before ONNX conversion (Ph
 
 ### 4.8 Deliverables
 
-- [ ] `scripts/finetune/requirements.txt` (unsloth, transformers, datasets, trl)
-- [ ] `scripts/finetune/train_qwen_05b.py` implemented
-- [ ] `scripts/finetune/README.md` documenting setup and usage
+- [ ] `src/fine-tuning/scripts/requirements.txt` (unsloth, transformers, datasets, trl)
+- [ ] `src/fine-tuning/scripts/train_qwen_05b.py` implemented
+- [ ] `src/fine-tuning/scripts/README.md` documenting setup and usage
 - [ ] Training run completed on Qwen2.5-0.5B
 - [ ] LoRA adapters saved to `output/qwen25-05b-finetuned/`
 - [ ] Training logs and loss curves saved
@@ -508,7 +508,7 @@ Convert the fine-tuned model to ONNX INT4 format for use with ElBruno.LocalLLMs.
 
 ### 5.2 Merge LoRA Adapters
 
-**Script:** `scripts/finetune/merge_lora.py`
+**Script:** `src/fine-tuning/scripts/merge_lora.py`
 
 ```python
 #!/usr/bin/env python3
@@ -575,7 +575,7 @@ output/qwen25-05b-merged/
 
 **Tool:** `onnxruntime-genai` model builder (from Microsoft)
 
-**Script:** `scripts/finetune/convert_to_onnx.py`
+**Script:** `src/fine-tuning/scripts/convert_to_onnx.py`
 
 ```python
 #!/usr/bin/env python3
@@ -630,7 +630,7 @@ output/qwen25-05b-onnx-int4/
 
 ### 5.4 Validate ONNX Model
 
-**Script:** `scripts/finetune/validate_onnx.py`
+**Script:** `src/fine-tuning/scripts/validate_onnx.py`
 
 ```python
 #!/usr/bin/env python3
@@ -740,9 +740,9 @@ if __name__ == "__main__":
 
 ### 5.6 Deliverables
 
-- [ ] `scripts/finetune/merge_lora.py` implemented
-- [ ] `scripts/finetune/convert_to_onnx.py` implemented
-- [ ] `scripts/finetune/validate_onnx.py` implemented
+- [ ] `src/fine-tuning/scripts/merge_lora.py` implemented
+- [ ] `src/fine-tuning/scripts/convert_to_onnx.py` implemented
+- [ ] `src/fine-tuning/scripts/validate_onnx.py` implemented
 - [ ] Merged model saved to `output/qwen25-05b-merged/`
 - [ ] ONNX INT4 model saved to `output/qwen25-05b-onnx-int4/`
 - [ ] All validation tests pass
@@ -784,7 +784,7 @@ elbruno/Qwen2.5-0.5B-LocalLLMs-ToolCalling/
 
 ### 6.3 Model Card Template
 
-**File:** `scripts/finetune/model_card_template.md`
+**File:** `src/fine-tuning/scripts/model_card_template.md`
 
 ```markdown
 ---
@@ -906,7 +906,7 @@ If you use this model, please cite:
 
 ### 6.4 Upload Script
 
-**Script:** `scripts/finetune/upload_to_huggingface.py`
+**Script:** `src/fine-tuning/scripts/upload_to_huggingface.py`
 
 ```python
 #!/usr/bin/env python3
@@ -985,7 +985,7 @@ We'll publish **3 fine-tuned variants** for each model size:
 
 - [ ] HuggingFace repositories created (3 variants)
 - [ ] Model cards written (using template)
-- [ ] `scripts/finetune/upload_to_huggingface.py` implemented
+- [ ] `src/fine-tuning/scripts/upload_to_huggingface.py` implemented
 - [ ] All ONNX models uploaded to HuggingFace
 - [ ] README.md includes usage examples
 - [ ] Apache 2.0 license added to each repo
@@ -1441,7 +1441,7 @@ For .NET developers who want to learn fine-tuning (optional — consumers can ju
 2. **Clone the repo**  
    ```bash
    git clone https://github.com/elbruno/ElBruno.LocalLLMs
-   cd ElBruno.LocalLLMs/scripts/finetune
+   cd ElBruno.LocalLLMs/src/fine-tuning/scripts
    ```
 
 3. **Install dependencies**  
@@ -1461,11 +1461,11 @@ For .NET developers who want to learn fine-tuning (optional — consumers can ju
    python prepare_training_data.py
    ```
    
-   This creates `training-data/combined-train.json` (5K examples).
+   This creates `src/fine-tuning/src/fine-tuning/training-data/combined-train.json` (5K examples).
 
 6. **Inspect the data**  
    ```bash
-   head -n 50 training-data/combined-train.json
+   head -n 50 src/fine-tuning/training-data/combined-train.json
    ```
 
 ### Saturday Evening: Train (2 hours)

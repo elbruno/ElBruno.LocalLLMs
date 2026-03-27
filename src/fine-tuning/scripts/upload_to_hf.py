@@ -17,7 +17,7 @@ Usage:
     python upload_to_hf.py \
         --model-dir ./output/qwen25-05b-onnx-int4 \
         --repo-id elbruno/Qwen2.5-0.5B-LocalLLMs-ToolCalling \
-        --model-card ./scripts/finetune/model-card-template.md
+        --model-card ./src/fine-tuning/scripts/model-card-template.md
 
     # Explicit token and custom tags
     python upload_to_hf.py \
@@ -327,7 +327,7 @@ def parse_args() -> argparse.Namespace:
             "      --capability RAG \\\n"
             "      --base-model Qwen/Qwen2.5-1.5B-Instruct \\\n"
             "      --model-size 1.5B \\\n"
-            "      --model-card ./scripts/finetune/model-card-template.md"
+            "      --model-card ./src/fine-tuning/scripts/model-card-template.md"
         ),
     )
     parser.add_argument(

@@ -19,9 +19,9 @@ if sys.stdout.encoding != "utf-8":
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-REPO_ROOT = SCRIPT_DIR.parent.parent
+REPO_ROOT = SCRIPT_DIR.parent.parent.parent
 NOTEBOOK_PATH = SCRIPT_DIR / "train_and_publish.ipynb"
-TRAINING_DATA_DIR = REPO_ROOT / "training-data"
+TRAINING_DATA_DIR = SCRIPT_DIR.parent / "training-data"
 EXPECTED_CELL_COUNT = 21
 
 passed = 0

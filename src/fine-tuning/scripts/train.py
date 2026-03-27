@@ -73,10 +73,10 @@ def step(num: int, total: int, msg: str) -> None:
 
 
 def resolve_repo_root() -> Path:
-    """Walk up from this script to find the repository root (contains training-data/)."""
+    """Walk up from this script to find the repository root (contains src/fine-tuning/training-data/)."""
     candidate = Path(__file__).resolve().parent
     for _ in range(5):
-        if (candidate / "training-data").is_dir():
+        if (candidate / "src" / "fine-tuning" / "training-data").is_dir():
             return candidate
         candidate = candidate.parent
     # Fallback: assume CWD
@@ -187,12 +187,12 @@ Fine-tuned Qwen2.5-0.5B optimized for **{capability}** in [ElBruno.LocalLLMs](ht
 def step_load_data(variant: str, repo_root: Path):
     """Load training and (optional) validation data."""
     train_file = DATA_FILES[variant]
-    train_path = repo_root / "training-data" / train_file
+    train_path = repo_root / "src" / "fine-tuning" / "training-data" / train_file
     if not train_path.exists():
         raise FileNotFoundError(
             f"Training file not found: {train_path}\n"
             f"Expected one of: {list(DATA_FILES.values())}\n"
-            f"Looked in: {repo_root / 'training-data'}"
+            f"Looked in: {repo_root / 'src' / 'fine-tuning' / 'training-data'}"
         )
 
     with open(train_path, encoding="utf-8") as f:
@@ -201,7 +201,7 @@ def step_load_data(variant: str, repo_root: Path):
     print(f"  Example keys: {list(data[0].keys())}")
     print(f"  First conversation has {len(data[0]['conversations'])} turns")
 
-    val_path = repo_root / "training-data" / "validation.json"
+    val_path = repo_root / "src" / "fine-tuning" / "training-data" / "validation.json"
     return train_path, val_path if val_path.exists() else None
 
 
