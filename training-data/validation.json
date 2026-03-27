@@ -1,0 +1,226 @@
+[
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get current weather for a location\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"celsius\", \"fahrenheit\"]}}, \"required\": [\"location\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Thanks, that was helpful!"
+      },
+      {
+        "from": "gpt",
+        "value": "You're welcome! Let me know if you have any other questions."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] CI/CD uses GitHub Actions with SDK 8.0.x.\n[2] Build command: dotnet build -p:TargetFrameworks=net8.0\n[3] Test command: dotnet test --framework net8.0\n[4] All code resides in the src/ directory.\n\nQuestion: How do I build the project?"
+      },
+      {
+        "from": "gpt",
+        "value": "To build the project, use the .NET CLI [2]:\n\n```bash\ndotnet build -p:TargetFrameworks=net8.0\n```\n\nThe project uses .NET SDK 8.0.x [1], and all source code is located in the `src/` directory [4]. To run tests after building [3]:\n\n```bash\ndotnet test --framework net8.0\n```"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"create_reminder\", \"description\": \"Create a reminder\", \"parameters\": {\"type\": \"object\", \"properties\": {\"title\": {\"type\": \"string\"}, \"time\": {\"type\": \"string\", \"description\": \"ISO 8601 datetime\"}, \"priority\": {\"type\": \"string\", \"enum\": [\"low\", \"medium\", \"high\"]}}, \"required\": [\"title\", \"time\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Remind me to call the doctor at 9 AM tomorrow, high priority"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"create_reminder\", \"arguments\": {\"title\": \"Call the doctor\", \"time\": \"2025-01-16T09:00:00\", \"priority\": \"high\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"id\": \"rem_456\", \"status\": \"created\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "I've created a high-priority reminder to call the doctor at 9:00 AM tomorrow."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"search_database\", \"description\": \"Search a database with SQL-like queries\", \"parameters\": {\"type\": \"object\", \"properties\": {\"table\": {\"type\": \"string\"}, \"filters\": {\"type\": \"object\"}, \"limit\": {\"type\": \"integer\"}}, \"required\": [\"table\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Find the top 5 customers by revenue"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"search_database\", \"arguments\": {\"table\": \"customers\", \"filters\": {\"order_by\": \"revenue\", \"order\": \"desc\"}, \"limit\": 5}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"rows\": [{\"name\": \"Acme Corp\", \"revenue\": 1200000}, {\"name\": \"TechStart Inc\", \"revenue\": 890000}, {\"name\": \"Global Dynamics\", \"revenue\": 750000}, {\"name\": \"Nexus Solutions\", \"revenue\": 620000}, {\"name\": \"BrightPath Ltd\", \"revenue\": 580000}]}"
+      },
+      {
+        "from": "gpt",
+        "value": "Here are the top 5 customers by revenue:\n\n1. **Acme Corp** — $1,200,000\n2. **TechStart Inc** — $890,000\n3. **Global Dynamics** — $750,000\n4. **Nexus Solutions** — $620,000\n5. **BrightPath Ltd** — $580,000"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get current weather\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}}, \"required\": [\"location\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Get weather for"
+      },
+      {
+        "from": "gpt",
+        "value": "It looks like you didn't specify a location. Could you tell me which city or area you'd like the weather for?"
+      },
+      {
+        "from": "human",
+        "value": "Oh sorry, I meant Chicago"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Chicago\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"temperature\": -5, \"condition\": \"snowing\", \"humidity\": 80}"
+      },
+      {
+        "from": "gpt",
+        "value": "It's quite cold in Chicago — -5°C with snow and 80% humidity. Bundle up!"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"generate_image\", \"description\": \"Generate an image from a text prompt\", \"parameters\": {\"type\": \"object\", \"properties\": {\"prompt\": {\"type\": \"string\", \"description\": \"Image description\"}, \"size\": {\"type\": \"string\", \"enum\": [\"256x256\", \"512x512\", \"1024x1024\"]}, \"style\": {\"type\": \"string\", \"enum\": [\"realistic\", \"artistic\", \"cartoon\"]}}, \"required\": [\"prompt\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Generate a cartoon image of a cat wearing a space suit, 512x512"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"generate_image\", \"arguments\": {\"prompt\": \"a cat wearing a space suit, floating in space with stars in the background\", \"size\": \"512x512\", \"style\": \"cartoon\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"url\": \"https://images.example.com/cat-space.png\", \"width\": 512, \"height\": 512}"
+      },
+      {
+        "from": "gpt",
+        "value": "Here's your cartoon space cat! 🐱🚀\n\n![Space Cat](https://images.example.com/cat-space.png)\n\nThe image is 512×512 pixels in cartoon style."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"schedule_meeting\", \"description\": \"Schedule a meeting\", \"parameters\": {\"type\": \"object\", \"properties\": {\"title\": {\"type\": \"string\"}, \"participants\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"start_time\": {\"type\": \"string\"}, \"duration_minutes\": {\"type\": \"integer\"}}, \"required\": [\"title\", \"participants\", \"start_time\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Schedule a 30-minute sprint planning meeting with Alice, Bob, and Charlie at 10 AM tomorrow"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"schedule_meeting\", \"arguments\": {\"title\": \"Sprint Planning\", \"participants\": [\"Alice\", \"Bob\", \"Charlie\"], \"start_time\": \"2025-01-16T10:00:00\", \"duration_minutes\": 30}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"meeting_id\": \"mtg_321\", \"calendar_link\": \"https://calendar.example.com/mtg_321\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "Sprint Planning meeting scheduled! 📅\n\n- **When:** Tomorrow at 10:00 AM (30 minutes)\n- **Participants:** Alice, Bob, Charlie\n- **Calendar link:** https://calendar.example.com/mtg_321"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"calculate\", \"description\": \"Evaluate a math expression\", \"parameters\": {\"type\": \"object\", \"properties\": {\"expression\": {\"type\": \"string\", \"description\": \"Math expression to evaluate\"}}, \"required\": [\"expression\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "What is 15 * 37 + 42?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"calculate\", \"arguments\": {\"expression\": \"15 * 37 + 42\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"result\": 597}"
+      },
+      {
+        "from": "gpt",
+        "value": "15 × 37 + 42 = 597"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"translate\", \"description\": \"Translate text between languages\", \"parameters\": {\"type\": \"object\", \"properties\": {\"text\": {\"type\": \"string\"}, \"source_lang\": {\"type\": \"string\"}, \"target_lang\": {\"type\": \"string\"}}, \"required\": [\"text\", \"target_lang\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Translate 'Hello, how are you?' to Spanish"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"translate\", \"arguments\": {\"text\": \"Hello, how are you?\", \"source_lang\": \"en\", \"target_lang\": \"es\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"translated_text\": \"Hola, ¿cómo estás?\", \"confidence\": 0.98}"
+      },
+      {
+        "from": "gpt",
+        "value": "The Spanish translation of \"Hello, how are you?\" is: **Hola, ¿cómo estás?**"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant."
+      },
+      {
+        "from": "human",
+        "value": "Convert this JSON to a C# class:\n{\"name\": \"John\", \"age\": 30, \"email\": \"john@example.com\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "Here's the equivalent C# class:\n\n```csharp\npublic class Person\n{\n    public string Name { get; set; }\n    public int Age { get; set; }\n    public string Email { get; set; }\n}\n```\n\nYou can deserialize the JSON using System.Text.Json:\n\n```csharp\nvar person = JsonSerializer.Deserialize<Person>(jsonString);\n```"
+      }
+    ]
+  }
+]

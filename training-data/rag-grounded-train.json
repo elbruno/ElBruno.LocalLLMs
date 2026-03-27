@@ -1,0 +1,149 @@
+[
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] ElBruno.LocalLLMs is a C# library for running local language models using ONNX Runtime GenAI.\n[2] The library implements the IChatClient interface from Microsoft.Extensions.AI.\n[3] It supports 29 models across 5 tiers, from 0.5B to 14B parameters.\n\nQuestion: What interface does ElBruno.LocalLLMs implement?"},
+      {"from": "gpt", "value": "Based on the documentation [2], ElBruno.LocalLLMs implements the **IChatClient** interface from Microsoft.Extensions.AI."}
+    ]
+  },
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] Qwen2.5-0.5B-Instruct is the smallest model with tool calling support in the library.\n[2] Qwen2.5-1.5B-Instruct offers the best balance between speed and quality for tool calling.\n[3] Models are stored in ONNX INT4 format for efficient local inference.\n\nQuestion: Which is the smallest tool-calling model?"},
+      {"from": "gpt", "value": "According to the documentation [1], **Qwen2.5-0.5B-Instruct** is the smallest model with tool calling support in the library."}
+    ]
+  },
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] The ONNX Runtime GenAI library provides high-performance inference for generative AI models.\n[2] It supports multiple execution providers including CPU, CUDA, and DirectML.\n[3] Models are loaded using the OnnxRuntimeGenAIChatClient class.\n\nQuestion: Does ONNX Runtime support GPU acceleration?"},
+      {"from": "gpt", "value": "Yes, based on the documentation [2], ONNX Runtime GenAI supports GPU acceleration through multiple execution providers, including **CUDA** (NVIDIA GPUs) and **DirectML** (Windows GPU)."}
+    ]
+  },
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] Fine-tuning uses QLoRA (Quantized Low-Rank Adaptation) technique.\n[2] Training requires a GPU with at least 24GB VRAM such as RTX 4090.\n[3] The 0.5B model takes approximately 2 hours to fine-tune on consumer hardware.\n\nQuestion: Can I fine-tune the model on my laptop with 8GB RAM?"},
+      {"from": "gpt", "value": "Based on the documentation [2], fine-tuning requires a GPU with at least **24GB VRAM** (like an RTX 4090). A laptop with only 8GB RAM would not have sufficient memory for fine-tuning. However, you can use the pre-fine-tuned models that we publish, which only require enough resources for inference."}
+    ]
+  },
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] The library uses ChatML format with <|im_start|> and <|im_end|> tokens.\n[2] Tool calls are wrapped in <tool_call> and </tool_call> tags.\n[3] System messages include tool definitions in JSON format.\n\nQuestion: What format does the library use for chat templates?"},
+      {"from": "gpt", "value": "The library uses the **ChatML** format [1], which structures conversations with `<|im_start|>` and `<|im_end|>` tokens. Tool calls are enclosed in `<tool_call>` and `</tool_call>` tags [2], and system messages include tool definitions as JSON [3]."}
+    ]
+  },
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] The NuGet package is available as ElBruno.LocalLLMs.\n[2] Install using: dotnet add package ElBruno.LocalLLMs\n[3] The package targets .NET 8.0 and .NET 10.0.\n\nQuestion: How do I install ElBruno.LocalLLMs?"},
+      {"from": "gpt", "value": "You can install ElBruno.LocalLLMs via NuGet [1]. Run the following command [2]:\n\n```\ndotnet add package ElBruno.LocalLLMs\n```\n\nThe package supports .NET 8.0 and .NET 10.0 [3]."}
+    ]
+  },
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] Python is a popular programming language created by Guido van Rossum.\n[2] It was first released in 1991.\n\nQuestion: What is the latest version of C#?"},
+      {"from": "gpt", "value": "I don't have enough information to answer that question. The provided context only discusses Python, not C#. I would need documentation about C# versions to answer this accurately."}
+    ]
+  },
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] The KnownModels class provides pre-configured model definitions for popular ONNX models.\n[2] Models include Phi-3, Phi-3.5, Qwen2.5, Llama, and Mistral families.\n[3] Each model definition specifies the HuggingFace repo ID, template format, and supported capabilities.\n[4] The ModelDefinition class includes properties like ModelId, ModelFamily, and ChatTemplate.\n\nQuestion: How does the library manage different model configurations?"},
+      {"from": "gpt", "value": "The library manages model configurations through the **KnownModels** class [1], which provides pre-configured **ModelDefinition** objects [4]. Each definition specifies the HuggingFace repository ID, template format, and supported capabilities [3]. The library currently includes definitions for several model families including Phi-3, Phi-3.5, Qwen2.5, Llama, and Mistral [2]."}
+    ]
+  },
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] RAG (Retrieval-Augmented Generation) combines document retrieval with language model generation.\n[2] ElBruno.LocalLLMs.RAG provides a local RAG pipeline using ONNX embeddings.\n[3] Documents are chunked, embedded, and stored in a local vector index.\n[4] The RAG pipeline supports PDF, Markdown, and plain text documents.\n[5] Similarity search uses cosine distance to find relevant chunks.\n\nQuestion: What document formats does the RAG pipeline support?"},
+      {"from": "gpt", "value": "According to the documentation [4], the ElBruno.LocalLLMs.RAG pipeline supports three document formats:\n\n1. **PDF** documents\n2. **Markdown** files\n3. **Plain text** files\n\nDocuments are chunked and embedded using ONNX embeddings [3], and relevant chunks are retrieved using cosine similarity search [5]."}
+    ]
+  },
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] ElBruno.LocalLLMs uses ONNX Runtime GenAI for model inference.\n[2] The library downloads models automatically from HuggingFace Hub.\n[3] Downloaded models are cached in the user's local cache directory.\n\nQuestion: Do I need to manually download models before using the library?"},
+      {"from": "gpt", "value": "No, you don't need to manually download models. According to the documentation [2], the library **automatically downloads models from HuggingFace Hub**. Downloaded models are then cached locally [3] so they don't need to be re-downloaded on subsequent uses."}
+    ]
+  },
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] The library supports streaming responses via IChatClient.GetStreamingResponseAsync().\n[2] Streaming sends tokens as they are generated rather than waiting for the complete response.\n[3] This provides a better user experience for long responses.\n\nQuestion: Can the library stream responses?"},
+      {"from": "gpt", "value": "Yes! The library supports streaming responses [1] through the `IChatClient.GetStreamingResponseAsync()` method. Streaming sends tokens as they're generated [2] rather than waiting for the complete response, which provides a better user experience especially for longer responses [3]."}
+    ]
+  },
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] Training data uses ShareGPT format with conversations array.\n[2] Each conversation has entries with 'from' (system/human/gpt) and 'value' fields.\n[3] The recommended mix is 50% tool calling, 30% RAG, and 20% general instruction.\n\nQuestion: What is the recommended training data distribution?"},
+      {"from": "gpt", "value": "The recommended training data distribution [3] is:\n\n- **50% tool calling** — Teaching the model to produce correct tool call JSON\n- **30% RAG** — Teaching context-grounded answering with citations\n- **20% general instruction** — Maintaining general chat capabilities\n\nAll training data uses ShareGPT format [1] with `from`/`value` conversation entries [2]."}
+    ]
+  },
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] The Qwen2.5 model family ranges from 0.5B to 72B parameters.\n[2] For local inference on consumer hardware, the 0.5B, 1.5B, and 3B variants are recommended.\n[3] INT4 quantization reduces model size by approximately 75% with minimal quality loss.\n[4] The 1.5B INT4 model is approximately 1.2GB on disk.\n\nQuestion: How much disk space does the 1.5B model need?"},
+      {"from": "gpt", "value": "The Qwen2.5-1.5B model in INT4 quantized format requires approximately **1.2GB** of disk space [4]. INT4 quantization reduces the model size by about 75% compared to full precision [3], making it practical for local inference on consumer hardware [2]."}
+    ]
+  },
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] The library was created by Bruno Capuano (ElBruno).\n[2] It is open-source under the MIT license.\n\nQuestion: What programming languages does the library support for tool functions?"},
+      {"from": "gpt", "value": "The provided context doesn't contain information about which programming languages are supported for tool functions. The context only mentions the library's creator [1] and license [2]. You may want to check the library's documentation or API reference for details about tool function implementation."}
+    ]
+  },
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] Benchmarks show the 0.5B base model achieves 45% accuracy on tool calling tasks.\n[2] After fine-tuning, the 0.5B model accuracy improves to 78%.\n[3] The fine-tuned 1.5B model achieves 91% tool calling accuracy.\n[4] Fine-tuning took 2 hours on an RTX 4090 for the 0.5B model.\n[5] The training used 5,000 examples with QLoRA rank 16.\n\nQuestion: How much does fine-tuning improve tool calling accuracy?"},
+      {"from": "gpt", "value": "Fine-tuning significantly improves tool calling accuracy:\n\n- **0.5B model:** 45% → 78% accuracy [1][2] — a **33 percentage point improvement**\n- **1.5B model:** Achieves 91% accuracy after fine-tuning [3]\n\nThe 0.5B fine-tuning was done on an RTX 4090 in just 2 hours [4] using 5,000 training examples with QLoRA rank 16 [5]."}
+    ]
+  },
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] The ModelDownloader class handles downloading models from HuggingFace.\n[2] It supports progress reporting during download.\n[3] Models are stored in the default cache directory under .cache/elbruno-localllms/.\n[4] You can specify a custom cache directory via the CacheDirectory property.\n\nQuestion: Where are downloaded models stored and can I change the location?"},
+      {"from": "gpt", "value": "Downloaded models are stored by default in the `.cache/elbruno-localllms/` directory [3]. Yes, you can change the storage location by setting the **CacheDirectory** property [4] on the model configuration. The ModelDownloader class [1] handles all download operations and supports progress reporting [2]."}
+    ]
+  },
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] CI/CD uses GitHub Actions with SDK 8.0.x.\n[2] Build command: dotnet build -p:TargetFrameworks=net8.0\n[3] Test command: dotnet test --framework net8.0\n[4] All code resides in the src/ directory.\n\nQuestion: How do I build the project?"},
+      {"from": "gpt", "value": "To build the project, use the .NET CLI [2]:\n\n```bash\ndotnet build -p:TargetFrameworks=net8.0\n```\n\nThe project uses .NET SDK 8.0.x [1], and all source code is located in the `src/` directory [4]. To run tests after building [3]:\n\n```bash\ndotnet test --framework net8.0\n```"}
+    ]
+  },
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] The QwenFormatter class implements the IChatTemplateFormatter interface.\n[2] It formats messages using ChatML style with <|im_start|> and <|im_end|> tokens.\n[3] For system messages with tools, it injects tool definitions after the system content.\n[4] The Phi3Formatter uses a different format with <|user|> and <|assistant|> tokens.\n\nQuestion: What is the difference between QwenFormatter and Phi3Formatter?"},
+      {"from": "gpt", "value": "The key difference is in their chat template formats:\n\n- **QwenFormatter** [1][2]: Uses **ChatML** style with `<|im_start|>` and `<|im_end|>` tokens. For tool-enabled conversations, it injects tool definitions into the system message [3].\n\n- **Phi3Formatter** [4]: Uses a different format with `<|user|>` and `<|assistant|>` tokens.\n\nBoth implement the `IChatTemplateFormatter` interface [1], but they produce different prompt formats to match their respective model families."}
+    ]
+  },
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] ElBruno.LocalLLMs provides the LocalChatCompletionService as the main entry point.\n[2] It wraps ONNX Runtime GenAI's inference capabilities.\n[3] Usage: var service = new LocalChatCompletionService(modelPath);\n[4] The service implements IChatClient for compatibility with Microsoft.Extensions.AI.\n\nQuestion: Show me a basic usage example."},
+      {"from": "gpt", "value": "Here's a basic example based on the documentation [3][4]:\n\n```csharp\n// Create the service pointing to your ONNX model\nvar service = new LocalChatCompletionService(modelPath);\n\n// Use via IChatClient interface\nvar response = await service.GetResponseAsync(\"Hello, how are you?\");\n```\n\nThe `LocalChatCompletionService` [1] wraps ONNX Runtime GenAI [2] and implements the `IChatClient` interface [4] from Microsoft.Extensions.AI for standard compatibility."}
+    ]
+  },
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] The JsonToolCallParser extracts tool calls from model output.\n[2] It uses regex to find content between <tool_call> and </tool_call> tags.\n[3] Multiple tool calls in a single response are supported.\n[4] Each tool call must contain valid JSON with name and arguments fields.\n\nQuestion: How does the library parse tool calls from model output?"},
+      {"from": "gpt", "value": "The library uses the **JsonToolCallParser** [1] to parse tool calls from model output. Here's how it works:\n\n1. It uses regex to find content between `<tool_call>` and `</tool_call>` tags [2]\n2. Each matched block must contain valid JSON with `name` and `arguments` fields [4]\n3. Multiple tool calls in a single response are supported [3] — each wrapped in its own `<tool_call>` tags\n\nThis means the model must produce properly formatted tool call blocks for the parser to extract them correctly."}
+    ]
+  },
+  {
+    "conversations": [
+      {"from": "system", "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."},
+      {"from": "human", "value": "Context:\n[1] Fine-tuned models are published on HuggingFace under the elbruno organization.\n[2] Model naming convention: elbruno/Qwen2.5-{size}-LocalLLMs-{capability}\n[3] Example: elbruno/Qwen2.5-0.5B-LocalLLMs-ToolCalling\n[4] Models are published in ONNX INT4 format ready for use.\n\nQuestion: Where can I download fine-tuned models?"},
+      {"from": "gpt", "value": "Fine-tuned models are available on **HuggingFace** [1] under the `elbruno` organization. They follow the naming convention [2]:\n\n`elbruno/Qwen2.5-{size}-LocalLLMs-{capability}`\n\nFor example, the tool calling model for 0.5B [3]:\n`elbruno/Qwen2.5-0.5B-LocalLLMs-ToolCalling`\n\nAll models are published in **ONNX INT4 format** [4], ready to use directly with ElBruno.LocalLLMs — no conversion needed."}
+    ]
+  }
+]

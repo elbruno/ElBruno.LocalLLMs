@@ -1,0 +1,1706 @@
+[
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] The QwenFormatter class implements the IChatTemplateFormatter interface.\n[2] It formats messages using ChatML style with <|im_start|> and <|im_end|> tokens.\n[3] For system messages with tools, it injects tool definitions after the system content.\n[4] The Phi3Formatter uses a different format with <|user|> and <|assistant|> tokens.\n\nQuestion: What is the difference between QwenFormatter and Phi3Formatter?"
+      },
+      {
+        "from": "gpt",
+        "value": "The key difference is in their chat template formats:\n\n- **QwenFormatter** [1][2]: Uses **ChatML** style with `<|im_start|>` and `<|im_end|>` tokens. For tool-enabled conversations, it injects tool definitions into the system message [3].\n\n- **Phi3Formatter** [4]: Uses a different format with `<|user|>` and `<|assistant|>` tokens.\n\nBoth implement the `IChatTemplateFormatter` interface [1], but they produce different prompt formats to match their respective model families."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] Python is a popular programming language created by Guido van Rossum.\n[2] It was first released in 1991.\n\nQuestion: What is the latest version of C#?"
+      },
+      {
+        "from": "gpt",
+        "value": "I don't have enough information to answer that question. The provided context only discusses Python, not C#. I would need documentation about C# versions to answer this accurately."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] RAG (Retrieval-Augmented Generation) combines document retrieval with language model generation.\n[2] ElBruno.LocalLLMs.RAG provides a local RAG pipeline using ONNX embeddings.\n[3] Documents are chunked, embedded, and stored in a local vector index.\n[4] The RAG pipeline supports PDF, Markdown, and plain text documents.\n[5] Similarity search uses cosine distance to find relevant chunks.\n\nQuestion: What document formats does the RAG pipeline support?"
+      },
+      {
+        "from": "gpt",
+        "value": "According to the documentation [4], the ElBruno.LocalLLMs.RAG pipeline supports three document formats:\n\n1. **PDF** documents\n2. **Markdown** files\n3. **Plain text** files\n\nDocuments are chunked and embedded using ONNX embeddings [3], and relevant chunks are retrieved using cosine similarity search [5]."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] ElBruno.LocalLLMs uses ONNX Runtime GenAI for model inference.\n[2] The library downloads models automatically from HuggingFace Hub.\n[3] Downloaded models are cached in the user's local cache directory.\n\nQuestion: Do I need to manually download models before using the library?"
+      },
+      {
+        "from": "gpt",
+        "value": "No, you don't need to manually download models. According to the documentation [2], the library **automatically downloads models from HuggingFace Hub**. Downloaded models are then cached locally [3] so they don't need to be re-downloaded on subsequent uses."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get current weather\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}}, \"required\": [\"location\"]}}},\n  {\"type\": \"function\", \"function\": {\"name\": \"get_time\", \"description\": \"Get current time\", \"parameters\": {\"type\": \"object\", \"properties\": {\"timezone\": {\"type\": \"string\"}}, \"required\": [\"timezone\"]}}},\n  {\"type\": \"function\", \"function\": {\"name\": \"calculate\", \"description\": \"Evaluate a math expression\", \"parameters\": {\"type\": \"object\", \"properties\": {\"expression\": {\"type\": \"string\"}}, \"required\": [\"expression\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "What's the weather in Seattle, the time in PST, and what's 15% tip on $85?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Seattle\"}}\n</tool_call>\n<tool_call>\n{\"name\": \"get_time\", \"arguments\": {\"timezone\": \"America/Los_Angeles\"}}\n</tool_call>\n<tool_call>\n{\"name\": \"calculate\", \"arguments\": {\"expression\": \"85 * 0.15\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"temperature\": 8, \"condition\": \"rainy\"}\nTool result: {\"time\": \"09:15:00\"}\nTool result: {\"result\": 12.75}"
+      },
+      {
+        "from": "gpt",
+        "value": "Here's everything you asked for:\n\n1. **Seattle weather:** 8°C and rainy\n2. **PST time:** 9:15 AM\n3. **15% tip on $85:** $12.75 (total: $97.75)"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get current weather\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}}, \"required\": [\"location\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Can you book me a flight to Paris?"
+      },
+      {
+        "from": "gpt",
+        "value": "I'm sorry, but I don't have a tool to book flights. I can only check the weather for you. You might want to use a travel booking website or app for flight reservations."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get current weather for a location\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\", \"description\": \"City name\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"celsius\", \"fahrenheit\"]}}, \"required\": [\"location\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "How hot is it in Tokyo right now?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Tokyo\", \"unit\": \"celsius\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"temperature\": 28, \"condition\": \"sunny\", \"humidity\": 55}"
+      },
+      {
+        "from": "gpt",
+        "value": "It's currently 28°C and sunny in Tokyo with 55% humidity."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] Benchmarks show the 0.5B base model achieves 45% accuracy on tool calling tasks.\n[2] After fine-tuning, the 0.5B model accuracy improves to 78%.\n[3] The fine-tuned 1.5B model achieves 91% tool calling accuracy.\n[4] Fine-tuning took 2 hours on an RTX 4090 for the 0.5B model.\n[5] The training used 5,000 examples with QLoRA rank 16.\n\nQuestion: How much does fine-tuning improve tool calling accuracy?"
+      },
+      {
+        "from": "gpt",
+        "value": "Fine-tuning significantly improves tool calling accuracy:\n\n- **0.5B model:** 45% → 78% accuracy [1][2] — a **33 percentage point improvement**\n- **1.5B model:** Achieves 91% accuracy after fine-tuning [3]\n\nThe 0.5B fine-tuning was done on an RTX 4090 in just 2 hours [4] using 5,000 training examples with QLoRA rank 16 [5]."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_stock_price\", \"description\": \"Get the current stock price\", \"parameters\": {\"type\": \"object\", \"properties\": {\"symbol\": {\"type\": \"string\", \"description\": \"Stock ticker symbol\"}}, \"required\": [\"symbol\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "What's the current price of Microsoft stock?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_stock_price\", \"arguments\": {\"symbol\": \"MSFT\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"symbol\": \"MSFT\", \"price\": 420.50, \"change\": 2.30, \"percent_change\": 0.55}"
+      },
+      {
+        "from": "gpt",
+        "value": "Microsoft (MSFT) is currently trading at $420.50, up $2.30 (+0.55%) today."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] The KnownModels class provides pre-configured model definitions for popular ONNX models.\n[2] Models include Phi-3, Phi-3.5, Qwen2.5, Llama, and Mistral families.\n[3] Each model definition specifies the HuggingFace repo ID, template format, and supported capabilities.\n[4] The ModelDefinition class includes properties like ModelId, ModelFamily, and ChatTemplate.\n\nQuestion: How does the library manage different model configurations?"
+      },
+      {
+        "from": "gpt",
+        "value": "The library manages model configurations through the **KnownModels** class [1], which provides pre-configured **ModelDefinition** objects [4]. Each definition specifies the HuggingFace repository ID, template format, and supported capabilities [3]. The library currently includes definitions for several model families including Phi-3, Phi-3.5, Qwen2.5, Llama, and Mistral [2]."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"calculate\", \"description\": \"Evaluate a math expression\", \"parameters\": {\"type\": \"object\", \"properties\": {\"expression\": {\"type\": \"string\"}}, \"required\": [\"expression\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "I have a rectangular room that's 4.5 meters by 3.2 meters. What's the area and perimeter?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"calculate\", \"arguments\": {\"expression\": \"4.5 * 3.2\"}}\n</tool_call>\n<tool_call>\n{\"name\": \"calculate\", \"arguments\": {\"expression\": \"2 * (4.5 + 3.2)\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"result\": 14.4}\nTool result: {\"result\": 15.4}"
+      },
+      {
+        "from": "gpt",
+        "value": "For your rectangular room (4.5m × 3.2m):\n\n- **Area:** 14.4 m²\n- **Perimeter:** 15.4 m"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get current weather for a location\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"celsius\", \"fahrenheit\"]}}, \"required\": [\"location\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Tell me about the history of Rome"
+      },
+      {
+        "from": "gpt",
+        "value": "Rome has a rich history spanning over 2,500 years. Founded in 753 BC according to legend, it grew from a small settlement on the Tiber River to become the center of one of the largest empires in history. The Roman Republic was established in 509 BC, and the Roman Empire reached its peak under Emperor Trajan around 117 AD. Rome is known for its contributions to law, architecture, engineering, and governance that continue to influence the modern world."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"summarize_text\", \"description\": \"Summarize a long text\", \"parameters\": {\"type\": \"object\", \"properties\": {\"text\": {\"type\": \"string\"}, \"max_sentences\": {\"type\": \"integer\"}}, \"required\": [\"text\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Summarize this in 2 sentences: Machine learning is a subset of artificial intelligence that focuses on building systems that learn from data. These systems improve their performance on a specific task over time without being explicitly programmed. Machine learning algorithms use statistical techniques to find patterns in large datasets and make predictions or decisions based on those patterns."
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"summarize_text\", \"arguments\": {\"text\": \"Machine learning is a subset of artificial intelligence that focuses on building systems that learn from data. These systems improve their performance on a specific task over time without being explicitly programmed. Machine learning algorithms use statistical techniques to find patterns in large datasets and make predictions or decisions based on those patterns.\", \"max_sentences\": 2}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"summary\": \"Machine learning is an AI subset where systems learn from data and improve without explicit programming. These algorithms use statistical methods to identify patterns in data and make predictions.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "Here's the 2-sentence summary:\n\nMachine learning is an AI subset where systems learn from data and improve without explicit programming. These algorithms use statistical methods to identify patterns in data and make predictions."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] Fine-tuned models are published on HuggingFace under the elbruno organization.\n[2] Model naming convention: elbruno/Qwen2.5-{size}-LocalLLMs-{capability}\n[3] Example: elbruno/Qwen2.5-0.5B-LocalLLMs-ToolCalling\n[4] Models are published in ONNX INT4 format ready for use.\n\nQuestion: Where can I download fine-tuned models?"
+      },
+      {
+        "from": "gpt",
+        "value": "Fine-tuned models are available on **HuggingFace** [1] under the `elbruno` organization. They follow the naming convention [2]:\n\n`elbruno/Qwen2.5-{size}-LocalLLMs-{capability}`\n\nFor example, the tool calling model for 0.5B [3]:\n`elbruno/Qwen2.5-0.5B-LocalLLMs-ToolCalling`\n\nAll models are published in **ONNX INT4 format** [4], ready to use directly with ElBruno.LocalLLMs — no conversion needed."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_exchange_rate\", \"description\": \"Get exchange rate between currencies\", \"parameters\": {\"type\": \"object\", \"properties\": {\"base\": {\"type\": \"string\"}, \"target\": {\"type\": \"string\"}}, \"required\": [\"base\", \"target\"]}}},\n  {\"type\": \"function\", \"function\": {\"name\": \"calculate\", \"description\": \"Evaluate a math expression\", \"parameters\": {\"type\": \"object\", \"properties\": {\"expression\": {\"type\": \"string\"}}, \"required\": [\"expression\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "I have $2500 USD. How much is that in euros and what would be left if I spend €1000?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_exchange_rate\", \"arguments\": {\"base\": \"USD\", \"target\": \"EUR\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"rate\": 0.92, \"base\": \"USD\", \"target\": \"EUR\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"calculate\", \"arguments\": {\"expression\": \"2500 * 0.92\"}}\n</tool_call>\n<tool_call>\n{\"name\": \"calculate\", \"arguments\": {\"expression\": \"2500 * 0.92 - 1000\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"result\": 2300}\nTool result: {\"result\": 1300}"
+      },
+      {
+        "from": "gpt",
+        "value": "At the current exchange rate (1 USD = 0.92 EUR):\n\n- **$2,500 USD** = **€2,300 EUR**\n- After spending €1,000, you'd have **€1,300** remaining"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant."
+      },
+      {
+        "from": "human",
+        "value": "Tell me a fun fact about programming."
+      },
+      {
+        "from": "gpt",
+        "value": "Here's a fun fact: The first computer bug was an actual bug! In 1947, Grace Hopper found a moth trapped in a relay of the Harvard Mark II computer. She taped it into the logbook with the note \"First actual case of bug being found.\" This is often cited as the origin of the term \"debugging,\" though the word \"bug\" for a technical glitch was already in use by engineers before that."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"validate_json\", \"description\": \"Validate a JSON string against a schema\", \"parameters\": {\"type\": \"object\", \"properties\": {\"json_string\": {\"type\": \"string\"}, \"schema\": {\"type\": \"object\"}}, \"required\": [\"json_string\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Is this valid JSON? {name: 'John', age: 30}"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"validate_json\", \"arguments\": {\"json_string\": \"{name: 'John', age: 30}\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"valid\": false, \"errors\": [\"Property names must be enclosed in double quotes\", \"String values must use double quotes, not single quotes\"]}"
+      },
+      {
+        "from": "gpt",
+        "value": "That's **not valid JSON**. Two issues:\n\n1. Property names must be in double quotes: `name` → `\"name\"`\n2. String values must use double quotes: `'John'` → `\"John\"`\n\nThe correct JSON would be:\n```json\n{\"name\": \"John\", \"age\": 30}\n```"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get current weather\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}}, \"required\": [\"location\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "What's the weather on Mars?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Mars\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"error\": \"Location not found: Mars\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "The weather tool doesn't support extraterrestrial locations like Mars. It's designed for Earth-based cities and regions. If you'd like, I can check the weather for an Earth location instead!"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant."
+      },
+      {
+        "from": "human",
+        "value": "What are the SOLID principles in software engineering?"
+      },
+      {
+        "from": "gpt",
+        "value": "The SOLID principles are five design guidelines for writing maintainable object-oriented code:\n\n1. **S**ingle Responsibility: A class should have only one reason to change\n2. **O**pen/Closed: Open for extension, closed for modification\n3. **L**iskov Substitution: Subtypes must be substitutable for their base types\n4. **I**nterface Segregation: Prefer small, specific interfaces over large ones\n5. **D**ependency Inversion: Depend on abstractions, not concrete implementations\n\nFollowing these principles leads to code that's easier to test, maintain, and extend."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"run_code\", \"description\": \"Execute a code snippet\", \"parameters\": {\"type\": \"object\", \"properties\": {\"language\": {\"type\": \"string\", \"enum\": [\"python\", \"javascript\", \"csharp\"]}, \"code\": {\"type\": \"string\"}}, \"required\": [\"language\", \"code\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Execute this C# code: Console.WriteLine(DateTime.Now);"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"run_code\", \"arguments\": {\"language\": \"csharp\", \"code\": \"Console.WriteLine(DateTime.Now);\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"output\": \"2025-01-15 14:30:45\\n\", \"exit_code\": 0}"
+      },
+      {
+        "from": "gpt",
+        "value": "The C# code ran successfully. The current date and time is: 2025-01-15 14:30:45"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] The ONNX Runtime GenAI library provides high-performance inference for generative AI models.\n[2] It supports multiple execution providers including CPU, CUDA, and DirectML.\n[3] Models are loaded using the OnnxRuntimeGenAIChatClient class.\n\nQuestion: Does ONNX Runtime support GPU acceleration?"
+      },
+      {
+        "from": "gpt",
+        "value": "Yes, based on the documentation [2], ONNX Runtime GenAI supports GPU acceleration through multiple execution providers, including **CUDA** (NVIDIA GPUs) and **DirectML** (Windows GPU)."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant."
+      },
+      {
+        "from": "human",
+        "value": "Write a short poem about coding."
+      },
+      {
+        "from": "gpt",
+        "value": "Lines of logic, row by row,\nFunctions bloom and data flows.\nBugs may lurk in every seam,\nBut every fix fulfills the dream.\nFrom compile error to success,\nA coder's journey, nothing less."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"calculate\", \"description\": \"Evaluate a math expression\", \"parameters\": {\"type\": \"object\", \"properties\": {\"expression\": {\"type\": \"string\"}}, \"required\": [\"expression\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "What's the meaning of life?"
+      },
+      {
+        "from": "gpt",
+        "value": "That's a profound philosophical question! Different perspectives offer various answers — from existentialist views that we create our own meaning, to religious interpretations of divine purpose, to the scientific view of life as a natural process. Ultimately, many find meaning through relationships, purpose, creativity, and helping others. Is there something specific you'd like to explore?"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_directions\", \"description\": \"Get driving directions between two locations\", \"parameters\": {\"type\": \"object\", \"properties\": {\"origin\": {\"type\": \"string\"}, \"destination\": {\"type\": \"string\"}, \"mode\": {\"type\": \"string\", \"enum\": [\"driving\", \"walking\", \"transit\"]}}, \"required\": [\"origin\", \"destination\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "How do I get from Times Square to Central Park by walking?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_directions\", \"arguments\": {\"origin\": \"Times Square, New York\", \"destination\": \"Central Park, New York\", \"mode\": \"walking\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"distance\": \"0.8 miles\", \"duration\": \"15 minutes\", \"steps\": [\"Head north on Broadway\", \"Turn right on W 59th St\", \"Enter Central Park at Columbus Circle\"]}"
+      },
+      {
+        "from": "gpt",
+        "value": "Walking from Times Square to Central Park:\n\n- **Distance:** 0.8 miles\n- **Duration:** ~15 minutes\n\n**Directions:**\n1. Head north on Broadway\n2. Turn right on W 59th St\n3. Enter Central Park at Columbus Circle"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant."
+      },
+      {
+        "from": "human",
+        "value": "Summarize the main benefits of using local LLMs instead of cloud APIs."
+      },
+      {
+        "from": "gpt",
+        "value": "The main benefits of local LLMs over cloud APIs are:\n\n1. **Privacy** — Data never leaves your machine, crucial for sensitive information\n2. **Cost** — No per-token charges; pay once for hardware\n3. **Latency** — No network round-trip; responses can be faster for small models\n4. **Offline capability** — Works without internet connection\n5. **Customization** — Fine-tune models for your specific domain\n6. **Control** — No vendor lock-in or API deprecation risk\n\nThe trade-off is lower model capability compared to frontier cloud models (GPT-4, Claude), and the need for local compute resources."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] The library was created by Bruno Capuano (ElBruno).\n[2] It is open-source under the MIT license.\n\nQuestion: What programming languages does the library support for tool functions?"
+      },
+      {
+        "from": "gpt",
+        "value": "The provided context doesn't contain information about which programming languages are supported for tool functions. The context only mentions the library's creator [1] and license [2]. You may want to check the library's documentation or API reference for details about tool function implementation."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant."
+      },
+      {
+        "from": "human",
+        "value": "What is ONNX and why does it matter for AI?"
+      },
+      {
+        "from": "gpt",
+        "value": "**ONNX** (Open Neural Network Exchange) is an open format for representing machine learning models. It matters because:\n\n1. **Interoperability** — Train a model in PyTorch or TensorFlow, deploy it anywhere ONNX is supported\n2. **Performance** — ONNX Runtime optimizes inference with hardware-specific accelerations\n3. **Edge deployment** — Run models on devices without needing the original training framework\n4. **Standardization** — One format works across platforms, languages, and devices\n\nFor .NET developers, ONNX is especially important because it allows using Python-trained models in C# applications via ONNX Runtime, without any Python dependency at runtime."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get current weather for a location\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"celsius\", \"fahrenheit\"]}}, \"required\": [\"location\"]}}},\n  {\"type\": \"function\", \"function\": {\"name\": \"get_time\", \"description\": \"Get the current time in a timezone\", \"parameters\": {\"type\": \"object\", \"properties\": {\"timezone\": {\"type\": \"string\"}}, \"required\": [\"timezone\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "What's the weather and time in Berlin?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Berlin\", \"unit\": \"celsius\"}}\n</tool_call>\n<tool_call>\n{\"name\": \"get_time\", \"arguments\": {\"timezone\": \"Europe/Berlin\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"temperature\": 12, \"condition\": \"rainy\", \"humidity\": 85}\nTool result: {\"time\": \"15:45:00\", \"date\": \"2025-01-15\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "In Berlin right now (3:45 PM), it's 12°C and rainy with 85% humidity."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get current weather\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"celsius\", \"fahrenheit\"]}}, \"required\": [\"location\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Is it going to rain in Seattle today?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Seattle\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"temperature\": 12, \"condition\": \"light rain\", \"forecast\": \"rain expected throughout the day\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "Yes, it is currently raining in Seattle (light rain, 12°C), and rain is expected to continue throughout the day. You might want to bring an umbrella!"
+      },
+      {
+        "from": "human",
+        "value": "How about tomorrow?"
+      },
+      {
+        "from": "gpt",
+        "value": "I can only check the current weather conditions, not forecasts for specific future days. You might want to check a weather app or website for tomorrow's forecast in Seattle."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant."
+      },
+      {
+        "from": "human",
+        "value": "Give me a list of 5 tips for writing clean code."
+      },
+      {
+        "from": "gpt",
+        "value": "Here are 5 tips for writing clean code:\n\n1. **Use meaningful names** — Variables, functions, and classes should clearly describe their purpose. `getUserById()` is better than `getData()`.\n\n2. **Keep functions small** — Each function should do one thing well. If it's longer than 20 lines, consider breaking it up.\n\n3. **Avoid magic numbers** — Use named constants instead of hard-coded values. `MAX_RETRIES = 3` is better than just `3`.\n\n4. **Write self-documenting code** — Code should be readable without excessive comments. Comments explain *why*, code explains *what*.\n\n5. **Follow consistent formatting** — Use a linter/formatter and stick to team conventions. Consistency reduces cognitive load."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant."
+      },
+      {
+        "from": "human",
+        "value": "Explain async/await in C#."
+      },
+      {
+        "from": "gpt",
+        "value": "Async/await in C# allows you to write asynchronous code that looks synchronous:\n\n```csharp\npublic async Task<string> GetDataAsync()\n{\n    var result = await httpClient.GetStringAsync(\"https://api.example.com/data\");\n    return result;\n}\n```\n\n- **async** marks a method as asynchronous\n- **await** pauses execution until the awaited task completes\n- The thread is freed during the wait, improving scalability\n- The method returns a `Task<T>` (or `Task` for void)\n\nThis is essential for I/O-bound operations like HTTP requests, file access, and database queries."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"compress_image\", \"description\": \"Compress an image file\", \"parameters\": {\"type\": \"object\", \"properties\": {\"input_path\": {\"type\": \"string\"}, \"output_path\": {\"type\": \"string\"}, \"quality\": {\"type\": \"integer\", \"description\": \"Compression quality 1-100\"}, \"format\": {\"type\": \"string\", \"enum\": [\"jpeg\", \"png\", \"webp\"]}}, \"required\": [\"input_path\", \"output_path\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Compress photo.png to webp format at 80% quality and save as photo_compressed.webp"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"compress_image\", \"arguments\": {\"input_path\": \"photo.png\", \"output_path\": \"photo_compressed.webp\", \"quality\": 80, \"format\": \"webp\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"input_size\": \"2.4 MB\", \"output_size\": \"380 KB\", \"compression_ratio\": \"84%\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "Image compressed successfully!\n\n- **Input:** photo.png (2.4 MB)\n- **Output:** photo_compressed.webp (380 KB)\n- **Compression:** 84% reduction in file size\n\nThe WebP format at 80% quality achieved excellent compression while maintaining good visual quality."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_news\", \"description\": \"Get latest news articles\", \"parameters\": {\"type\": \"object\", \"properties\": {\"topic\": {\"type\": \"string\"}, \"count\": {\"type\": \"integer\"}, \"language\": {\"type\": \"string\"}}, \"required\": [\"topic\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Get me the latest 3 news articles about artificial intelligence"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_news\", \"arguments\": {\"topic\": \"artificial intelligence\", \"count\": 3, \"language\": \"en\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"articles\": [{\"title\": \"AI Breakthrough in Drug Discovery\", \"source\": \"Nature\", \"date\": \"2025-01-15\"}, {\"title\": \"New Open-Source LLM Released\", \"source\": \"TechCrunch\", \"date\": \"2025-01-14\"}, {\"title\": \"AI Safety Summit 2025 Outcomes\", \"source\": \"BBC\", \"date\": \"2025-01-13\"}]}"
+      },
+      {
+        "from": "gpt",
+        "value": "Here are the latest 3 AI news articles:\n\n1. **AI Breakthrough in Drug Discovery** — Nature (Jan 15, 2025)\n2. **New Open-Source LLM Released** — TechCrunch (Jan 14, 2025)\n3. **AI Safety Summit 2025 Outcomes** — BBC (Jan 13, 2025)"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"search_products\", \"description\": \"Search for products in the catalog\", \"parameters\": {\"type\": \"object\", \"properties\": {\"query\": {\"type\": \"string\"}, \"category\": {\"type\": \"string\"}, \"min_price\": {\"type\": \"number\"}, \"max_price\": {\"type\": \"number\"}, \"sort_by\": {\"type\": \"string\", \"enum\": [\"price_asc\", \"price_desc\", \"rating\", \"newest\"]}}, \"required\": [\"query\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Find me wireless headphones under $100, sorted by rating"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"search_products\", \"arguments\": {\"query\": \"wireless headphones\", \"category\": \"electronics\", \"max_price\": 100, \"sort_by\": \"rating\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"products\": [{\"name\": \"SoundMax Pro\", \"price\": 79.99, \"rating\": 4.7}, {\"name\": \"AudioBliss 200\", \"price\": 59.99, \"rating\": 4.5}, {\"name\": \"BassWave Ultra\", \"price\": 89.99, \"rating\": 4.3}]}"
+      },
+      {
+        "from": "gpt",
+        "value": "Here are the top-rated wireless headphones under $100:\n\n1. **SoundMax Pro** — $79.99 ⭐ 4.7/5\n2. **AudioBliss 200** — $59.99 ⭐ 4.5/5\n3. **BassWave Ultra** — $89.99 ⭐ 4.3/5\n\nThe SoundMax Pro has the highest rating. Would you like more details on any of these?"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant."
+      },
+      {
+        "from": "human",
+        "value": "What is the difference between SQL and NoSQL databases?"
+      },
+      {
+        "from": "gpt",
+        "value": "**SQL databases** (relational) like PostgreSQL, MySQL, SQL Server:\n- Store data in structured tables with rows and columns\n- Use SQL for queries\n- Enforce schemas (data structure is predefined)\n- Great for complex relationships and transactions\n- Scale vertically (bigger server)\n\n**NoSQL databases** like MongoDB, Redis, Cassandra:\n- Store data in flexible formats (documents, key-value, graphs)\n- Each type has its own query language\n- Schema-flexible (data structure can vary)\n- Great for large-scale, unstructured data\n- Scale horizontally (more servers)\n\nChoose SQL for structured data with relationships, NoSQL for flexibility and scale."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get current weather\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}}, \"required\": [\"location\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "I'm planning a trip. Check the weather in Rome, Barcelona, and Athens for me."
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Rome\"}}\n</tool_call>\n<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Barcelona\"}}\n</tool_call>\n<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Athens\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"temperature\": 14, \"condition\": \"partly cloudy\"}\nTool result: {\"temperature\": 16, \"condition\": \"sunny\"}\nTool result: {\"temperature\": 12, \"condition\": \"windy\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "Here's the weather for your potential trip destinations:\n\n| City | Temp | Condition |\n|------|------|-----------|\n| Rome 🇮🇹 | 14°C | Partly cloudy |\n| Barcelona 🇪🇸 | 16°C | Sunny ☀️ |\n| Athens 🇬🇷 | 12°C | Windy 💨 |\n\nBarcelona has the best weather right now! All three are relatively mild."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant."
+      },
+      {
+        "from": "human",
+        "value": "Explain the concept of 'model quantization' in simple terms."
+      },
+      {
+        "from": "gpt",
+        "value": "Model quantization is like reducing the quality of a photo to make the file smaller — you lose a tiny bit of detail, but the image still looks good and loads much faster.\n\nIn AI terms, models store their knowledge as numbers (weights). Full precision uses 32-bit or 16-bit numbers. Quantization converts these to smaller formats:\n\n- **INT8** — 8-bit integers (4x smaller than FP32)\n- **INT4** — 4-bit integers (8x smaller than FP32)\n\nFor example, a 3B model might be:\n- FP32: ~12 GB\n- INT4: ~1.5 GB\n\nThe trade-off is typically 1-3% quality loss for 4-8x size reduction and faster inference — usually an excellent deal for local deployment."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"send_email\", \"description\": \"Send an email\", \"parameters\": {\"type\": \"object\", \"properties\": {\"to\": {\"type\": \"string\", \"description\": \"Recipient email\"}, \"subject\": {\"type\": \"string\", \"description\": \"Email subject\"}, \"body\": {\"type\": \"string\", \"description\": \"Email body\"}}, \"required\": [\"to\", \"subject\", \"body\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Send an email to alice@example.com about our meeting tomorrow at 3pm"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"send_email\", \"arguments\": {\"to\": \"alice@example.com\", \"subject\": \"Meeting Tomorrow at 3 PM\", \"body\": \"Hi Alice,\\n\\nThis is a reminder about our meeting scheduled for tomorrow at 3:00 PM.\\n\\nBest regards\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"status\": \"sent\", \"message_id\": \"msg_123\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "Done! I've sent the email to alice@example.com about your meeting tomorrow at 3 PM."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"analyze_sentiment\", \"description\": \"Analyze the sentiment of text\", \"parameters\": {\"type\": \"object\", \"properties\": {\"text\": {\"type\": \"string\"}, \"language\": {\"type\": \"string\"}}, \"required\": [\"text\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "What's the sentiment of this review: 'The product is terrible. It broke after one day and customer support was unhelpful.'"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"analyze_sentiment\", \"arguments\": {\"text\": \"The product is terrible. It broke after one day and customer support was unhelpful.\", \"language\": \"en\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"sentiment\": \"negative\", \"score\": -0.85, \"aspects\": [{\"aspect\": \"product quality\", \"sentiment\": \"very negative\"}, {\"aspect\": \"customer support\", \"sentiment\": \"negative\"}]}"
+      },
+      {
+        "from": "gpt",
+        "value": "The review has a **strongly negative** sentiment (score: -0.85):\n\n- **Product quality:** Very negative — the product broke after one day\n- **Customer support:** Negative — described as unhelpful"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"file_read\", \"description\": \"Read a file from disk\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\", \"description\": \"File path\"}}, \"required\": [\"path\"]}}},\n  {\"type\": \"function\", \"function\": {\"name\": \"file_write\", \"description\": \"Write content to a file\", \"parameters\": {\"type\": \"object\", \"properties\": {\"path\": {\"type\": \"string\"}, \"content\": {\"type\": \"string\"}}, \"required\": [\"path\", \"content\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Read the config.json file and tell me what port is configured"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"file_read\", \"arguments\": {\"path\": \"config.json\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"content\": \"{\\\"server\\\": {\\\"port\\\": 8080, \\\"host\\\": \\\"0.0.0.0\\\"}, \\\"database\\\": {\\\"connection\\\": \\\"localhost:5432\\\"}}\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "The server is configured to run on port **8080** (host: 0.0.0.0)."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"calculate\", \"description\": \"Evaluate a math expression\", \"parameters\": {\"type\": \"object\", \"properties\": {\"expression\": {\"type\": \"string\"}}, \"required\": [\"expression\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "If I invest $10,000 at 5% annual interest compounded monthly, how much will I have after 10 years?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"calculate\", \"arguments\": {\"expression\": \"10000 * (1 + 0.05/12) ** (12 * 10)\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"result\": 16470.09}"
+      },
+      {
+        "from": "gpt",
+        "value": "With $10,000 invested at 5% annual interest compounded monthly, after 10 years you'll have approximately **$16,470.09**. That's a gain of $6,470.09."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_definition\", \"description\": \"Get the dictionary definition of a word\", \"parameters\": {\"type\": \"object\", \"properties\": {\"word\": {\"type\": \"string\"}, \"language\": {\"type\": \"string\"}}, \"required\": [\"word\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "What does 'ephemeral' mean?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_definition\", \"arguments\": {\"word\": \"ephemeral\", \"language\": \"en\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"word\": \"ephemeral\", \"definitions\": [{\"part_of_speech\": \"adjective\", \"definition\": \"lasting for a very short time\", \"examples\": [\"ephemeral pleasures\", \"the ephemeral nature of fashion\"]}]}"
+      },
+      {
+        "from": "gpt",
+        "value": "**Ephemeral** (adjective): Lasting for a very short time.\n\nExamples:\n- \"ephemeral pleasures\"\n- \"the ephemeral nature of fashion\""
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get current weather for a location\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"celsius\", \"fahrenheit\"]}}, \"required\": [\"location\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Check the weather in Sydney, Melbourne, and Brisbane"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Sydney\", \"unit\": \"celsius\"}}\n</tool_call>\n<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Melbourne\", \"unit\": \"celsius\"}}\n</tool_call>\n<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Brisbane\", \"unit\": \"celsius\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"temperature\": 25, \"condition\": \"sunny\", \"humidity\": 50}\nTool result: {\"temperature\": 18, \"condition\": \"overcast\", \"humidity\": 65}\nTool result: {\"temperature\": 30, \"condition\": \"sunny\", \"humidity\": 70}"
+      },
+      {
+        "from": "gpt",
+        "value": "Here's the weather across Australian cities:\n\n| City | Temp | Condition | Humidity |\n|------|------|-----------|----------|\n| Sydney | 25°C | Sunny | 50% |\n| Melbourne | 18°C | Overcast | 65% |\n| Brisbane | 30°C | Sunny | 70% |\n\nBrisbane is the warmest and Melbourne the coolest today."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] The library supports streaming responses via IChatClient.GetStreamingResponseAsync().\n[2] Streaming sends tokens as they are generated rather than waiting for the complete response.\n[3] This provides a better user experience for long responses.\n\nQuestion: Can the library stream responses?"
+      },
+      {
+        "from": "gpt",
+        "value": "Yes! The library supports streaming responses [1] through the `IChatClient.GetStreamingResponseAsync()` method. Streaming sends tokens as they're generated [2] rather than waiting for the complete response, which provides a better user experience especially for longer responses [3]."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] The JsonToolCallParser extracts tool calls from model output.\n[2] It uses regex to find content between <tool_call> and </tool_call> tags.\n[3] Multiple tool calls in a single response are supported.\n[4] Each tool call must contain valid JSON with name and arguments fields.\n\nQuestion: How does the library parse tool calls from model output?"
+      },
+      {
+        "from": "gpt",
+        "value": "The library uses the **JsonToolCallParser** [1] to parse tool calls from model output. Here's how it works:\n\n1. It uses regex to find content between `<tool_call>` and `</tool_call>` tags [2]\n2. Each matched block must contain valid JSON with `name` and `arguments` fields [4]\n3. Multiple tool calls in a single response are supported [3] — each wrapped in its own `<tool_call>` tags\n\nThis means the model must produce properly formatted tool call blocks for the parser to extract them correctly."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] Fine-tuning uses QLoRA (Quantized Low-Rank Adaptation) technique.\n[2] Training requires a GPU with at least 24GB VRAM such as RTX 4090.\n[3] The 0.5B model takes approximately 2 hours to fine-tune on consumer hardware.\n\nQuestion: Can I fine-tune the model on my laptop with 8GB RAM?"
+      },
+      {
+        "from": "gpt",
+        "value": "Based on the documentation [2], fine-tuning requires a GPU with at least **24GB VRAM** (like an RTX 4090). A laptop with only 8GB RAM would not have sufficient memory for fine-tuning. However, you can use the pre-fine-tuned models that we publish, which only require enough resources for inference."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"search_web\", \"description\": \"Search the web for information\", \"parameters\": {\"type\": \"object\", \"properties\": {\"query\": {\"type\": \"string\", \"description\": \"Search query\"}, \"num_results\": {\"type\": \"integer\", \"description\": \"Number of results to return\"}}, \"required\": [\"query\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Search for recent news about .NET 9"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"search_web\", \"arguments\": {\"query\": \".NET 9 release news\", \"num_results\": 5}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"results\": [{\"title\": \".NET 9 Released\", \"url\": \"https://devblogs.microsoft.com/dotnet/dotnet-9\", \"snippet\": \".NET 9 is now available with performance improvements.\"}]}"
+      },
+      {
+        "from": "gpt",
+        "value": "Here are the latest news about .NET 9:\n\n- **.NET 9 Released** — .NET 9 is now available with performance improvements. [Read more](https://devblogs.microsoft.com/dotnet/dotnet-9)"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get current weather\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}}, \"required\": [\"location\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "What's the weather?"
+      },
+      {
+        "from": "gpt",
+        "value": "I'd be happy to check the weather for you! Which city or location would you like me to look up?"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant."
+      },
+      {
+        "from": "human",
+        "value": "What's the difference between a list and a dictionary in Python?"
+      },
+      {
+        "from": "gpt",
+        "value": "A **list** is an ordered collection of items accessed by index (position). A **dictionary** is an unordered collection of key-value pairs accessed by key.\n\n```python\n# List: ordered, accessed by index\nfruits = [\"apple\", \"banana\", \"cherry\"]\nprint(fruits[0])  # \"apple\"\n\n# Dictionary: key-value pairs\nperson = {\"name\": \"Alice\", \"age\": 30}\nprint(person[\"name\"])  # \"Alice\"\n```\n\nUse lists when order matters, dictionaries when you need fast lookups by key."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"check_availability\", \"description\": \"Check if a service or resource is available\", \"parameters\": {\"type\": \"object\", \"properties\": {\"service\": {\"type\": \"string\"}, \"date\": {\"type\": \"string\"}, \"location\": {\"type\": \"string\"}}, \"required\": [\"service\"]}}},\n  {\"type\": \"function\", \"function\": {\"name\": \"make_reservation\", \"description\": \"Make a reservation\", \"parameters\": {\"type\": \"object\", \"properties\": {\"service\": {\"type\": \"string\"}, \"date\": {\"type\": \"string\"}, \"time\": {\"type\": \"string\"}, \"party_size\": {\"type\": \"integer\"}, \"name\": {\"type\": \"string\"}}, \"required\": [\"service\", \"date\", \"time\", \"name\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Is the Italian restaurant on Main Street available Saturday?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"check_availability\", \"arguments\": {\"service\": \"restaurant\", \"date\": \"2025-01-18\", \"location\": \"Italian restaurant, Main Street\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"available\": true, \"time_slots\": [\"18:00\", \"19:30\", \"21:00\"]}"
+      },
+      {
+        "from": "gpt",
+        "value": "Yes, the Italian restaurant on Main Street has availability on Saturday! Open time slots: 6:00 PM, 7:30 PM, and 9:00 PM. Would you like me to make a reservation?"
+      },
+      {
+        "from": "human",
+        "value": "Yes, book for 4 people at 7:30 PM under the name Garcia"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"make_reservation\", \"arguments\": {\"service\": \"restaurant\", \"date\": \"2025-01-18\", \"time\": \"19:30\", \"party_size\": 4, \"name\": \"Garcia\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"confirmation\": \"RES-2025-0456\", \"status\": \"confirmed\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "Your reservation is confirmed! 🍝\n\n- **Restaurant:** Italian restaurant, Main Street\n- **Date:** Saturday, January 18\n- **Time:** 7:30 PM\n- **Party size:** 4\n- **Name:** Garcia\n- **Confirmation #:** RES-2025-0456"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get current weather for a location\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\", \"description\": \"City name\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"celsius\", \"fahrenheit\"]}}, \"required\": [\"location\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "What's the temperature in New York in Fahrenheit?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"New York\", \"unit\": \"fahrenheit\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"temperature\": 75, \"condition\": \"partly cloudy\", \"humidity\": 60}"
+      },
+      {
+        "from": "gpt",
+        "value": "The temperature in New York is currently 75°F with partly cloudy skies and 60% humidity."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_stock_price\", \"description\": \"Get the current stock price\", \"parameters\": {\"type\": \"object\", \"properties\": {\"symbol\": {\"type\": \"string\", \"description\": \"Stock ticker symbol\"}}, \"required\": [\"symbol\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Compare Apple and Google stock prices"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_stock_price\", \"arguments\": {\"symbol\": \"AAPL\"}}\n</tool_call>\n<tool_call>\n{\"name\": \"get_stock_price\", \"arguments\": {\"symbol\": \"GOOGL\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"symbol\": \"AAPL\", \"price\": 185.20, \"change\": -1.10, \"percent_change\": -0.59}\nTool result: {\"symbol\": \"GOOGL\", \"price\": 142.80, \"change\": 3.50, \"percent_change\": 2.51}"
+      },
+      {
+        "from": "gpt",
+        "value": "Here's the comparison:\n\n| Stock | Price | Change |\n|-------|-------|--------|\n| Apple (AAPL) | $185.20 | -$1.10 (-0.59%) |\n| Google (GOOGL) | $142.80 | +$3.50 (+2.51%) |\n\nGoogle is up significantly today while Apple is slightly down."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"query_api\", \"description\": \"Make an HTTP API request\", \"parameters\": {\"type\": \"object\", \"properties\": {\"url\": {\"type\": \"string\"}, \"method\": {\"type\": \"string\", \"enum\": [\"GET\", \"POST\", \"PUT\", \"DELETE\"]}, \"headers\": {\"type\": \"object\"}, \"body\": {\"type\": \"object\"}}, \"required\": [\"url\", \"method\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Call the users API to get user ID 42"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"query_api\", \"arguments\": {\"url\": \"https://api.example.com/users/42\", \"method\": \"GET\", \"headers\": {\"Accept\": \"application/json\"}}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"status\": 200, \"body\": {\"id\": 42, \"name\": \"Ada Lovelace\", \"email\": \"ada@example.com\"}}"
+      },
+      {
+        "from": "gpt",
+        "value": "Successfully retrieved user 42:\n\n- **Name:** Ada Lovelace\n- **Email:** ada@example.com"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] The Qwen2.5 model family ranges from 0.5B to 72B parameters.\n[2] For local inference on consumer hardware, the 0.5B, 1.5B, and 3B variants are recommended.\n[3] INT4 quantization reduces model size by approximately 75% with minimal quality loss.\n[4] The 1.5B INT4 model is approximately 1.2GB on disk.\n\nQuestion: How much disk space does the 1.5B model need?"
+      },
+      {
+        "from": "gpt",
+        "value": "The Qwen2.5-1.5B model in INT4 quantized format requires approximately **1.2GB** of disk space [4]. INT4 quantization reduces the model size by about 75% compared to full precision [3], making it practical for local inference on consumer hardware [2]."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"convert_currency\", \"description\": \"Convert between currencies\", \"parameters\": {\"type\": \"object\", \"properties\": {\"amount\": {\"type\": \"number\"}, \"from_currency\": {\"type\": \"string\"}, \"to_currency\": {\"type\": \"string\"}}, \"required\": [\"amount\", \"from_currency\", \"to_currency\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Convert 1000 Japanese yen to British pounds"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"convert_currency\", \"arguments\": {\"amount\": 1000, \"from_currency\": \"JPY\", \"to_currency\": \"GBP\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"result\": 5.32, \"rate\": 0.00532}"
+      },
+      {
+        "from": "gpt",
+        "value": "1,000 JPY = **£5.32 GBP** (exchange rate: 1 JPY = 0.00532 GBP)."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] The NuGet package is available as ElBruno.LocalLLMs.\n[2] Install using: dotnet add package ElBruno.LocalLLMs\n[3] The package targets .NET 8.0 and .NET 10.0.\n\nQuestion: How do I install ElBruno.LocalLLMs?"
+      },
+      {
+        "from": "gpt",
+        "value": "You can install ElBruno.LocalLLMs via NuGet [1]. Run the following command [2]:\n\n```\ndotnet add package ElBruno.LocalLLMs\n```\n\nThe package supports .NET 8.0 and .NET 10.0 [3]."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"create_task\", \"description\": \"Create a task in the task manager\", \"parameters\": {\"type\": \"object\", \"properties\": {\"title\": {\"type\": \"string\"}, \"description\": {\"type\": \"string\"}, \"assignee\": {\"type\": \"string\"}, \"due_date\": {\"type\": \"string\"}, \"priority\": {\"type\": \"string\", \"enum\": [\"low\", \"medium\", \"high\", \"critical\"]}}, \"required\": [\"title\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Create a critical task for John to fix the login bug by Friday"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"create_task\", \"arguments\": {\"title\": \"Fix login bug\", \"description\": \"Investigate and resolve the login authentication issue\", \"assignee\": \"John\", \"due_date\": \"2025-01-17\", \"priority\": \"critical\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"id\": \"task_789\", \"status\": \"created\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "Created a critical-priority task \"Fix login bug\" assigned to John, due Friday (Jan 17). Task ID: task_789."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_time\", \"description\": \"Get the current time in a timezone\", \"parameters\": {\"type\": \"object\", \"properties\": {\"timezone\": {\"type\": \"string\", \"description\": \"IANA timezone name\"}}, \"required\": [\"timezone\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "What time is it in London?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_time\", \"arguments\": {\"timezone\": \"Europe/London\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"time\": \"14:30:00\", \"date\": \"2025-01-15\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "The current time in London is 2:30 PM on January 15, 2025."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_time\", \"description\": \"Get the current time in a timezone\", \"parameters\": {\"type\": \"object\", \"properties\": {\"timezone\": {\"type\": \"string\", \"description\": \"IANA timezone name\"}}, \"required\": [\"timezone\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "What's the current time in Japan?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_time\", \"arguments\": {\"timezone\": \"Asia/Tokyo\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"time\": \"23:30:00\", \"date\": \"2025-01-15\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "The current time in Japan is 11:30 PM on January 15, 2025."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"convert_currency\", \"description\": \"Convert between currencies\", \"parameters\": {\"type\": \"object\", \"properties\": {\"amount\": {\"type\": \"number\"}, \"from_currency\": {\"type\": \"string\"}, \"to_currency\": {\"type\": \"string\"}}, \"required\": [\"amount\", \"from_currency\", \"to_currency\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "How much is 500 euros in US dollars?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"convert_currency\", \"arguments\": {\"amount\": 500, \"from_currency\": \"EUR\", \"to_currency\": \"USD\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"result\": 542.50, \"rate\": 1.085}"
+      },
+      {
+        "from": "gpt",
+        "value": "500 EUR = **$542.50 USD** (exchange rate: 1 EUR = 1.085 USD)."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get current weather\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}}, \"required\": [\"location\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Show me the weather for all capital cities in South America"
+      },
+      {
+        "from": "gpt",
+        "value": "That's quite a few cities! Let me check the weather for the major South American capitals.\n\n<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Buenos Aires\"}}\n</tool_call>\n<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Brasilia\"}}\n</tool_call>\n<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Santiago\"}}\n</tool_call>\n<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Lima\"}}\n</tool_call>\n<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Bogota\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"temperature\": 32, \"condition\": \"sunny\"}\nTool result: {\"temperature\": 28, \"condition\": \"thunderstorm\"}\nTool result: {\"temperature\": 18, \"condition\": \"clear\"}\nTool result: {\"temperature\": 22, \"condition\": \"overcast\"}\nTool result: {\"temperature\": 14, \"condition\": \"cloudy\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "Here's the weather across South American capitals:\n\n| Capital | Temp | Condition |\n|---------|------|-----------|\n| Buenos Aires 🇦🇷 | 32°C | Sunny |\n| Brasilia 🇧🇷 | 28°C | Thunderstorm |\n| Santiago 🇨🇱 | 18°C | Clear |\n| Lima 🇵🇪 | 22°C | Overcast |\n| Bogotá 🇨🇴 | 14°C | Cloudy |\n\nBuenos Aires is the hottest while Bogotá is the coolest. Watch out for thunderstorms in Brasilia!"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant."
+      },
+      {
+        "from": "human",
+        "value": "What's 2 + 2?"
+      },
+      {
+        "from": "gpt",
+        "value": "2 + 2 = 4"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get current weather for a location\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"celsius\", \"fahrenheit\"]}}, \"required\": [\"location\"]}}},\n  {\"type\": \"function\", \"function\": {\"name\": \"calculate\", \"description\": \"Evaluate a math expression\", \"parameters\": {\"type\": \"object\", \"properties\": {\"expression\": {\"type\": \"string\"}}, \"required\": [\"expression\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "What's the weather in London and what's 100 divided by 7?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"London\", \"unit\": \"celsius\"}}\n</tool_call>\n<tool_call>\n{\"name\": \"calculate\", \"arguments\": {\"expression\": \"100 / 7\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"temperature\": 10, \"condition\": \"foggy\", \"humidity\": 90}\nTool result: {\"result\": 14.285714285714286}"
+      },
+      {
+        "from": "gpt",
+        "value": "Here are your answers:\n\n- **London weather:** 10°C and foggy with 90% humidity.\n- **100 ÷ 7** = approximately 14.29"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] The ModelDownloader class handles downloading models from HuggingFace.\n[2] It supports progress reporting during download.\n[3] Models are stored in the default cache directory under .cache/elbruno-localllms/.\n[4] You can specify a custom cache directory via the CacheDirectory property.\n\nQuestion: Where are downloaded models stored and can I change the location?"
+      },
+      {
+        "from": "gpt",
+        "value": "Downloaded models are stored by default in the `.cache/elbruno-localllms/` directory [3]. Yes, you can change the storage location by setting the **CacheDirectory** property [4] on the model configuration. The ModelDownloader class [1] handles all download operations and supports progress reporting [2]."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get current weather\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}}, \"required\": [\"location\"]}}},\n  {\"type\": \"function\", \"function\": {\"name\": \"calculate\", \"description\": \"Evaluate a math expression\", \"parameters\": {\"type\": \"object\", \"properties\": {\"expression\": {\"type\": \"string\"}}, \"required\": [\"expression\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Just wanted to say hello!"
+      },
+      {
+        "from": "gpt",
+        "value": "Hello! 👋 How can I help you today? I can check the weather for any city or do math calculations for you."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant."
+      },
+      {
+        "from": "human",
+        "value": "What is dependency injection and why is it important?"
+      },
+      {
+        "from": "gpt",
+        "value": "**Dependency Injection (DI)** is a design pattern where an object receives its dependencies from external sources rather than creating them itself.\n\nInstead of:\n```csharp\npublic class OrderService\n{\n    private readonly Database _db = new Database(); // tightly coupled\n}\n```\n\nYou inject the dependency:\n```csharp\npublic class OrderService\n{\n    private readonly IDatabase _db;\n    public OrderService(IDatabase db) => _db = db; // loosely coupled\n}\n```\n\n**Why it matters:**\n- **Testability** — Easily swap real dependencies with mocks\n- **Flexibility** — Change implementations without modifying consumers\n- **Maintainability** — Clear dependency graph makes code easier to understand"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get current weather\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}}, \"required\": [\"location\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "What's the weather in Paris?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Paris\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"temperature\": 15, \"condition\": \"rainy\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "It's 15°C and rainy in Paris right now."
+      },
+      {
+        "from": "human",
+        "value": "What about Madrid?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Madrid\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"temperature\": 22, \"condition\": \"sunny\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "Madrid is much nicer — 22°C and sunny! That's 7 degrees warmer than Paris."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get current weather for a location\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\", \"description\": \"City name\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"celsius\", \"fahrenheit\"]}}, \"required\": [\"location\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "What's the weather in Paris?"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"get_weather\", \"arguments\": {\"location\": \"Paris\", \"unit\": \"celsius\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"temperature\": 18, \"condition\": \"cloudy\", \"humidity\": 72}"
+      },
+      {
+        "from": "gpt",
+        "value": "The weather in Paris is currently 18°C and cloudy with 72% humidity."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant."
+      },
+      {
+        "from": "human",
+        "value": "Translate this pseudocode to C#:\nfor each item in list\n  if item > 10\n    print item"
+      },
+      {
+        "from": "gpt",
+        "value": "Here's the C# equivalent:\n\n```csharp\nforeach (var item in list)\n{\n    if (item > 10)\n    {\n        Console.WriteLine(item);\n    }\n}\n```\n\nOr using LINQ for a more concise approach:\n\n```csharp\nlist.Where(item => item > 10)\n    .ToList()\n    .ForEach(Console.WriteLine);\n```"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] The library uses ChatML format with <|im_start|> and <|im_end|> tokens.\n[2] Tool calls are wrapped in <tool_call> and </tool_call> tags.\n[3] System messages include tool definitions in JSON format.\n\nQuestion: What format does the library use for chat templates?"
+      },
+      {
+        "from": "gpt",
+        "value": "The library uses the **ChatML** format [1], which structures conversations with `<|im_start|>` and `<|im_end|>` tokens. Tool calls are enclosed in `<tool_call>` and `</tool_call>` tags [2], and system messages include tool definitions as JSON [3]."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant."
+      },
+      {
+        "from": "human",
+        "value": "How do I create a .gitignore file?"
+      },
+      {
+        "from": "gpt",
+        "value": "Create a `.gitignore` file in your repository root with patterns for files/folders Git should ignore:\n\n```\n# IDE files\n.vs/\n.idea/\n*.suo\n\n# Build output\nbin/\nobj/\n\n# Dependencies\nnode_modules/\n\n# Environment\n.env\n*.local\n\n# OS files\n.DS_Store\nThumbs.db\n```\n\nYou can also use GitHub's templates at github.com/github/gitignore for language-specific defaults (e.g., VisualStudio.gitignore for C# projects)."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] ElBruno.LocalLLMs is a C# library for running local language models using ONNX Runtime GenAI.\n[2] The library implements the IChatClient interface from Microsoft.Extensions.AI.\n[3] It supports 29 models across 5 tiers, from 0.5B to 14B parameters.\n\nQuestion: What interface does ElBruno.LocalLLMs implement?"
+      },
+      {
+        "from": "gpt",
+        "value": "Based on the documentation [2], ElBruno.LocalLLMs implements the **IChatClient** interface from Microsoft.Extensions.AI."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant."
+      },
+      {
+        "from": "human",
+        "value": "Explain Docker in one paragraph."
+      },
+      {
+        "from": "gpt",
+        "value": "Docker is a platform that packages applications and their dependencies into lightweight, portable containers that run consistently across any environment. Think of a container as a mini virtual machine (but much lighter) — it includes your app, its runtime, libraries, and configuration, ensuring it works the same on your laptop, a test server, and production. Developers use Docker to eliminate \"works on my machine\" problems, simplify deployment, and enable microservices architectures."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"get_weather\", \"description\": \"Get current weather\", \"parameters\": {\"type\": \"object\", \"properties\": {\"location\": {\"type\": \"string\"}}, \"required\": [\"location\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "What's 2 + 2?"
+      },
+      {
+        "from": "gpt",
+        "value": "2 + 2 = 4. That's basic arithmetic, no tool needed for that!"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] ElBruno.LocalLLMs provides the LocalChatCompletionService as the main entry point.\n[2] It wraps ONNX Runtime GenAI's inference capabilities.\n[3] Usage: var service = new LocalChatCompletionService(modelPath);\n[4] The service implements IChatClient for compatibility with Microsoft.Extensions.AI.\n\nQuestion: Show me a basic usage example."
+      },
+      {
+        "from": "gpt",
+        "value": "Here's a basic example based on the documentation [3][4]:\n\n```csharp\n// Create the service pointing to your ONNX model\nvar service = new LocalChatCompletionService(modelPath);\n\n// Use via IChatClient interface\nvar response = await service.GetResponseAsync(\"Hello, how are you?\");\n```\n\nThe `LocalChatCompletionService` [1] wraps ONNX Runtime GenAI [2] and implements the `IChatClient` interface [4] from Microsoft.Extensions.AI for standard compatibility."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant."
+      },
+      {
+        "from": "human",
+        "value": "Hello! What can you help me with?"
+      },
+      {
+        "from": "gpt",
+        "value": "Hello! I'm a helpful AI assistant. I can help you with a wide range of tasks, including:\n\n- Answering questions on various topics\n- Writing and editing text\n- Explaining technical concepts\n- Helping with code and programming\n- Math and calculations\n- General conversation\n\nWhat would you like help with today?"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] Training data uses ShareGPT format with conversations array.\n[2] Each conversation has entries with 'from' (system/human/gpt) and 'value' fields.\n[3] The recommended mix is 50% tool calling, 30% RAG, and 20% general instruction.\n\nQuestion: What is the recommended training data distribution?"
+      },
+      {
+        "from": "gpt",
+        "value": "The recommended training data distribution [3] is:\n\n- **50% tool calling** — Teaching the model to produce correct tool call JSON\n- **30% RAG** — Teaching context-grounded answering with citations\n- **20% general instruction** — Maintaining general chat capabilities\n\nAll training data uses ShareGPT format [1] with `from`/`value` conversation entries [2]."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"run_code\", \"description\": \"Execute a code snippet\", \"parameters\": {\"type\": \"object\", \"properties\": {\"language\": {\"type\": \"string\", \"enum\": [\"python\", \"javascript\", \"csharp\"]}, \"code\": {\"type\": \"string\"}}, \"required\": [\"language\", \"code\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Run this Python code: print('Hello World')"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"run_code\", \"arguments\": {\"language\": \"python\", \"code\": \"print('Hello World')\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"output\": \"Hello World\\n\", \"exit_code\": 0}"
+      },
+      {
+        "from": "gpt",
+        "value": "The code executed successfully:\n\n```\nHello World\n```"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"lookup_user\", \"description\": \"Look up a user by ID or email\", \"parameters\": {\"type\": \"object\", \"properties\": {\"user_id\": {\"type\": \"string\"}, \"email\": {\"type\": \"string\"}}, \"required\": []}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Look up the user with email john@example.com"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"lookup_user\", \"arguments\": {\"email\": \"john@example.com\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"user_id\": \"u_123\", \"name\": \"John Smith\", \"email\": \"john@example.com\", \"role\": \"admin\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "Found the user:\n\n- **Name:** John Smith\n- **ID:** u_123\n- **Email:** john@example.com\n- **Role:** Admin"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant."
+      },
+      {
+        "from": "human",
+        "value": "What is the difference between HTTP GET and POST?"
+      },
+      {
+        "from": "gpt",
+        "value": "The key differences between HTTP GET and POST:\n\n**GET:**\n- Retrieves data from the server\n- Parameters are in the URL query string\n- Can be bookmarked and cached\n- Has URL length limits (~2048 chars)\n- Should be idempotent (no side effects)\n\n**POST:**\n- Sends data to the server\n- Parameters are in the request body\n- Cannot be bookmarked\n- No size limit on data\n- Can have side effects (create/update resources)\n\nUse GET for reading data, POST for creating or modifying data."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant."
+      },
+      {
+        "from": "human",
+        "value": "Thank you for your help!"
+      },
+      {
+        "from": "gpt",
+        "value": "You're welcome! Happy to help. Feel free to come back anytime you have more questions. Have a great day! 😊"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant.\n\nYou have access to the following tools:\n\n[\n  {\"type\": \"function\", \"function\": {\"name\": \"calculate\", \"description\": \"Evaluate a math expression\", \"parameters\": {\"type\": \"object\", \"properties\": {\"expression\": {\"type\": \"string\", \"description\": \"Math expression to evaluate\"}}, \"required\": [\"expression\"]}}}\n]\n\nWhen you need to call a tool, respond with a JSON object in this format:\n{\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}"
+      },
+      {
+        "from": "human",
+        "value": "Calculate the square root of 144"
+      },
+      {
+        "from": "gpt",
+        "value": "<tool_call>\n{\"name\": \"calculate\", \"arguments\": {\"expression\": \"sqrt(144)\"}}\n</tool_call>"
+      },
+      {
+        "from": "human",
+        "value": "Tool result: {\"result\": 12}"
+      },
+      {
+        "from": "gpt",
+        "value": "The square root of 144 is 12."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant. Answer questions based on the provided context. If the context doesn't contain enough information, say so."
+      },
+      {
+        "from": "human",
+        "value": "Context:\n[1] Qwen2.5-0.5B-Instruct is the smallest model with tool calling support in the library.\n[2] Qwen2.5-1.5B-Instruct offers the best balance between speed and quality for tool calling.\n[3] Models are stored in ONNX INT4 format for efficient local inference.\n\nQuestion: Which is the smallest tool-calling model?"
+      },
+      {
+        "from": "gpt",
+        "value": "According to the documentation [1], **Qwen2.5-0.5B-Instruct** is the smallest model with tool calling support in the library."
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "system",
+        "value": "You are a helpful assistant."
+      },
+      {
+        "from": "human",
+        "value": "Explain what an API is in simple terms."
+      },
+      {
+        "from": "gpt",
+        "value": "An API (Application Programming Interface) is like a waiter at a restaurant. You (the app) tell the waiter (API) what you want, the waiter goes to the kitchen (server), and brings back your food (data). The waiter handles all the communication so you don't need to know how the kitchen works — you just need to know the menu (API documentation)."
+      }
+    ]
+  }
+]
