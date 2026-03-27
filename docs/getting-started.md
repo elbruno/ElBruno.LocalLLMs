@@ -117,6 +117,7 @@ ElBruno.LocalLLMs supports 29 models across 5 tiers. Here's how to pick:
 > - Limited RAM (<8 GB)? → Use **Qwen2.5-0.5B-Instruct** (Tiny)
 > - Production quality needed? → Use **Phi-4** or **Qwen2.5-7B-Instruct** (Medium)
 > - Advanced reasoning/coding? → Use **DeepSeek-R1-Distill** or **Mistral-7B**
+> - Reliable tool calling from a small model? → Use a [fine-tuned variant](fine-tuning-guide.md)
 
 ---
 
@@ -461,6 +462,35 @@ If you want to use a model without native ONNX (e.g., Qwen2.5-7B, Llama-3.2-3B),
    ```
 
 For detailed ONNX conversion steps, see [scripts/README.md](../scripts/README.md).
+
+---
+
+## Fine-Tuned Models
+
+ElBruno.LocalLLMs includes pre-fine-tuned Qwen2.5 variants that are optimized for specific tasks. These download automatically from HuggingFace and work out of the box:
+
+```csharp
+using ElBruno.LocalLLMs;
+using Microsoft.Extensions.AI;
+
+// Use a fine-tuned model for reliable tool calling at 0.5B
+var options = new LocalLLMsOptions
+{
+    Model = KnownModels.Qwen25_05B_ToolCalling
+};
+
+using var client = await LocalChatClient.CreateAsync(options);
+```
+
+| Model | KnownModels Constant | Best For |
+|-------|---------------------|----------|
+| Tool Calling (0.5B) | `Qwen25_05B_ToolCalling` | Reliable JSON tool calls from a tiny model |
+| RAG (0.5B) | `Qwen25_05B_RAG` | Document-grounded answers with citations |
+| General (0.5B) | `Qwen25_05B_Instruct_FineTuned` | All tasks (tools + RAG + instruction following) |
+
+> **Why fine-tune?** A fine-tuned 0.5B model often matches or exceeds a base 1.5B model on its specialized task — smaller, faster, and more reliable.
+
+For full details on using and training fine-tuned models, see the [Fine-Tuning Guide](fine-tuning-guide.md).
 
 ---
 

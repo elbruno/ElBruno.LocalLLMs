@@ -38,6 +38,18 @@ ElBruno.LocalLLMs supports **29 LLMs** across 5 tiers. This guide details each m
 | 🟣 Next-Gen | Gemma-3-12B-IT | 12B | google/gemma-3-12b-it | 🔄 Convert | ChatML | — | 12–16 GB | ⚡ |
 | 🟣 Next-Gen | DeepSeek-V3 | 671B (MoE) | deepseek-ai/DeepSeek-V3 | 🔄 Convert | ChatML | — | 128+ GB | 🐢 |
 
+### 🎯 Fine-Tuned Models
+
+Fine-tuned variants of Qwen2.5-0.5B, optimized for specific tasks with ElBruno.LocalLLMs' chat template format. These models are ready-to-use ONNX INT4 and download automatically from HuggingFace.
+
+| Model | Params | HuggingFace ID | Task | Chat Template | Tool Calling | RAM | Speed |
+|-------|--------|----------------|------|---|---|---|---|
+| Qwen2.5-0.5B-LocalLLMs-ToolCalling | 0.5B | elbruno/Qwen2.5-0.5B-LocalLLMs-ToolCalling | Tool/function calling | Qwen | ✅ | ~1 GB | ⚡⚡⚡ |
+| Qwen2.5-0.5B-LocalLLMs-RAG | 0.5B | elbruno/Qwen2.5-0.5B-LocalLLMs-RAG | RAG with citations | Qwen | — | ~1 GB | ⚡⚡⚡ |
+| Qwen2.5-0.5B-LocalLLMs-Instruct | 0.5B | elbruno/Qwen2.5-0.5B-LocalLLMs-Instruct | General (tools + RAG) | Qwen | ✅ | ~1 GB | ⚡⚡⚡ |
+
+> **Tip:** A fine-tuned 0.5B model often matches or exceeds a base 1.5B model on its specialized task. See the [Fine-Tuning Guide](fine-tuning-guide.md) for details.
+
 ---
 
 ## ONNX Status Legend
@@ -246,8 +258,9 @@ Tool calling enables models to call functions/tools you define, enabling agent-l
 | 🥈 Smallest Option | **Qwen2.5-0.5B-Instruct** (0.5B) | Only ~1-2 GB RAM, great for testing/demos |
 | 🥉 Best Quality/Size | **Qwen2.5-7B-Instruct** (7B) | Best tool calling accuracy among supported models |
 | 🏆 Best Overall | **Phi-4** (14B) | Highest accuracy, needs more RAM (12-16 GB) |
+| 🎯 Best Small + Reliable | **Qwen2.5-0.5B-LocalLLMs-ToolCalling** (0.5B) | Fine-tuned for tool calling — cleaner JSON than base 0.5B |
 
-> **Note:** Tool calling quality scales with model size. Smaller models may hallucinate tool calls or miss them. For production use, prefer 3B+ models.
+> **Note:** Tool calling quality scales with model size. Smaller models may hallucinate tool calls or miss them. For production use, prefer 3B+ models or a [fine-tuned variant](fine-tuning-guide.md).
 
 ### How It Works
 

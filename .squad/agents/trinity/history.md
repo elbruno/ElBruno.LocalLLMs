@@ -206,6 +206,15 @@ All 359 tests passing. Build clean. Ready for integration.
 
 **Part 5: Solution Integration**
 - Updated `ElBruno.LocalLLMs.slnx` to include all 3 new projects
+
+### 2026-03-28: Fine-Tuning Documentation Review & Gap Fixes
+- Reviewed `docs/fine-tuning-guide.md` — found it thorough (use pre-trained, train your own, model table, troubleshooting). No code changes needed.
+- `src/samples/FineTunedToolCalling/` follows ToolCallingAgent patterns correctly with proper agent loop and XML comments.
+- **Gap fixed: README.md** — added fine-tuned models feature bullet, FineTunedToolCalling + RagChatbot to samples table, fine-tuned model table, and Fine-Tuning Guide to docs links.
+- **Gap fixed: supported-models.md** — added Fine-Tuned Models section with 3 model variants and added `Qwen25_05B_ToolCalling` to tool-calling recommendations table.
+- **Gap fixed: getting-started.md** — added Fine-Tuned Models section with code example and model table, updated decision tree with fine-tuned variant option.
+- **Gap fixed: RagChatbot README** — added recommendation to try `KnownModels.Qwen25_05B_RAG` for better citations.
+- Decided against a separate RAG fine-tuning sample — existing RagChatbot + fine-tuning guide cover the scenario adequately.
 - Total solution: 13 projects (was 10, added Rag lib + tests + sample)
 - Full solution builds clean: 0 errors, 0 warnings
 - All tests pass: 25/25 RAG tests + existing tests

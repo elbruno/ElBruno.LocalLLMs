@@ -416,6 +416,21 @@ Key findings from parallel model research by Dozer:
 - Trinity ready to implement RAG pipeline following same pattern
 - Tank ready for integration tests with real ONNX models
 - Morpheus orchestration complete; team converged on working Phase 4a
+
+### 2026-03-30 — Training Data Hosting Decision: Hybrid (GitHub + HuggingFace)
+
+**Decision:** Recommended hybrid approach for training data hosting. Seed data (~210 KB, 94 examples) stays in `training-data/` in GitHub; expanded dataset (5K+ examples from Glaive/Alpaca) publishes to HuggingFace Datasets as `elbruno/LocalLLMs-training-data`.
+
+**Key factors:**
+- CI tests (`TrainingDataValidationTests.cs`) already use `SkippableFact` — seed data validates format offline, expanded data is optional
+- .NET devs get `git clone → dotnet test` without HF dependency; ML researchers find dataset on HF Hub
+- 210 KB is fine for Git; multi-MB expanded datasets belong in a data platform
+- Models already publish to HuggingFace (Phase 4 plan) — training data alongside models is natural
+- Matches industry practice (microsoft/phi-3, unsloth patterns)
+
+**Action items:** Create HF dataset repo, add `--push-to-hub` to `prepare_training_data.py`, cross-link in docs, tag for discoverability. ~4 hours total, zero library code changes.
+
+**Decision file:** `.squad/decisions/inbox/morpheus-training-data-hosting.md`
 - Tool formatters will be in: `src/ElBruno.LocalLLMs/Templates/` (extended)
 - RAG package: `src/ElBruno.LocalLLMs.Rag/`
 - Samples: `samples/ToolCallingAgent/`, `samples/RagChatbot/`

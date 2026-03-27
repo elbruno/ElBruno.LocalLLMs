@@ -22,6 +22,7 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 - 💉 **DI-friendly** — register with `AddLocalLLMs()` in ASP.NET Core
 - 🔄 **Streaming** — token-by-token streaming via `GetStreamingResponseAsync`
 - 📊 **Multi-model** — switch between Phi-3.5, Phi-4, Qwen2.5, Llama 3.2, and more
+- 🎯 **Fine-tuned models** — pre-trained Qwen2.5 variants for tool calling and RAG ([guide](docs/fine-tuning-guide.md))
 
 ## Installation
 
@@ -118,6 +119,16 @@ public class MyService(IChatClient chatClient) { ... }
 | 🔴 Large | DeepSeek-R1-Distill-Llama-70B | 70B | 🔄 Convert | `deepseek-r1-distill-llama-70b` |
 | 🔴 Large | Command-R (35B) | 35B | 🔄 Convert | `command-r-35b` |
 
+### Fine-Tuned Models
+
+Pre-trained variants optimized for specific tasks. A fine-tuned 0.5B model often matches or exceeds a base 1.5B on its specialized task.
+
+| Model | Size | Task | HuggingFace ID |
+|-------|------|------|----------------|
+| Qwen2.5-0.5B-ToolCalling | ~1 GB | Tool/function calling | `elbruno/Qwen2.5-0.5B-LocalLLMs-ToolCalling` |
+| Qwen2.5-0.5B-RAG | ~1 GB | RAG with citations | `elbruno/Qwen2.5-0.5B-LocalLLMs-RAG` |
+| Qwen2.5-0.5B-Instruct | ~1 GB | General-purpose | `elbruno/Qwen2.5-0.5B-LocalLLMs-Instruct` |
+
 See the [Supported Models Guide](docs/supported-models.md) for detailed model cards, performance benchmarks, and selection guidance.
 
 ## Samples
@@ -129,6 +140,8 @@ See the [Supported Models Guide](docs/supported-models.md) for detailed model ca
 | [MultiModelChat](src/samples/MultiModelChat) | Switch models at runtime |
 | [DependencyInjection](src/samples/DependencyInjection) | ASP.NET Core DI registration |
 | [ToolCallingAgent](src/samples/ToolCallingAgent) | Function calling and tool use |
+| [FineTunedToolCalling](src/samples/FineTunedToolCalling) | Fine-tuned model for improved tool calling |
+| [RagChatbot](src/samples/RagChatbot) | RAG pipeline with document retrieval |
 | [ConsoleAppDemo](src/samples/ConsoleAppDemo) | Interactive console application |
 
 ## Requirements
@@ -154,6 +167,7 @@ dotnet test ElBruno.LocalLLMs.slnx --framework net8.0
 - [Architecture](docs/architecture.md) — design decisions and internal structure
 - [Samples Guide](docs/samples.md) — walkthrough of each sample application
 - [Benchmarks](docs/benchmarks.md) — how to run and interpret performance benchmarks
+- [Fine-Tuning Guide](docs/fine-tuning-guide.md) — using and training fine-tuned models
 - [ONNX Conversion](docs/onnx-conversion.md) — converting HuggingFace models to ONNX format
 - [Publishing](docs/publishing.md) — NuGet package publishing with OIDC
 - [Contributing](docs/CONTRIBUTING.md) — how to contribute

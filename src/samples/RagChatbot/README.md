@@ -46,3 +46,4 @@ var response = await chatClient.GetResponseAsync(messages);
 - Use `SqliteDocumentStore` for persistent storage
 - Tune `chunkSize`, `overlap`, `topK`, and `minSimilarity` for your use case
 - Combine with `LocalChatClient` for complete RAG-powered chat
+- Try the fine-tuned RAG model (`KnownModels.Qwen25_05B_RAG`) for better source citations — see the [Fine-Tuning Guide](../../../docs/fine-tuning-guide.md)
