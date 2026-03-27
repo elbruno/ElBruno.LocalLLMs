@@ -11,6 +11,12 @@ internal sealed class DeepSeekFormatter : IChatTemplateFormatter
 {
     public string FormatMessages(IList<ChatMessage> messages)
     {
+        return FormatMessages(messages, tools: null);
+    }
+
+    public string FormatMessages(IList<ChatMessage> messages, IEnumerable<AITool>? tools)
+    {
+        // TODO: Implement tool support for DeepSeek format
         var sb = new StringBuilder();
         sb.Append("<｜begin▁of▁sentence｜>");
 

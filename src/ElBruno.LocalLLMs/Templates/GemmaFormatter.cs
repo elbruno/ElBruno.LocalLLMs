@@ -11,6 +11,12 @@ internal sealed class GemmaFormatter : IChatTemplateFormatter
 {
     public string FormatMessages(IList<ChatMessage> messages)
     {
+        return FormatMessages(messages, tools: null);
+    }
+
+    public string FormatMessages(IList<ChatMessage> messages, IEnumerable<AITool>? tools)
+    {
+        // TODO: Implement tool support for Gemma format
         var sb = new StringBuilder();
         string? systemContent = null;
 

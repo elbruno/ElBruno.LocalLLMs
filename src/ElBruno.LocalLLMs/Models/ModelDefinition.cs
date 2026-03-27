@@ -48,4 +48,10 @@ public sealed record ModelDefinition
     /// Used for repos that store multiple variants (e.g., cpu, cuda) in separate folders.
     /// </summary>
     public string? ModelSubPath { get; init; }
+
+    /// <summary>
+    /// Whether this model supports tool/function calling.
+    /// Models that support tool calling can handle AITool/AIFunction in ChatOptions.
+    /// </summary>
+    public bool SupportsToolCalling { get; init; }
 }

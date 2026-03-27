@@ -11,6 +11,12 @@ internal sealed class QwenFormatter : IChatTemplateFormatter
 {
     public string FormatMessages(IList<ChatMessage> messages)
     {
+        return FormatMessages(messages, tools: null);
+    }
+
+    public string FormatMessages(IList<ChatMessage> messages, IEnumerable<AITool>? tools)
+    {
+        // TODO: Implement tool support for Qwen format (similar to ChatML)
         var sb = new StringBuilder();
 
         foreach (var message in messages)

@@ -46,7 +46,8 @@ public static class KnownModels
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Qwen,
         Tier = ModelTier.Tiny,
-        HasNativeOnnx = true
+        HasNativeOnnx = true,
+        SupportsToolCalling = true
     };
 
     /// <summary>Qwen2.5-1.5B-Instruct — small Qwen model.</summary>
@@ -59,7 +60,8 @@ public static class KnownModels
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Qwen,
         Tier = ModelTier.Tiny,
-        HasNativeOnnx = true
+        HasNativeOnnx = true,
+        SupportsToolCalling = true
     };
 
     /// <summary>Gemma 2B IT — Google's tiny instruction-tuned model.</summary>
@@ -103,7 +105,8 @@ public static class KnownModels
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Phi3,
         Tier = ModelTier.Small,
-        HasNativeOnnx = true
+        HasNativeOnnx = true,
+        SupportsToolCalling = true
     };
 
     /// <summary>Qwen2.5-3B-Instruct — small Qwen model, good balance.</summary>
@@ -116,7 +119,8 @@ public static class KnownModels
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Qwen,
         Tier = ModelTier.Small,
-        HasNativeOnnx = true
+        HasNativeOnnx = true,
+        SupportsToolCalling = true
     };
 
     /// <summary>Llama 3.2 3B Instruct — Meta's compact instruct model.</summary>
@@ -159,7 +163,8 @@ public static class KnownModels
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Qwen,
         Tier = ModelTier.Medium,
-        HasNativeOnnx = true
+        HasNativeOnnx = true,
+        SupportsToolCalling = true
     };
 
     /// <summary>Llama 3.1 8B Instruct — Meta's mainstream instruct model.</summary>
@@ -212,7 +217,8 @@ public static class KnownModels
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Phi3,
         Tier = ModelTier.Medium,
-        HasNativeOnnx = true
+        HasNativeOnnx = true,
+        SupportsToolCalling = true
     };
 
     /// <summary>DeepSeek-R1-Distill-Qwen-14B — reasoning-focused distilled model.</summary>
