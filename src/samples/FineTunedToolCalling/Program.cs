@@ -113,7 +113,7 @@ Console.WriteLine($"👤 User: {singleTurnMessages[0].Text}");
 
 var singleResponse = await client!.GetResponseAsync(
     singleTurnMessages,
-    new ChatOptions { Tools = tools, MaxOutputTokens = 512 });
+    new ChatOptions { Tools = tools, MaxOutputTokens = 2048 });
 
 var toolCalls = singleResponse.Messages
     .SelectMany(m => m.Contents.OfType<FunctionCallContent>())
@@ -177,7 +177,7 @@ async Task RunAgentLoop(IChatClient chatClient, List<AITool> agentTools, string 
     {
         var response = await chatClient.GetResponseAsync(
             messages,
-            new ChatOptions { Tools = agentTools, MaxOutputTokens = 512 });
+            new ChatOptions { Tools = agentTools, MaxOutputTokens = 2048 });
 
         // Collect any tool calls from the response
         var calls = response.Messages
