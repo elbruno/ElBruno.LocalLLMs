@@ -24,6 +24,52 @@ The Colab notebook runs the entire pipeline end-to-end:
 
 ---
 
+## Local Validation
+
+Run the validation script to check for API compatibility before running on Colab:
+
+```bash
+python scripts/finetune/validate_notebook.py
+```
+
+This catches common issues (deprecated parameters, missing packages, removed APIs) that would otherwise only surface at runtime on Colab.
+
+---
+
+## CLI Training
+
+For running the full pipeline on **any machine with a GPU** (not just Colab):
+
+```bash
+# Train ToolCalling variant and upload to HuggingFace
+python scripts/finetune/train.py --variant ToolCalling --hf-token YOUR_TOKEN
+
+# Train locally without uploading
+python scripts/finetune/train.py --variant RAG --skip-upload
+
+# Custom epochs, skip ONNX conversion
+python scripts/finetune/train.py --variant Instruct --epochs 5 --skip-onnx
+
+# See all options
+python scripts/finetune/train.py --help
+```
+
+The CLI script replicates the Colab notebook as a single command. It runs:
+load data → format → QLoRA train → merge LoRA → ONNX INT4 → validate → upload.
+
+| Flag | Description |
+|------|-------------|
+| `--variant` | `ToolCalling`, `RAG`, or `Instruct` (default: `ToolCalling`) |
+| `--hf-token` | HuggingFace token (or set `HF_TOKEN` env var) |
+| `--hf-username` | HuggingFace username (default: `elbruno`) |
+| `--epochs` | Training epochs (default: 3) |
+| `--output-dir` | Output directory (default: `./output`) |
+| `--skip-upload` | Skip HuggingFace upload |
+| `--skip-onnx` | Skip ONNX INT4 conversion |
+| `--skip-validation` | Skip ONNX model validation |
+
+---
+
 ## Local Quick Start
 
 ### 1. Install Dependencies
@@ -104,6 +150,7 @@ python upload_to_hf.py \
 
 | Script | Purpose |
 |--------|---------|
+| `train.py` | **Full pipeline CLI** — train, merge, convert, validate, upload in one command |
 | `prepare_training_data.py` | Download & convert external datasets, merge with custom data |
 | `train_qwen_*.py` | QLoRA fine-tuning for each model size |
 | `merge_lora.py` | Merge LoRA adapters into base model |
