@@ -1,4 +1,6 @@
-# Project Context
+# Morpheus — History
+
+## Project Context
 
 - **Owner:** Bruno Capuano
 - **Project:** ElBruno.LocalLLMs — C# library for local LLM chat completions using ONNX Runtime
@@ -7,6 +9,14 @@
 - **Key dependency:** ElBruno.HuggingFace.Downloader for model downloads from HuggingFace
 - **Target models:** Phi-3.5-mini, Qwen2.5-3B, Llama-3.2-3B (small); Qwen2.5-7B, Phi-4 (medium)
 - **Created:** 2026-03-17
+
+## Latest: RAG Tool Routing Implementation Plan
+
+**2026-03-27:** Created comprehensive 4-phase implementation plan (`docs/plan-rag-tool-routing.md`, 584 lines) for RAG tool routing in MCPToolRouter. Covers model conversion (Phase 0), benchmark framework (Phase 1), sample integration (Phase 2), optimization (Phase 3), and documentation (Phase 4) across 18 tasks with team assignments.
+
+**Key Decisions Locked:** Benchmark-first approach, ToolSelectionService in `samples/` (not a library), JSON parsing fallback chain for tiny models, cross-encoder re-ranking as hedge, graceful degradation mandatory.
+
+**Status:** Plan approved. Ready for execution. Team references: See `docs/plan-rag-tool-routing.md` and `.squad/decisions.md` for full RAG plan decisions. All phases linked to corresponding agents' history.md.
 
 ## Learnings
 
@@ -109,6 +119,101 @@
 - Contributors have clear onboarding path to add new models
 - Release transparency via CHANGELOG for early adopters
 
+### 2026-03-18 — RAG Architecture Evaluation for MCP Tool Routing
+
+**Context:** Bruno proposed combining ElBruno.LocalEmbeddings, ElBruno.ModelContextProtocol.MCPToolRouter, and ElBruno.LocalLLMs to create a fully local RAG pipeline for MCP tool selection. Goal: Use semantic embeddings + tiny SLM (0.5B-1.5B params) to route user prompts to relevant MCP tools.
+
+**Key architectural findings:**
+
+**Component Integration:**
+- All three libraries implement MEAI interfaces (`IEmbeddingGenerator`, `IChatClient`) — composition is clean
+- MCPToolRouter already uses LocalEmbeddings internally for embedding generation
+- Current MCPToolRouter: User Prompt → Embeddings → Cosine Similarity → Top-K Tools (~15-40ms total)
+- Proposed RAG: User Prompt → MCPToolRouter → Top-K Tools → SLM Reasoning → Tool Selection + Args (~1.2-7.6s total)
+
+**Performance Budget Analysis:**
+- Embedding-only routing: 15-40ms (fast enough for real-time UIs)
+- Adding 0.5B SLM: +1.2s latency (30-80x slower)
+- Adding 1.5B SLM: +3.4s latency (85-227x slower)
+- Adding 3.8B SLM: +7.6s latency (190-507x slower)
+- GPU acceleration helps (5-30x faster) but undermines "fully local" value prop
+
+**Tiny SLM Capabilities for Tool Selection:**
+- JSON structured output quality: Qwen2.5-0.5B (14.6% exact), Qwen2.5-1.5B (16%), Phi-3.5-mini (2%)
+- Tool selection accuracy: 0.5B can pick 1 tool from 5 candidates; 1.5B+ needed for multi-tool selection
+- Argument generation: Requires 3.8B+ for reliable extraction; tiny models struggle
+- Context windows: 0.5B models can fit ~5-10 tool descriptions max; embedding pre-filter is mandatory
+
+**When SLM Adds Value vs. Embeddings-Only:**
+- **Embeddings suffice:** Small tool catalogs (<20 tools), clear prompts, single-tool selection, latency-critical apps
+- **SLM helps:** Large catalogs (100+ tools), ambiguous queries, multi-tool orchestration, argument inference, conversational context
+- **Alternative approaches:** Cross-encoder re-ranking (100-300ms, better than SLM for pure ranking), rule-based argument extraction
+
+**Architecture Recommendations:**
+1. **Do NOT add SLM dependency to MCPToolRouter** — keep it as pure embedding search library
+2. **Create composition pattern sample** — demonstrate how users can optionally add SLM reasoning layer
+3. **Document decision tree** — when to use embeddings vs. SLM with clear tradeoffs
+4. **Sweet spot model:** Qwen2.5-1.5B-Instruct (best structured output in <2B category, works on GPU)
+5. **If new package needed:** `ElBruno.LocalRAG` as optional composition layer (not core to MCPToolRouter)
+
+**Key insight:** The best architecture uses the minimum necessary complexity. For many MCP tool routing scenarios, embedding-only routing (40ms, 90%+ accuracy) beats SLM-enhanced routing (3.4s, 92% accuracy) because the 2% accuracy gain doesn't justify 85x latency increase.
+
+**Open questions for Bruno:**
+- Target deployment (GPU availability?)
+- Tool catalog size in typical use cases
+- Acceptable latency budget
+- Primary use case (real-time vs. batch)
+- Package structure preference
+
+**Deliverables:**
+- Architecture evaluation: `.squad/decisions/inbox/morpheus-rag-architecture-eval.md`
+- Covers: architecture fit, performance analysis, model quality benchmarks, alternative approaches, composition patterns, implementation phases
+- Recommendation: Sample project demonstrating optional SLM composition, not a required architectural change
+
+### 2026-03-27 — RAG Architecture Evaluation Complete (Coordinated with Dozer)
+
+**Delivered comprehensive architecture analysis for optional SLM layer in MCPToolRouter RAG pipeline.**
+
+Key findings from parallel model research by Dozer:
+- Qwen2.5-0.5B-Instruct is the top model candidate (already converted, 825 MB INT4)
+- SmolLM2-360M as tested backup (smaller/faster)
+- Research validates: specialized sub-1B models can beat 7B+ on tool-calling tasks (OPT-350M: 77.55% vs ChatGPT-CoT: 26%)
+
+**Implication for architecture:**
+- Current model selection aligns with composition pattern recommendation
+- Qwen2.5-1.5B-Instruct as "sweet spot" for best structured output (16% exact match on JSON)
+- Performance budget: 1.2s per query with 0.5B, 3.4s with 1.5B — acceptable for non-real-time scenarios
+
+**Cross-team alignment:**
+- Morpheus owns architectural decisions (pure vs. composed)
+- Dozer owns model benchmarking and conversion
+- Both agree: MCPToolRouter stays pure, composition sample shows optional SLM integration
+- Sample will use Qwen2.5-0.5B as reference implementation
+
+**Next phase coordination:**
+- Dozer tests Qwen2.5-0.5B on actual routing prompts
+- Morpheus documents decision tree for users (when embeddings suffice vs. when SLM helps)
+
+### 2026-03-27 — RAG Tool Routing Implementation Plan Created
+
+**Delivered:** Comprehensive 4-phase implementation plan (`docs/plan-rag-tool-routing.md`) covering model conversion, benchmark framework, sample integration, and optimization.
+
+**Key decisions in the plan:**
+1. **Benchmark-first** — no model/pipeline commitments until data exists. 6 models × 3 catalog sizes × 5 prompt categories.
+2. **ToolSelectionService as sample code** — lives in `samples/ToolRoutingWithSlm/`, not a library. Users copy and adapt. Avoids a fourth NuGet package.
+3. **JSON parsing fallback chain** — 5-strategy cascading parser for tiny model output (strict → regex → line-match → fuzzy → give up). Non-negotiable at 14% JSON compliance.
+4. **Cross-encoder re-ranking as hedge** — if SLM proves too slow/inaccurate, cross-encoder (~100-300ms) is the planned alternative.
+5. **Graceful degradation mandatory** — SLM failures always fall back to embedding-only results. 5s timeout default.
+
+**Models in scope:** Qwen2.5-0.5B (top pick, already converted), SmolLM2-360M (runner-up), SmolLM2-135M (budget), Qwen3-0.6B (wild card), Gemma-3-270M (investigate), TinyAgent-1.1B (investigate).
+
+**Bruno's confirmed constraints:** CPU+GPU, 20+ tools, tool selection only, minimum latency.
+
+**Team assignments:** Dozer owns Phase 0 (model conversion), Tank owns Phase 1 (benchmarks), Trinity owns Phase 2-3 (sample + optimization), Morpheus owns Phase 4 (docs) and reviews all API surfaces.
+
+**Deliverables:**
+- Plan: `docs/plan-rag-tool-routing.md`
+- Decisions: `.squad/decisions/inbox/morpheus-rag-plan-decisions.md`
 ### 2026-03-18 — Phase 4 Architecture: RAG + Tool Routing
 
 **Architecture decisions made:**

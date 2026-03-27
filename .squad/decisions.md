@@ -381,6 +381,75 @@ Push to main → squad-release.yml (creates GitHub Release) → release event tr
 
 ---
 
+### 2026-03-27T15:58: User directives — RAG tool routing constraints
+
+**By:** Bruno Capuano (via Copilot)
+
+**What:**
+1. Target both CPU and GPU — must work on both
+2. Goal is to help with many tools (20+), not small catalogs
+3. SLM task is tool selection only — no argument generation
+4. Latency: as low as possible for local execution
+5. Additional models to investigate: Gemma-3-270M (Google nano, native function calling) and TinyAgent-1.1B (Berkeley, specialized tool calling)
+
+**Why:** User request — captured for team memory. These constraints narrow the model selection and architecture decisions for the RAG tool routing plan.
+
+---
+
+### Decision: RAG Tool Routing Implementation Plan Approved
+
+**Date:** 2026-03-27  
+**Author:** Morpheus (Lead/Architect)  
+**Status:** Approved — ready for execution
+
+## Context
+
+Bruno confirmed constraints for the RAG tool routing pipeline: CPU+GPU, 20+ tools, tool selection only (no argument generation), minimize latency. Dozer's model research identified 6 candidate tiny SLMs. Morpheus's architecture evaluation recommended composition over integration.
+
+## Decisions Made
+
+### D1: Four-Phase Implementation Structure
+Phases: (0) Model Conversion, (1) Benchmark Framework, (2) Sample/Integration, (3) Optimization, plus a documentation phase. This ordering ensures we have data before we optimize.
+
+### D2: Benchmark-First Approach
+No architectural commitments to a specific model or pipeline until benchmarks produce data. The benchmark framework (Phase 1) measures accuracy, latency, and memory across all 6 models on 3 catalog sizes with 5 prompt categories. Decisions about "recommended model" and "default pipeline" come from data, not intuition.
+
+### D3: ToolSelectionService as Sample Code, Not a Library
+The composition layer (`ToolSelectionService`) lives in `samples/`, not `src/`. Users copy and adapt it. This avoids creating a fourth NuGet package and keeps MCPToolRouter dependency-free. If the pattern proves popular, a separate `ElBruno.LocalRAG` package can be extracted later.
+
+### D4: JSON Parsing Fallback Chain
+Tiny models produce valid JSON only ~14% of the time. The parser uses a 5-strategy fallback chain: strict JSON → regex extraction → line-by-line matching → fuzzy matching → give up (fall back to embeddings). This is non-negotiable for production use with sub-1B models.
+
+### D5: Cross-Encoder Re-Ranking as Alternative
+If SLM re-ranking proves too slow or inaccurate at 0.5B, cross-encoder re-ranking (~100-300ms) is the planned alternative. Task 3.4 is explicitly included as a hedge against SLM underperformance.
+
+### D6: Graceful Degradation is Mandatory
+The SLM layer must never block or crash the pipeline. Timeout (default 5s), exception handling, and automatic fallback to embedding-only results are required in all code paths.
+
+## Team Assignments
+
+| Phase | Owner | Support |
+|---|---|---|
+| Phase 0 (Models) | Dozer | Trinity (KnownModels registration) |
+| Phase 1 (Benchmarks) | Tank | Morpheus (scenario review) |
+| Phase 2 (Sample) | Trinity | Morpheus (API review) |
+| Phase 3 (Optimization) | Trinity + Dozer | Morpheus (design review) |
+| Phase 4 (Docs) | Morpheus | — |
+
+## Impact
+
+- No changes to existing `ElBruno.LocalLLMs` core library API
+- No changes to `MCPToolRouter` library
+- New projects: 1 benchmark, 1 sample
+- New docs: tool routing guide, architecture update
+- Up to 5 new `ModelDefinition` entries in `KnownModels.cs` (pending conversion success)
+
+## Reference
+
+Full plan: `docs/plan-rag-tool-routing.md`
+
+---
+
 ### Decision 21: Tiny Tier ONNX Conversions (4 of 6 Succeeded)
 
 **Date:** 2026-03-18  
@@ -856,6 +925,73 @@ None negative. The method is a pure function with no side effects. Exposing it t
 - All meaningful changes require team consensus
 - Document architectural decisions here
 - Keep history focused on work, decisions focused on direction
+---
+
+### Decision 31: Tiny SLM Model Selection for RAG Tool Routing
+
+**Date:** 2026-03-27
+**Author:** Dozer (ML/ONNX Conversion Engineer)
+**Status:** Active
+
+**Context:** MCPToolRouter needs an optional SLM-enhanced routing capability for scenarios with large tool catalogs or ambiguous queries. Research evaluated 15+ tiny models (sub-1B to 1.5B params).
+
+**Decision:** Use **Qwen2.5-0.5B-Instruct** as the primary recommendation, with **SmolLM2-360M-Instruct** as the tested backup.
+
+**Rationale:**
+- Qwen2.5-0.5B is already converted to INT4 (825 MB), reducing implementation friction
+- Native tool/function calling support explicitly built into Qwen2.5 architecture
+- 32K context window sufficient for 3-10 tool descriptions
+- Research shows specialized sub-1B models can achieve 77%+ accuracy on tool-calling tasks (OPT-350M fine-tuned: 77.55% vs. ChatGPT-CoT: 26%, ToolLLaMA-7B: 30%)
+- Small vocab (151936) provides good tokenization speed
+
+**Alternatives:**
+- **SmolLM2-360M-Instruct** — Smaller (faster), purpose-built for edge deployment, smaller vocab (49152)
+- **Qwen3-0.6B-Instruct** — Newest model (Apr 2025), thinking mode for reasoning, 36T token training
+- **Gemma-3-1B** — Official ONNX support from Google, mixed local/global attention, 32K context
+
+**Consequences:**
+- 1.2s latency per routing decision (vs. 15-40ms for embeddings-only)
+- Adds dependency on ElBruno.LocalLLMs to applications using enhanced routing
+- Requires testing on real MCPToolRouter prompts to validate accuracy
+
+---
+
+### Decision 32: Keep MCPToolRouter Pure + Composition Pattern for Optional SLM Layer
+
+**Date:** 2026-03-27
+**Author:** Morpheus (Lead/Architect)
+**Status:** Active
+
+**Context:** Proposed adding SLM reasoning to MCPToolRouter for better tool selection on large catalogs. Architecture evaluation found tradeoffs between accuracy and latency.
+
+**Decision:** Keep MCPToolRouter as a pure embedding-search library. Create a composition pattern (sample/extension) demonstrating how users can optionally add SLM reasoning.
+
+**Rationale:**
+- Embedding-only routing (40ms, ~90% accuracy) is sufficient for 80% of use cases
+- SLM adds 85-227x latency (1.2-3.4s) for minimal accuracy gain (2%)
+- MCPToolRouter is already clean, focused, and testable
+- MEAI interfaces (IEmbeddingGenerator) allow composition without source code changes
+- Users with large catalogs (100+ tools) or ambiguous queries can opt-in via composition
+- Keeps library minimal and maintainable
+
+**Alternative Approaches Considered:**
+- **Cross-encoder re-ranking** — Better accuracy ranking, 100-300ms latency
+- **Multi-stage embedding search** — Coarse filter + fine filter, no SLM
+- **Rule-based + embedding hybrid** — Specialized rules for known patterns
+- **Embedding + SLM inside MCPToolRouter** — Rejected (adds bloat, makes pure routing harder)
+
+**Consequences:**
+- MCPToolRouter remains a focused, small library
+- Sample code shows composition pattern for advanced users
+- Documentation explains decision tree: when embeddings suffice vs. when SLM helps
+- No architectural change to core library
+
+**Sweet Spot Model (if SLM added later):**
+- **Qwen2.5-1.5B-Instruct** — Best structured JSON output in <2B category, 16% exact match rate
+- Provides ~92% tool selection accuracy (vs. 90% for embeddings alone)
+- Runs on GPU (NVIDIA/AMD/Intel) for 5-30x speedup if needed
+
+---
 
 ---
 

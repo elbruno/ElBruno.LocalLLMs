@@ -12,14 +12,18 @@
 Phase 4 adds two critical capabilities to ElBruno.LocalLLMs:
 
 ### Phase 4a: Tool Calling (Tool Routing)
+
 Enable `LocalChatClient` to support function/tool calling through **prompt-based tool routing**. Since ONNX Runtime GenAI doesn't have native function calling support, we implement this by:
+
 - Injecting tool definitions into the chat template
 - Parsing the model's text output to detect tool call patterns
 - Converting detected tool calls into `FunctionCallContent` items
 - Handling `FunctionResultContent` in subsequent messages
 
 ### Phase 4b: RAG Pipeline
+
 Provide a clean integration path for Retrieval-Augmented Generation:
+
 - Core abstractions for document storage, chunking, and retrieval
 - Integration with `ElBruno.LocalEmbeddings` for vector embeddings
 - Sample implementations (in-memory and pluggable stores)
@@ -34,6 +38,7 @@ Provide a clean integration path for Retrieval-Augmented Generation:
 ### 2.1 Public API Changes
 
 #### ChatOptions Support
+
 `LocalChatClient` currently ignores `ChatOptions.Tools`. We'll extract and use:
 
 ```csharp
@@ -65,6 +70,7 @@ foreach (var item in response.Message.Contents)
 ```
 
 #### Model Capability Flags
+
 Add to `ModelDefinition`:
 
 ```csharp
@@ -94,6 +100,7 @@ public enum ToolCallingFormat
 ```
 
 #### Error Handling
+
 If `ChatOptions.Tools` is provided but `ModelDefinition.SupportsToolCalling` is false:
 
 ```csharp
@@ -105,6 +112,7 @@ throw new NotSupportedException(
 ### 2.2 Template Formatter Changes
 
 #### Updated Interface
+
 ```csharp
 internal interface IChatTemplateFormatter
 {
@@ -142,6 +150,7 @@ internal sealed record ParsedToolCall(
 ```
 
 #### Default Implementation (No Tool Support)
+
 ```csharp
 internal abstract class ChatTemplateFormatterBase : IChatTemplateFormatter
 {
@@ -166,6 +175,7 @@ internal abstract class ChatTemplateFormatterBase : IChatTemplateFormatter
 ### 2.3 Tool-Aware Formatters
 
 #### Qwen Formatter (Hermes-Style)
+
 ```csharp
 internal sealed class QwenFormatter : ChatTemplateFormatterBase
 {
@@ -248,6 +258,7 @@ internal sealed class QwenFormatter : ChatTemplateFormatterBase
 ```
 
 #### Llama3 Formatter (JSON Style)
+
 ```csharp
 internal sealed class Llama3Formatter : ChatTemplateFormatterBase
 {
@@ -309,6 +320,7 @@ internal sealed class Llama3Formatter : ChatTemplateFormatterBase
 ```
 
 #### Phi4 Formatter (Functools Style)
+
 ```csharp
 internal sealed class Phi4Formatter : ChatTemplateFormatterBase
 {
@@ -340,6 +352,7 @@ internal sealed class Phi4Formatter : ChatTemplateFormatterBase
 ### 2.4 LocalChatClient Integration
 
 #### Modified GetResponseAsync
+
 ```csharp
 public async Task<ChatResponse> GetResponseAsync(
     IEnumerable<ChatMessage> messages,
@@ -430,6 +443,7 @@ public async Task<ChatResponse> GetResponseAsync(
 ```
 
 #### Handling Tool Results in Subsequent Messages
+
 Tool results come back as `ChatRole.Tool` messages with `FunctionResultContent`. The formatter must convert these into the model's expected format.
 
 ```csharp
@@ -475,11 +489,13 @@ private string FormatSingleMessage(ChatMessage message)
 ### 2.6 Streaming Support
 
 Streaming tool calls is complex because:
+
 1. Tool call patterns may span multiple tokens
 2. We need to buffer until we can parse a complete tool call
 3. Some models emit partial JSON that becomes valid later
 
 **Phase 4a decision:** Tool calling is **non-streaming only**. If `GetStreamingResponseAsync` is called with `ChatOptions.Tools`, we either:
+
 - Throw `NotSupportedException` (conservative)
 - Fall back to `GetResponseAsync` internally (user-friendly)
 
@@ -497,6 +513,7 @@ Future enhancement: Add streaming tool call support with buffered parsing.
 **Decision:** Extension package `ElBruno.LocalLLMs.Rag`
 
 **Rationale:**
+
 - RAG is optional — not all users need it
 - Keeps core library focused on chat completions
 - Allows separate versioning and dependencies
@@ -586,6 +603,7 @@ public sealed record RagContext(
 ### 3.3 Default Implementations
 
 #### Simple Document Chunker
+
 ```csharp
 public sealed class SlidingWindowChunker : IDocumentChunker
 {
@@ -619,6 +637,7 @@ public sealed class SlidingWindowChunker : IDocumentChunker
 ```
 
 #### In-Memory Vector Store
+
 ```csharp
 public sealed class InMemoryDocumentStore : IDocumentStore
 {
@@ -707,6 +726,7 @@ public sealed class InMemoryDocumentStore : IDocumentStore
 ```
 
 #### RAG Pipeline Implementation
+
 ```csharp
 public sealed class LocalRagPipeline : IRagPipeline
 {
@@ -1009,6 +1029,7 @@ public sealed class RagOptions
 ```
 
 Usage:
+
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
 
@@ -1047,6 +1068,7 @@ app.Run();
 ### Phase 4a: Tool Calling (2-3 weeks)
 
 **Week 1: Core Infrastructure**
+
 1. Add `SupportsToolCalling` and `ToolCallingFormat` to `ModelDefinition`
 2. Update `KnownModels` with tool support flags
 3. Extend `IChatTemplateFormatter` with tool methods
@@ -1070,6 +1092,7 @@ app.Run();
 ### Phase 4b: RAG Pipeline (2 weeks)
 
 **Week 1: Core Abstractions**
+
 1. Create `ElBruno.LocalLLMs.Rag` project
 2. Define interfaces: `IDocumentChunker`, `IDocumentStore`, `IRagPipeline`
 3. Implement `SlidingWindowChunker`
@@ -1426,6 +1449,7 @@ static bool HasToolCalls(ChatMessage message)
 ### Phase 4a: Tool Calling Tests
 
 **Unit Tests:**
+
 - Tool definition serialization to JSON schema
 - Tool call parsing for each format (Qwen, Llama3, Phi4)
 - Tool result formatting for each template
@@ -1433,6 +1457,7 @@ static bool HasToolCalls(ChatMessage message)
 - Edge cases: malformed JSON, missing arguments, extra text
 
 **Integration Tests:**
+
 - Round-trip: tools → prompt → model → parse → FunctionCallContent
 - Tool result → format → model → final answer
 - Multi-turn tool calling loops
@@ -1441,12 +1466,14 @@ static bool HasToolCalls(ChatMessage message)
 ### Phase 4b: RAG Tests
 
 **Unit Tests:**
+
 - Document chunking with various sizes and overlaps
 - Cosine similarity calculations
 - In-memory store add/search operations
 - Context formatting
 
 **Integration Tests:**
+
 - End-to-end: index → embed → store → query → retrieve → format
 - SQLite store persistence across sessions
 - Large document sets (1000+ chunks)
@@ -1457,13 +1484,14 @@ static bool HasToolCalls(ChatMessage message)
 ## 8. Documentation Plan
 
 ### New Documents
+
 1. **`docs/tool-calling-guide.md`** — Comprehensive guide to tool calling
    - Supported models
    - Defining tools with AIFunctionFactory
    - Tool calling loop patterns
    - Debugging tool calls
    - Model-specific formats
-   
+
 2. **`docs/rag-guide.md`** — RAG pipeline guide
    - When to use RAG vs fine-tuning
    - Document chunking strategies
@@ -1473,6 +1501,7 @@ static bool HasToolCalls(ChatMessage message)
    - Combining RAG with tool calling
 
 ### Updated Documents
+
 - **`docs/getting-started.md`** — Add tool calling quickstart section
 - **`docs/supported-models.md`** — Add "Tool Support" column
 - **`CONTRIBUTING.md`** — Add "Adding tool support to a model"
@@ -1516,6 +1545,7 @@ static bool HasToolCalls(ChatMessage message)
 ## 11. Success Criteria
 
 **Phase 4a is complete when:**
+
 - [ ] At least 3 models support tool calling (Qwen2.5-7B, Llama-3.2-3B, Phi-4)
 - [ ] All formatters have >90% test coverage for tool parsing
 - [ ] Integration tests pass with real models making real tool calls
@@ -1523,6 +1553,7 @@ static bool HasToolCalls(ChatMessage message)
 - [ ] Documentation explains tool calling clearly with examples
 
 **Phase 4b is complete when:**
+
 - [ ] RAG pipeline can index, embed, store, and retrieve documents
 - [ ] Both in-memory and SQLite stores work correctly
 - [ ] Integration tests verify end-to-end RAG with LocalEmbeddings
