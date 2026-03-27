@@ -18,18 +18,16 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: |
-            8.0.x
-            10.0.x
+          dotnet-version: 8.0.x
 
       - name: Restore
-        run: dotnet restore ElBruno.LocalLLMs.slnx
+        run: dotnet restore ElBruno.LocalLLMs.slnx -p:TargetFrameworks=net8.0
 
       - name: Build
-        run: dotnet build ElBruno.LocalLLMs.slnx --configuration Release --no-restore
+        run: dotnet build ElBruno.LocalLLMs.slnx --configuration Release --no-restore -p:TargetFrameworks=net8.0
 
       - name: Unit Tests
-        run: dotnet test tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj --configuration Release --no-build --verbosity normal
+        run: dotnet test ElBruno.LocalLLMs.slnx --configuration Release --no-build --framework net8.0 --verbosity normal
 
       - name: Read version from .csproj
         id: version
