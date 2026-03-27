@@ -13,6 +13,7 @@ How to decide who handles what.
 | Testing | Tank 🧪 | Unit tests, integration tests, model validation |
 | NuGet packaging & CI/CD | Switch ⚙️ | Package publishing, GitHub Actions, build scripts |
 | Model conversion (HF→ONNX) | Dozer 🔬 | ONNX GenAI builder, quantization, HF upload |
+| Fine-tuning & training | Mouse 🔬 | LoRA/QLoRA, training data, evaluation, base model selection |
 | Scope & priorities | Morpheus 🏗️ | What to build next, trade-offs, decisions |
 | Session logging | Scribe 📋 | Automatic — never needs routing |
 

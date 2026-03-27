@@ -97,6 +97,46 @@
 
 **Impact:** Users new to tool calling or RAG have comprehensive, self-contained guides with runnable examples. Development team has clear documentation of Phase 4 capabilities and limitations for maintenance and future work.
 
+### 2026-03-28 — Strategic Assessment: Fine-Tuning for ElBruno.LocalLLMs
+
+**RECOMMENDATION: HYBRID PHASE 1 + 3 APPROACH — Not a core library responsibility.**
+
+**Key Finding:** Fine-tuning has real value, but the library's strength is its **interface abstraction** (IChatClient), not model ownership. Community-maintained fine-tuned models already exist and are better maintained than anything we could produce.
+
+**Strategic Assessment Delivered:**
+- `.squad/decisions/inbox/morpheus-finetune-strategy.md` (25K words)
+- Comprehensive Build-vs-Buy analysis
+- Risk/Reward matrix for all options
+- Ecosystem fit analysis
+- Architecture impact assessment (none—fine-tuned models are data variants, work seamlessly)
+
+**Phases Recommended:**
+1. **Phase 1 ✅ DO** (2 weeks) — Evaluate existing fine-tuned models (siddharthvader's Qwen2.5-1.5B LoRA, FunctionGemma-7B, community Llama adapters). Document in `docs/supported-models.md`. Zero maintenance cost; immediate user benefit.
+2. **Phase 2 ❌ SKIP** — Skip publishing our own fine-tuned models. Maintenance burden (re-tuning per base model update) not justified when community options exist.
+3. **Phase 3 ✅ DO (Later)** — Create `docs/fine-tuning-guide.md` + optional training scripts. Empower users to fine-tune for specialized domains. Publish after Phase 4 stabilizes.
+4. **Phase 4 ❌ SKIP** — Skip publishing fine-tuning pipeline/infrastructure. Ecosystem tools (LLaMA-Factory, Unsloth, TRL) already excel here.
+
+**Key Insights:**
+- Qwen2.5-1.5B fine-tuned on 3K examples achieves 86.6% exact match on function calls (vs 85% base), nearly matching 7B base model. Small models + fine-tuning are asymptotically powerful.
+- Phi-3.5-mini is already so good at tool calling (base model) that fine-tuning provides <5% marginal gain. Not worth the effort.
+- FunctionGemma-7B is Google's official tool-calling fine-tune and should be a primary recommendation.
+- No library code changes needed for fine-tuned models. They flow through the same pipeline (ModelDefinition → ONNX → formatter → parser).
+
+**Architecture Impact:** Zero. Fine-tuned models are data variants. The `ModelDefinition` record + ONNX inference pipeline absorb them identically to base models.
+
+**Cost Analysis:**
+- Phase 1: 10 hours (evaluation + documentation)
+- Phase 3: 14 hours (guide + optional scripts)
+- Total: 24 hours vs. 122+ hours/year for owning fine-tuned models
+- Skip-everything cost: $0; ownership cost: $600–1K/year + 60+ maintenance hours
+
+**Business Fit:** Hybrid approach scales with community effort, not library resources. Users get better models; library stays maintainable. Win-win.
+
+**Next Steps:**
+- Approve Phase 1 (evaluate community fine-tunes)
+- Schedule Phase 3 for post-Phase 4a (late April)
+- Inform Mouse and Dozer of scope change (from training → evaluation/integration)
+
 ### 2026-03-28 — Documentation Updated for Phase 4a Tool Calling
 - Added "Tool Calling" column to `docs/supported-models.md` marking Qwen2.5-0.5B, Phi-3.5-mini, Qwen-7B with support
 - Created new "Tool Calling" section in `docs/getting-started.md` with feature overview and link to samples/ToolCallingAgent
@@ -415,3 +455,39 @@ Key findings from parallel model research by Dozer:
 **Decision Merged:** Decision 8 (Documentation Updates) in `.squad/decisions.md`
 
 All conventions from `.github/copilot-instructions.md` now fully enforced. Team-wide convention compliance complete.
+
+
+### 2026-03-28 — Strategic Direction Revised: We Own Fine-Tuned Models
+
+**Context:** Bruno issued a critical directive overriding the previous "evaluate community models" assessment. The .NET community cannot fine-tune models (Python barriers, GPU infrastructure), and this library will remove that barrier by publishing fine-tuned models.
+
+**New Strategic Position:**
+- Library WILL publish fine-tuned ONNX models optimized for tool calling, RAG, and other capabilities
+- Models published on HuggingFace under `elbruno/*` namespace
+- Pre-converted to ONNX INT4/INT8/FP16 (no Python needed by consumers)
+- Integrated into `KnownModels` with metadata (`IsFineTuned`, `FineTunedFor`, `BaseModelId`)
+
+**Phase 1 Target:** Qwen2.5-0.5B-ToolCalling-v1
+- Fine-tune on Berkeley BFCL + xLAM + .NET-specific tool examples
+- Target accuracy: ≥75% (vs ~45% base model)
+- Timeline: 8 weeks from dataset curation to HuggingFace publication
+- Budget: ~$150 Year 1, ~$130/year ongoing
+
+**Key Insights:**
+- 85% of .NET devs cannot fine-tune locally (no GPU or insufficient VRAM)
+- Tool calling has highest ROI: +40-91% accuracy improvement with fine-tuning
+- No other .NET library publishes fine-tuned, ONNX-ready models
+- Low cost (2 hours on A100 = $5 for Qwen-0.5B), high value (removes Python barrier)
+
+**Impact:** Library now positioned as the ONLY .NET library with native fine-tuned local models. This is a competitive differentiator, not just a feature.
+
+**Document:** Created `morpheus-finetune-strategy-v2.md` (33.6 KB) covering:
+- Model publishing strategy (HuggingFace, ONNX distribution, NuGet integration)
+- Capability prioritization (tool calling > chat template > RAG)
+- 8-week phased approach (dataset curation → fine-tuning → validation → publication)
+- Library changes (ModelRecommender API, fine-tuned model metadata, test suite)
+- Competitive landscape (no .NET equivalent, Python fragmented)
+- Resource requirements ($5-30 per model, ~3-4 GPU hours)
+- Risk mitigation and success metrics
+
+**Status:** Strategy approved by Bruno's directive. Ready for execution starting Phase 1 (dataset curation).

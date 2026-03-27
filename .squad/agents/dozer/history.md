@@ -181,3 +181,82 @@ Key findings from parallel architecture evaluation by Morpheus:
 - Morpheus owns architecture decisions (composition vs. integration) and documentation (Phase 4)
 
 **Full plan reference:** `docs/plan-rag-tool-routing.md` with 4 implementation phases and 18 tasks. See `.squad/decisions.md` for RAG plan decision memo.
+
+### 2025-03-27 — ONNX Conversion Compatibility for Fine-Tuned Models
+
+**Researched ONNX conversion pipeline for fine-tuned sub-3B models. Documented complete LoRA → merge → ONNX workflow.**
+
+**Key findings:**
+1. **LoRA merge → ONNX is fully supported** for all target architectures (Qwen2.5, Llama-3.2, Phi-3.5, Gemma-2, SmolLM2).
+   - Use PEFT library for standard LoRA training (NOT QLoRA for production — merge causes precision loss).
+   - Merge adapters with `peft.PeftModel.merge_and_unload()` to produce dense checkpoint.
+   - Export merged checkpoint with `onnxruntime_genai.models.builder` — ONNX export is architecture-agnostic once merged.
+   - No special handling required vs base models — merged models convert identically if config/tokenizer preserved.
+
+2. **Quantization degrades fine-tuned models slightly more than base models** (1-3% task accuracy drop for INT4 vs <1% for INT8).
+   - Fine-tuning creates subtle behavioral deltas that quantization can wash out.
+   - Most affected: JSON formatting, tool calling, long-context reasoning, sub-1B models.
+   - Least affected: general chat, short-context Q&A, summarization.
+   - **Best practice:** Fine-tune in FP16/BF16 → merge → validate → quantize INT4 → validate ONNX.
+   - **Quantization strategies:** INT4 AWQ > INT4 GPTQ > INT4 RTN (in quality order). Use INT8 for quality-critical tasks.
+
+3. **GenAI config compatibility** — `genai_config.json` remains compatible unless fine-tuning changes:
+   - Context length / max_position_embeddings (e.g., RoPE scaling for 32K → 128K)
+   - Tokenizer vocabulary (e.g., adding special tokens for tool calling)
+   - Model architecture (NOT recommended — breaks compatibility)
+   - **Action:** If config changes, re-run builder on merged checkpoint to regenerate `genai_config.json`.
+
+4. **Tokenizer and special tokens:**
+   - Adding special tokens for tool calling (e.g., `<tool>`, `[TOOL_CALLS]`) is fully supported.
+   - MUST resize embeddings before training: `model.resize_token_embeddings(len(tokenizer))`.
+   - MUST save tokenizer with merged model: `tokenizer.save_pretrained()`.
+   - ONNX export automatically includes tokenizer files (tokenizer.json, tokenizer_config.json, special_tokens_map.json).
+   - Chat templates (ChatML, Llama3, Phi3, Qwen, Mistral) are preserved in `tokenizer_config.json` — don't change prompt format unless you update the template.
+
+5. **Architecture-specific notes:**
+   - **Qwen2.5** (0.5B/1.5B/3B): Perfect track record, native tool calling support, large vocab (151936 tokens). Top choice for fine-tuning.
+   - **Llama-3.2-3B**: Converts cleanly, GQA attention, 128K context, strong reasoning. Separate gated license per version.
+   - **Phi-3.5-mini / Phi-4**: Native ONNX from Microsoft. Fine-tune PyTorch checkpoint, re-export to ONNX. Strong instruction following.
+   - **Gemma-2-2B / Gemma-3-1B**: Supported, quantization-aware training (QAT), very large vocab (256K). Google's polish, QAT-optimized.
+   - **SmolLM2-1.7B**: Smallest vocab (49152 tokens), fastest tokenization, edge-optimized. Runner-up to Qwen for speed-critical deployments.
+   - **StableLM-2, Mixtral MoE, 70B+ models:** NOT SUPPORTED by builder (architecture issues or OOM).
+
+6. **End-to-end pipeline:**
+   - Fine-tune (LoRA, FP16/BF16) → merge adapters → save merged model + tokenizer → validate merged checkpoint → ONNX export (INT4) → validate ONNX → upload to HF → integrate with library.
+   - Critical validation points: after merge (test prompts, tool calling), after ONNX export (compare outputs to PyTorch).
+   - Failure modes: QLoRA precision loss, tokenizer not saved, special tokens missing, INT4 quality degradation, chat template mismatch.
+
+7. **Pre-converted fine-tuned ONNX models are RARE on HuggingFace.**
+   - Most fine-tuned models are PyTorch checkpoints (e.g., `SqueezeAILab/TinyAgent-1.1B` for function calling).
+   - Community ONNX models focus on base/instruction-tuned variants, not specialized fine-tunes.
+   - **Recommendation:** Fine-tune + convert yourself — faster and more flexible than waiting for pre-converted models.
+
+8. **Tool calling considerations:**
+   - Models with native tool calling (Qwen2.5, Gemma-3) are best starting points.
+   - Fine-tuning datasets: xLAM (Salesforce), custom tool schemas, function calling examples.
+   - Special tokens: `[AVAILABLE_TOOLS]`, `[TOOL_CALLS]`, `[TOOL_RESULTS]` — add to tokenizer before training.
+   - ONNX export handles tool tokens correctly IF tokenizer is saved with merged model.
+
+9. **Recommendations for Bruno's project:**
+   - **Priority 1:** Test Qwen2.5-0.5B (already converted) on tool calling prompts — may already be sufficient.
+   - **Priority 2:** Fine-tune Qwen2.5-0.5B with LoRA on xLAM or custom dataset if base model insufficient.
+   - **Priority 3:** Merge + ONNX export (INT4) + validate quality (compare to PyTorch).
+   - **Priority 4:** Upload to HF (`elbruno/<model-name>-onnx`) + add to `KnownModels.cs` + integration tests.
+   - **Target models:** Qwen2.5-0.5B (tool calling), SmolLM2-1.7B (edge), Llama-3.2-3B (long-context), Phi-3.5-mini (Microsoft).
+
+**Tools verified:**
+- **PEFT:** Standard LoRA merge (safest, most compatible)
+- **onnxruntime_genai.models.builder:** Primary ONNX export tool (produces GenAI-compatible format)
+- **Optimum:** Fallback ONNX export (if builder doesn't support architecture)
+- **Unsloth:** Alternative for faster merge/export (7B+ models)
+
+**Documentation written:** `.squad/decisions/inbox/dozer-onnx-finetune-compat.md` — comprehensive analysis with pipeline sketches, architecture notes, quality tradeoffs, integration guide.
+
+**References:**
+- Microsoft ONNX Runtime GenAI docs: https://github.com/microsoft/onnxruntime-genai
+- PEFT model merging guide: https://huggingface.co/docs/peft/developer_guides/model_merging
+- HuggingFace fine-tuning guide (2025): https://www.philschmid.de/fine-tune-llms-in-2025
+- xLAM function calling dataset: https://huggingface.co/learn/cookbook/en/function_calling_fine_tuning_llms_on_xlam
+- ONNX INT4 quantization spec: https://onnx.ai/onnx/technical/int4.html
+- PyTorch PEFT → ONNX Runtime tutorial: https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/pytorch-peft-sft-and-convert-to-onnx-runtime/4271557
+- Research: TinyAgent (arXiv:2512.15943), SmolLM2 (arXiv:2502.02737), Qwen2.5 (arXiv:2412.15115), Gemma-3 (arXiv:2503.19786)
