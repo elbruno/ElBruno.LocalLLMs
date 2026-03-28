@@ -6477,3 +6477,296 @@ All MCP tools registered with MCPToolRouter must follow the guidelines in 	ool-d
 - No new dependencies — uses System.Text.Json already available
 - ModelMetadata is a sealed record in the public API surface
 
+# Decision: MaxSequenceLength reports effective runtime limit
+
+**Author:** Trinity  
+**Date:** 2025-07-25  
+**Issue:** #5  
+**PR:** #6  
+
+## Context
+
+`ModelMetadata.MaxSequenceLength` returned the raw `genai_config.json` value (e.g. 131,072 for Phi-3.5 mini). The ONNX Runtime GenAI Generator enforces `GenerationParameters.MaxLength` (default 2048), so the reported value was ~64x too large.
+
+## Decision
+
+- `MaxSequenceLength` = `min(config_value, options.MaxSequenceLength)` — the effective limit
+- `ConfigMaxSequenceLength` (new) = raw config value — for consumers needing theoretical context window
+- Version bump to 0.7.0 (new public API property)
+
+## Rationale
+
+Downstream consumers (e.g. PromptDistiller) used `MaxSequenceLength` to calculate safe prompt sizes. The inflated value caused them to send prompts far exceeding the runtime limit. The fix makes the default behavior correct while preserving the raw value for advanced use.
+
+
+---
+
+# DX Plan v2 — Team Decision: Incorporate Issue #7 as P0 Anchor
+
+**Author:** Morpheus (Lead/Architect)  
+**Date:** 2026-03-29  
+**Status:** APPROVED FOR EXECUTION  
+**Distribution:** Team (Trinity, Dozer, Mouse, Tank, Switch)
+
+---
+
+## Decision
+
+**Elevate Issue #7 (DirectML Auto-Fallback Bug) from P1 to P0 and make it the anchor point for Wave 1 of the DX improvement plan.**
+
+The original 11-item DX plan prioritized Issue #7 as P1 (medium priority). Analysis shows it should be **P0 critical** because:
+1. It blocks users with unsupported GPU hardware on day 1
+2. Its fix compounds with custom exceptions + ILogger to create **3x error clarity**
+3. It unblocks the entire Wave 1 dependency chain
+
+---
+
+## Context: Issue #7 Root Cause
+
+**In:** `src/ElBruno.LocalLLMs/Execution/OnnxGenAIModel.cs`, method `ShouldFallbackToNextProvider()` (lines 120–158)
+
+**Problem:** When DirectML is unsupported, ONNX throws:
+```
+OnnxRuntimeGenAIException: Specified provider is not supported.
+```
+
+This generic message has NO provider token ("dml"/"cuda"). The fallback logic requires BOTH a provider token AND a failure indicator. Missing the token causes `hasProviderContext` to return false, which causes `ShouldFallbackToNextProvider()` to return false, which causes execution to hit the hard-error catch block (line 52–57) and throw `InvalidOperationException("hard error (no fallback)")`.
+
+**Impact:** Users on CPU-only machines with Auto mode get opaque crashes instead of graceful CPU fallback.
+
+---
+
+## Decision: Make Issue #7 the Anchor of Wave 1
+
+**Current Plan Structure:**
+
+| Wave | Timeline | P0/P1 Items | Status |
+|------|----------|-----------|--------|
+| 1 | 2 weeks | Fix Issue #7 + Exceptions + ILogger + Validation + Docs | **NEW: Issue #7 = P0** |
+| 2 | 3 weeks | GPU diagnostics + README + Troubleshooting | P1 items |
+| 3 | 2 weeks | Model warmup + Health check + Builder | P2 items |
+| 4 | 1 week | Progress callbacks + Exception context | P3 items |
+
+**Why Issue #7 is P0:**
+
+1. **User-facing hard error** — Crashes on first use if GPU missing
+2. **No workaround** — Users can't recover without code changes
+3. **Compounds with exceptions + logging** — Issue #7 alone = one error path. Issue #7 + custom exceptions + ILogger = 3x clarity multiplier:
+   - Custom exception tells *which layer* failed (ExecutionProviderException)
+   - ILogger shows the *fallback chain progression* (DirectML tried → CUDA tried → CPU selected)
+   - Issue #7 fix ensures we *reach CPU* instead of crashing
+
+**Rationale for P0 designation:**
+
+- **Scope:** Small (3 code edits + 2 test cases)
+- **Impact:** Huge (unblocks all P1/P2/P3 items, enables self-service diagnostics)
+- **Dependencies:** None (doesn't depend on anything; everything depends on Wave 1)
+- **Risk:** Low (fallback logic already exists, we're just making it more permissive in Auto mode)
+
+---
+
+## Implementation Plan Summary
+
+### Issue #7 Exact Fix
+
+**File: `src/ElBruno.LocalLLMs/Execution/OnnxGenAIModel.cs`**
+
+1. **Modify method signature** (line 120):
+   ```csharp
+   internal static bool ShouldFallbackToNextProvider(
+       ExecutionProvider provider, 
+       Exception ex, 
+       ExecutionProvider initialProvider)  // ← NEW PARAMETER
+   ```
+
+2. **Add permissive fallback logic for Auto mode** (after line 124):
+   ```csharp
+   var normalized = message.ToLowerInvariant();
+   
+   // Generic unsupported indicators — permit fallback in Auto mode even without provider token
+   var isGenericUnsupported = normalized.Contains("is not supported") ||
+       normalized.Contains("not available") ||
+       normalized.Contains("is unavailable");
+
+   if (isGenericUnsupported && initialProvider == ExecutionProvider.Auto)
+       return true; // Fast path: Auto mode + generic unsupported = fallback
+   
+   // Strict path: Check provider token AND failure indicator (existing code continues...)
+   ```
+
+3. **Update call sites** (lines 48, 71):
+   ```csharp
+   // Line 48: ShouldFallbackToNextProvider(candidate, ex, provider)  ← Add 3rd param
+   // Line 71: ShouldFallbackToNextProvider(provider, ex, provider)   ← Add 3rd param
+   ```
+
+### Tests
+
+Add to `tests/ElBruno.LocalLLMs.Tests/Execution/OnnxGenAIModelTests.cs`:
+
+```csharp
+[Fact]
+public void ShouldFallbackToNextProvider_GenericUnsupported_DirectML_Auto_ReturnsTrue()
+{
+    var ex = new OnnxRuntimeGenAIException("Specified provider is not supported.");
+    var result = OnnxGenAIModel.ShouldFallbackToNextProvider(
+        ExecutionProvider.DirectML, ex, ExecutionProvider.Auto);
+    Assert.True(result, "Generic 'not supported' should trigger fallback in Auto mode");
+}
+
+[Fact]
+public void ShouldFallbackToNextProvider_GenericUnsupported_DirectML_Explicit_ReturnsFalse()
+{
+    var ex = new OnnxRuntimeGenAIException("Specified provider is not supported.");
+    var result = OnnxGenAIModel.ShouldFallbackToNextProvider(
+        ExecutionProvider.DirectML, ex, ExecutionProvider.DirectML);
+    Assert.False(result, "Generic error should NOT fallback when DirectML explicitly requested");
+}
+```
+
+### Compound Benefit: Issue #7 + Wave 1 Exceptions + ILogger
+
+**Current (Broken):**
+```
+User runs app on CPU-only machine with Auto mode:
+  → DirectML init fails with "Specified provider is not supported."
+  → Hard error thrown: InvalidOperationException("hard error (no fallback)")
+  → User sees opaque crash, has no idea what happened
+```
+
+**New (Fixed + Enhanced):**
+```
+User runs app on CPU-only machine with Auto mode:
+  → DirectML init fails with "Specified provider is not supported."
+  → Issue #7 fix: Detects generic unsupported + Auto mode → fallback
+  → CUDA attempted, also fails generically → fallback
+  → CPU attempted → success
+  → [DEBUG] ILogger logs: "ExecutionProvider.Auto: DirectML unavailable, trying CUDA..."
+  → [INFO] ILogger logs: "Active provider: CPU"
+  → User experience: Silent recovery + optional debug logs
+  → If app crashes later, ExecutionProviderException (from 1.2) tells user which layer failed
+```
+
+---
+
+## Wave 1 Dependencies
+
+```
+Issue #7 Fix (1.1)
+    ↓
+Custom Exceptions (1.2)  ← Uses ExecutionProviderException in Issue #7 fix
+    ↓
+ILogger Integration (1.3)  ← Logs fallback attempts from Issue #7 fix
+    ↓
+Options Validation (1.4)  ← Can throw custom exceptions
+    ↓
+Docs Cleanup (1.5)
+```
+
+All items are sequential but small. Total: **11.5 days** (~2 weeks including code review).
+
+---
+
+## Team Assignments
+
+| Item | Owner | Effort | Notes |
+|------|-------|--------|-------|
+| 1.1 Issue #7 Fix | Morpheus + Trinity (pair) | 2d | Critical path; requires GPU testing |
+| 1.2 Custom Exceptions | Trinity | 3d | Uses custom types from 1.1 |
+| 1.3 ILogger Integration | Trinity + Dozer | 4d | Logs from Issue #7, others |
+| 1.4 Options Validation | Trinity | 2d | Throws custom exceptions |
+| 1.5 Docs Cleanup | Morpheus | 0.5d | Archive.md 3 fixes |
+
+**Lead:** Morpheus owns Wave 1 critical path + architecture review  
+**Integration:** Trinity coordinates exceptions + logging across 1.2/1.3/1.4
+
+---
+
+## Approval Criteria
+
+**Issue #7 + Wave 1 will ship v0.2.0 when:**
+
+- ✅ All 3 code edits to OnnxGenAIModel.cs complete
+- ✅ 2 test cases pass (Auto mode fallback vs. explicit mode hard error)
+- ✅ Custom exception types created and used in all throw sites
+- ✅ ILogger calls cover model init, provider selection, fallback attempts
+- ✅ Options validation catches all error cases
+- ✅ Architecture.md defaults match actual code
+- ✅ All 210+ unit tests pass
+- ✅ Integration test: CPU-only machine with Auto mode → CPU selected (no crash)
+
+**Approval:** Bruno signs off on release checklist  
+**Timeline:** 2 weeks from start of Wave 1  
+**Blocker Policy:** If Issue #7 fix takes >3 days, escalate to Morpheus immediately
+
+---
+
+## Risk Assessment
+
+| Risk | Likelihood | Mitigation |
+|------|-----------|-----------|
+| Fallback logic too permissive in Auto mode | Low | 2 test cases validate boundaries |
+| Explicit provider requests still fail correctly | Low | Second test case validates strict mode |
+| ILogger performance impact | Low | Lazy evaluation + no sync I/O |
+| Breaking change for users catching InvalidOperationException | Low | Custom exception is *more specific*, not less; backward compatible |
+| GPU testing on Windows/Linux limited | Medium | Use CI matrix; manual test on 2 machines if possible |
+
+**Mitigation Plan:** If any risk escalates, Morpheus makes trade-off decision (delay P3 items, not P0).
+
+---
+
+## Appendix: Why Custom Exceptions + ILogger Make Issue #7 P0
+
+**Scenario A: Issue #7 fix alone (without 1.2 + 1.3)**
+```
+User on CPU-only machine: "Why did it work last time but not now?"
+Error message: InvalidOperationException("Unable to initialize model with any provider.")
+→ User posts on GitHub: "Got an error, help?"
+→ Support must ask: "What OS? What GPU? What error exactly?"
+→ 3-4 rounds of debugging
+```
+
+**Scenario B: Issue #7 + custom exceptions + ILogger (with 1.2 + 1.3)**
+```
+User on CPU-only machine: Sees [DEBUG] logs showing fallback chain
+Error message: ExecutionProviderException (not generic InvalidOperationException)
+→ User understands: "GPU not available, using CPU instead"
+→ No GitHub issue needed; silent recovery
+→ If later error: custom exception type tells dev which layer failed
+→ Self-service debugging via DiagnoseEnvironmentAsync() (Wave 2)
+```
+
+**The multiplier effect:**
+- Custom exceptions alone: +1x clarity (type system helps)
+- ILogger alone: +1x clarity (debug logs help)
+- Issue #7 fix alone: +1x clarity (reaches CPU instead of crashing)
+- **All three together: 3x clarity** (exception type + fallback logs + reaching CPU = complete picture)
+
+This is why Issue #7 jumped from P1 (nice-to-have bug fix) to **P0 critical** (anchor for error-handling story).
+
+---
+
+## Next Steps
+
+1. **Immediate:** Morpheus + Trinity kickoff Issue #7 fix (pair programming, 2 days)
+2. **Day 2–3:** Trinity begins custom exceptions (3 days)
+3. **Day 3–4:** Dozer + Trinity start ILogger integration (4 days, parallel with exceptions)
+4. **Day 5–6:** Trinity options validation (2 days)
+5. **Day 6–7:** Morpheus docs cleanup (0.5 days)
+6. **Day 7–8:** Code review + testing (all items)
+7. **Day 8–9:** GPU integration testing (CPU-only machine with Auto mode)
+8. **Day 9–10:** Release v0.2.0 with all P0 items complete
+
+**Kickoff Meeting:** Schedule with Trinity, Dozer, and team to align on Wave 1 timing.
+
+---
+
+## Decision History
+
+| Version | Date | Decision | Rationale |
+|---------|------|----------|-----------|
+| v1 | 2026-03-27 | Issue #7 = P1 (bug fix) | Nice-to-have error fix |
+| v2 | 2026-03-29 | Issue #7 = P0 (anchor) | Compounds with exceptions + logging → 3x clarity |
+
+**v2 is approved for implementation.**
+

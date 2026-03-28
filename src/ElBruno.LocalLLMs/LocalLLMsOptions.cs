@@ -51,4 +51,9 @@ public sealed class LocalLLMsOptions
     /// Default top-p for generation. Default: 0.9.
     /// </summary>
     public float TopP { get; set; } = 0.9f;
+
+    /// <summary>
+    /// Optional system prompt prepended to conversations.
+    /// </summary>
+    public string? SystemPrompt { get; set; }
 }

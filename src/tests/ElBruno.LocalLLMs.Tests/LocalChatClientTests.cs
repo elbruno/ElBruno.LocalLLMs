@@ -42,7 +42,7 @@ public class LocalChatClientTests : IAsyncDisposable
     {
         var options = new LocalLLMsOptions();
 
-        Assert.Throws<ArgumentNullException>(() => new LocalChatClient(options, null!));
+        Assert.Throws<ArgumentNullException>(() => new LocalChatClient(options, (IModelDownloader)null!));
     }
 
     [Fact]
