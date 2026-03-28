@@ -301,3 +301,13 @@ Ready for phase 4c documentation and publishing.
 - McpToolRouting sample (`src/samples/McpToolRouting/`) deleted from repo — functionality moved to ElBruno.MCP library (`ElBruno.ModelContextProtocol.MCPToolRouter`)
 - Removed `docs/plan-rag-tool-routing.md` plan doc and cleaned up references in CHANGELOG.md and plan-finetune-qwen.md
 - Solution still builds clean (0 errors)
+
+### 2025-07-25: Model Metadata Feature (Issue #3, PR #4)
+- Created `ModelMetadata` record (`Models/ModelMetadata.cs`) - public, sealed, with MaxSequenceLength, ModelName, VocabSize
+- Created `GenAIConfigParser` (`Execution/GenAIConfigParser.cs`) - internal static class, parses genai_config.json from model directory
+- Resolution priority for max sequence length: search.max_length > model.context_length > model.max_length
+- Model name resolves from model.type in config, falls back to directory name
+- OnnxGenAIModel.Metadata property populated once during construction via GenAIConfigParser.TryParse(modelPath)
+- LocalChatClient.ModelInfo delegates to internal model; null before initialization (safe pre-init access)
+- 18 unit tests added covering parser logic, error handling, and client property behavior
+- Pattern: metadata parsing is fire-and-forget (returns null on any failure) - never blocks model loading
