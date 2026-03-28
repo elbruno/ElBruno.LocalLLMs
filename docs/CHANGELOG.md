@@ -150,7 +150,6 @@ None — this is the initial release.
 - `ToolCallingAgent` sample demonstrating multi-turn agent loop with local tools
 - 41 new unit tests for tool calling (parser, formatter, integration)
 - `docs/tool-calling-guide.md` — comprehensive tool calling guide with model support matrix, quick start, defining tools, agent loop patterns, and error handling
-- Architecture plan at `docs/plan-rag-tool-routing.md` for Phase 4 (RAG + Tool Routing)
 
 **Phase 4b: RAG Pipeline**
 - **RAG Pipeline Support** — new `ElBruno.LocalLLMs.Rag` extension package for Retrieval-Augmented Generation

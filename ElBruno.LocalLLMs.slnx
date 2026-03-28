@@ -15,7 +15,6 @@
   <Folder Name="/src/samples/">
     <Project Path="src/samples/HelloChat/HelloChat.csproj" />
     <Project Path="src/samples/StreamingChat/StreamingChat.csproj" />
-    <Project Path="src/samples/McpToolRouting/McpToolRouting.csproj" />
     <Project Path="src/samples/MultiModelChat/MultiModelChat.csproj" />
     <Project Path="src/samples/DependencyInjection/DependencyInjection.csproj" />
     <Project Path="src/samples/ConsoleAppDemo/ConsoleAppDemo.csproj" />

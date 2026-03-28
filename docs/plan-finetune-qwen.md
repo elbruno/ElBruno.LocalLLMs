@@ -1719,7 +1719,6 @@ Phase 6: Scale to 1.5B and 3B
 - **KnownModels:** `src/ElBruno.LocalLLMs/Models/KnownModels.cs`
 - **ToolCallingAgent Sample:** `src/samples/ToolCallingAgent/Program.cs`
 - **Architecture Doc:** `docs/architecture.md`
-- **RAG Tool Routing Plan:** `docs/plan-rag-tool-routing.md`
 
 ### Community Fine-Tuned Models (Inspiration)
 
