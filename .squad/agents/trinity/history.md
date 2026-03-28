@@ -18,6 +18,16 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-03-27: McpToolRouting Sample — Prompt Distillation + Tool Filtering Pipeline
+- Created `samples/McpToolRouting/` demonstrating full pipeline: user prompt → LLM distillation → MCPToolRouter semantic search → filtered tools
+- MCPToolRouter API: `ToolIndex.CreateAsync(IEnumerable<Tool>, ToolIndexOptions?)` builds the index; `SearchAsync(prompt, topK, minScore)` returns `IReadOnlyList<ToolSearchResult>` with `.Tool` and `.Score`
+- MCP `Tool` type from `ModelContextProtocol.Protocol` — constructed with `new Tool { Name = "...", Description = "..." }`
+- MCPToolRouter uses `ModelContextProtocol.Core` (v1.0.0) — not the older `ModelContextProtocol.SDK` namespace
+- `ToolIndexOptions.QueryCacheSize` enables an LRU cache for repeated queries; `EmbeddingTextTemplate` customizes how tool text is embedded
+- MCPToolRouter pulls in `ElBruno.LocalEmbeddings` as a transitive dependency — no direct embedding code needed in samples
+- PromptDistiller pattern: system prompt "Extract the user's primary intent in a single sentence" with Temperature=0.1 and MaxOutputTokens=128 for focused distillation
+- Token savings math: 40 tools → top-3 routing saves ~85-90% of tool-definition tokens in the LLM context window
+
 ### 2025-07-25: Colab Notebook Fixes (train_and_publish.ipynb)
 - `--no-deps` on pip install breaks transitive deps (`datasets`, `tokenizers`, etc.); Unsloth's simple `pip install unsloth` is the current recommended Colab install
 - `evaluation_strategy` is deprecated in newer transformers; use `eval_strategy` instead
