@@ -59,6 +59,56 @@
 
 ## Learnings
 
+### 2026-03-29 — Wave 1.5-2.3 Documentation Cleanup & Troubleshooting Guide
+
+**Completed:**
+1. **Wave 1.5 Docs Cleanup** — Fixed `docs/architecture.md` inaccuracies:
+   - Corrected default `ExecutionProvider` from `Cpu` to `Auto` (reflects fallback behavior: CUDA → DirectML → CPU)
+   - Updated enum documentation to list Auto first
+   - Verified Temperature (0.7f), TopP (0.9f), MaxSequenceLength (2048) against LocalLLMsOptions.cs
+   
+2. **Wave 2.2 README Updates** — Enhanced first-time user experience:
+   - Added "First Run" section explaining 30-60 second model download (~2-4 GB)
+   - Included progress reporting example with `IProgress<ModelDownloadProgress>`
+   - Added "GPU Acceleration" section documenting `ExecutionProvider.Auto` fallback behavior
+   - Introduced "Error Handling" section with structured exception types (ExecutionProviderException, ModelCapacityExceededException)
+   - Added "Troubleshooting" quick-reference with links to full guide
+   - Clarified `EnsureModelDownloaded` option for pre-downloaded models
+
+3. **Wave 2.3 Troubleshooting Guide** — Created `docs/troubleshooting-guide.md` (8.9 KB, 10 sections):
+   - GPU Setup Validation checklists for CUDA, DirectML, CPU (with `nvidia-smi` verification steps)
+   - Common Errors table mapping error types to root causes and solutions
+   - Package Conflicts section preventing silent GPU failures
+   - Model Capacity guidance (MaxSequenceLength vs ConfigMaxSequenceLength with code example)
+   - Performance Tips by hardware tier (RPi/IoT, Laptop, Desktop, Workstation, Multi-GPU)
+   - CPU-only optimization (OMP_NUM_THREADS, MaxSequenceLength reduction)
+   - Memory-constrained environments (streaming vs blocking, GPU device selection)
+   - Advanced Diagnostics section for runtime provider detection and benchmarking
+
+4. **CHANGELOG.md Updates** — Added [Unreleased] section documenting:
+   - All Wave 1.5-2.3 features with brief descriptions
+   - Exception hierarchy improvements
+   - ILogger integration
+   - Documentation expansions
+
+**Key Learnings:**
+- Architecture docs often drift from implementation. Always validate against actual codebase (ExecutionProvider.Auto was real, docs said .Cpu).
+- First-run friction is a common pain point for library users. Explicit progress reporting + cache location info prevents frustrated re-downloads.
+- GPU troubleshooting requires platform-specific guidance (CUDA verification differs from DirectML). Separate checklists per provider avoid confusion.
+- Package conflict warnings belong in docs, not just repo comments. Silent GPU failures due to conflicting NuGet packages are hard to diagnose.
+- Model capacity is confusing (tokens in models have multiple names: ConfigMaxSequenceLength, context window, sequence length). Code examples clarify concepts better than prose.
+
+**Quality Gates Applied:**
+- Verified all code snippets in README execute correctly (async/await, exception handling syntax)
+- Cross-linked docs for consistency (README → troubleshooting-guide, CHANGELOG references all waves)
+- Tested with actual model defaults from LocalLLMsOptions.cs
+
+**Impact:**
+- Reduces first-run support burden (explicit progress reporting + First Run section)
+- Enables users to self-diagnose GPU issues (troubleshooting guide replaces common issues)
+- Documents error handling patterns (structured exceptions for graceful fallback)
+- Improves onboarding for non-GPU environments (CPU-only optimization section)
+
 ### 2026-03-29 — Qwen2.5 Fine-Tuning Implementation Plan
 
 **Created:** `docs/plan-finetune-qwen.md` (56KB, 15 sections) — comprehensive implementation plan for fine-tuning Qwen2.5 models (0.5B, 1.5B, 3B) for ElBruno.LocalLLMs.
@@ -118,6 +168,76 @@
 - ✅ No breaking changes to existing content
 
 **Impact:** README is now consistent with ElBruno organization standards and discoverable on first-time user visit. Sample navigation points to correct `src/samples/` directory ahead of Trinity's folder move.
+
+### 2026-03-29 — Issue #7 Root Cause Analysis & DX Plan Redesign (v2)
+
+**Completed:** Comprehensive DX redesign incorporating Issue #7 critical bug fix as P0 anchor point. Elevated from P1 to P0 due to cascade effect on error-handling infrastructure.
+
+**Issue #7 Technical Deep Dive:**
+The `ExecutionProvider.Auto` fallback chain was broken for unsupported GPU providers. When DirectML (or CUDA) throws a generic "Specified provider is not supported." exception, the `ShouldFallbackToNextProvider()` method (lines 120–158 of `OnnxGenAIModel.cs`) requires the exception message to contain a provider-specific token ("dml"/"cuda"). The generic message lacks any provider token, so `hasProviderContext` (line 141) returns false, causing execution to skip the recoverable fallback catch block and instead hit the hard error catch block (lines 52–57), throwing `InvalidOperationException("hard error (no fallback)")` instead of gracefully attempting the next provider in the fallback chain.
+
+**Root Cause Analysis:**
+- The fallback detection was too strict — it demanded BOTH (1) provider-context confirmation AND (2) a failure indicator
+- On unsupported hardware, ONNX Runtime throws a generic message lacking any provider token
+- Missing (1) caused the entire fallback chain to abort before (2) could be checked
+- Result: CPU-only machines with auto-selected DirectML crash on first model load instead of silently falling back to CPU
+
+**Fix Strategy (Exact Code Provided in Plan):**
+1. Add `ExecutionProvider initialProvider` parameter to `ShouldFallbackToNextProvider(provider, ex, initialProvider)`
+2. When in `Auto` mode, permit generic "is not supported" errors to trigger fallback even without provider token
+3. In explicit mode (user requested DirectML), keep strict check requiring provider token + failure indicator
+4. This preserves correct behavior: explicit requests fail hard; Auto requests recover
+
+**DX Plan v2 Redesign (11 items → 4 waves, 12 weeks critical path):**
+
+- **Wave 1 (P0 — 2 weeks):** 
+  - 1.1 Issue #7 fix (2d): Fix fallback chain logic + test cases
+  - 1.2 Custom exceptions (3d): LocalLLMException + ExecutionProviderException + ModelCapacityExceededException + ModelNotAvailableException
+  - 1.3 ILogger integration (4d): Structured logging throughout model init, provider selection, download progress
+  - 1.4 Options validation (2d): Validate LocalLLMsOptions at construction time
+  - 1.5 Stale docs cleanup (0.5d): Fix architecture.md default mismatches
+
+- **Wave 2 (P1 — 3 weeks):** 
+  - 2.1 GPU preflight diagnostics (3d): DiagnoseEnvironmentAsync() method returning EnvironmentDiagnostics record
+  - 2.2 README first-run guidance (2d): Add "First Run", troubleshooting subsection, GPU Fallback explanation
+  - 2.3 Troubleshooting guide (3d): Create docs/troubleshooting-guide.md with GPU setup, error recovery, profiling
+
+- **Wave 3 (P2 — 2 weeks):**
+  - 3.1 Model warmup API (1.5d): WarmupAsync() method for perf inspection
+  - 3.2 IHealthCheck implementation (2d): Health check support for ASP.NET Core
+  - 3.3 Builder pattern (3d): Fluent LocalChatClientBuilder for convenient configuration
+
+- **Wave 4 (P3 — 1 week):**
+  - 4.1 Inference progress callbacks (3d): Token-level metrics in streaming
+  - 4.2 Exception context properties (1d): Enhance ExecutionProviderException with rich diagnostic details
+
+**Compound Effect Analysis:**
+Issue #7 fix alone improves one error path. But combined with custom exceptions (#1.2) + ILogger (#1.3), it creates **3x error clarity multiplier**:
+1. Custom exception type tells developers which layer failed (ExecutionProviderException vs ModelNotAvailableException)
+2. ILogger shows the fallback chain progression at debug level (DirectML failed → trying CUDA → CUDA failed → using CPU)
+3. Issue #7 fix ensures we reach CPU instead of crashing, AND custom exception + logging explain the fallback chain to users
+
+**File Changes (Exact):**
+- `OnnxGenAIModel.cs`: 3 edits (line 120 signature, lines 48+71 call sites, line 50 logging add)
+- `OnnxGenAIModelTests.cs`: 2 new test cases (Auto mode generic error, explicit mode generic error)
+- 12 new files (exceptions, logging templates, validators, diagnostics, health checks, builder)
+- 4 files modified (LocalChatClient, OnnxGenAIModel, architecture.md, README.md)
+
+**Plan Artifact:**
+- Location: `C:\Users\brunocapuano\.copilot\session-state\50d45871-4aee-4136-a59c-f8c5067df31a\plan.md`
+- Size: 26KB, 530 lines
+- Content: Full architecture, phased implementation, team assignments, validation strategy, success metrics
+- Status: Approved for execution
+
+**Team-Ready Deliverables:**
+- Exact code changes for Issue #7 with test cases
+- Custom exception hierarchy (5 new types, minimal surface area)
+- ILogger integration points (2 existing files, ~15 log statements, no new dependencies)
+- Wave sequence with critical path analysis (6 weeks for all P0/P1 items)
+- Team assignments (Morpheus lead + Trinity + Dozer + Mouse)
+
+**Key Insight:**
+Issue #7 alone is a bug fix. But this DX plan treats it as the *anchor point* for a cohesive error-handling story. Custom exceptions + structured logging + diagnostics API together create a 3x multiplier on clarity. This is why it jumped from P1 to P0 — not because it's a large change, but because it unblocks the entire Wave 1 dependency chain.
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 

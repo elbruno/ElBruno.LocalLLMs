@@ -1,5 +1,6 @@
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace ElBruno.LocalLLMs;
 
@@ -35,7 +36,8 @@ public static class LocalLLMsServiceExtensions
         {
             var opts = sp.GetRequiredService<LocalLLMsOptions>();
             var downloader = sp.GetRequiredService<IModelDownloader>();
-            return new LocalChatClient(opts, downloader);
+            var loggerFactory = sp.GetService<ILoggerFactory>();
+            return new LocalChatClient(opts, downloader, loggerFactory);
         });
 
         return services;
