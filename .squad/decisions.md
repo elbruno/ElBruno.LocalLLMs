@@ -6454,3 +6454,26 @@ All MCP tools registered with MCPToolRouter must follow the guidelines in 	ool-d
 
 ---
 
+
+
+---
+# Decision: ModelMetadata parsed from genai_config.json
+
+**Date:** 2025-07-25
+**Author:** Trinity (Core Dev)
+**Status:** Active
+
+**Context:** Issue #3 requests exposing model metadata (context window, model name, vocab size) from LocalChatClient.
+
+**Decision:** Parse `genai_config.json` from the model directory at model load time. Expose a `ModelMetadata?` property that is null before initialization and populated after. Parsing failures return null silently — metadata is informational, never blocking.
+
+**Resolution priority for MaxSequenceLength:**
+1. `search.max_length` (ONNX GenAI generation limit)
+2. `model.context_length` (newer config format)
+3. `model.max_length` (fallback)
+
+**Consequences:**
+- Consumers can check `ModelInfo.MaxSequenceLength` before sending prompts to avoid `OnnxRuntimeGenAIException` on token overflow
+- No new dependencies — uses System.Text.Json already available
+- ModelMetadata is a sealed record in the public API surface
+

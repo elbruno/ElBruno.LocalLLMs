@@ -95,6 +95,13 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
     /// </summary>
     public string? ProviderSelectionDetails => _model?.ProviderSelectionDetails;
 
+    /// <summary>
+    /// Metadata about the loaded model (context window, name, vocab size).
+    /// Populated from genai_config.json after model initialization.
+    /// Returns null before the model is loaded or if config is unavailable.
+    /// </summary>
+    public ModelMetadata? ModelInfo => _model?.Metadata;
+
     /// <inheritdoc />
     public async Task<ChatResponse> GetResponseAsync(
         IEnumerable<ChatMessage> messages,
