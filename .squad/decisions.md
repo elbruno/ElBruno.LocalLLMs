@@ -5274,6 +5274,164 @@ Use Unsloth's `model.save_pretrained_merged(dir, tokenizer, save_method="merged_
 
 - Only affects the Colab notebook. The standalone `merge_lora.py` script remains unchanged for local workflows.
 
+---
+
+## Decision Batch: 2026-03-29 DX Implementation
+**Merged From:** Inbox (Trinity Wave 1)  
+**Agent:** Trinity (Core Dev)  
+**Count:** 4 decisions  
+
+---
+
+# Decision: Exception Hierarchy Uses Abstract Base LocalLLMException
+
+**Date:** 2026-03-29
+**Author:** Trinity (Core Dev)
+**Status:** Applied (committed to main, PR #8)
+
+## Context
+
+Issue #7 identified DX inconsistency: exception types exposed by the library were not unified under a common base. Callers had to catch multiple concrete exception types or fall back to generic `Exception`.
+
+## Decision
+
+All library-specific exceptions derive from `LocalLLMException : Exception`. This gives consumers a single catch type for all library errors while preserving specific subtypes for targeted handling.
+
+Specific exception types:
+- `ExecutionProviderException` — CUDA/DirectML/CPU provider issues, includes `Provider` and `Suggestion` properties for actionable diagnostics
+- `ModelNotFoundException` — Model not found in KnownModels or download failed
+- `OptionsValidationException` — Invalid configuration passed to factory
+- `InitializationException` — Failure during model warmup or initialization
+
+## Rationale
+
+- **Single catch surface:** Users can `catch (LocalLLMException ex)` for all library errors
+- **Specific handling:** Subtypes enable targeted handling when needed
+- **Actionable messages:** `ExecutionProviderException.Suggestion` provides next-step guidance (e.g., "Install CUDA NuGet package")
+- **Backward compatible:** No breaking changes to existing exception handling (more specific types don't break broad `catch (Exception)` blocks)
+
+## Consequences
+
+- All new library code throws `LocalLLMException` or subtypes
+- Documentation guides users to catch `LocalLLMException` first
+- Test suite validates exception hierarchy and message quality
+
+---
+
+# Decision: ShouldFallbackToNextProvider Uses Explicit initialProvider Parameter (Not Default)
+
+**Date:** 2026-03-29
+**Author:** Trinity (Core Dev)
+**Status:** Applied (committed to main, PR #8)
+
+## Context
+
+The `ShouldFallbackToNextProvider` method had an overload that could be called with or without specifying the initial provider, creating ambiguity about when fallback was enabled.
+
+## Decision
+
+The 2-arg overload defaults to strict matching (provider-specific token required). Only the Auto loop in the constructor passes `ExecutionProvider.Auto` to enable the generic fast-path fallback. This prevents accidental fallback when users explicitly request a provider.
+
+```csharp
+// Strict path: explicit provider requested, no fallback
+if (ShouldFallbackToNextProvider(ex, ExecutionProvider.Cuda)) { ... }
+
+// Auto path: only in constructor's Auto loop
+if (ShouldFallbackToNextProvider(ex, ExecutionProvider.Auto)) { ... }
+```
+
+## Rationale
+
+- **Explicit intent:** Users requesting `Cuda` don't accidentally fall back to DirectML or CPU
+- **Auto is special:** Only the Auto selection logic uses fast-path fallback
+- **Predictable:** Developers know when fallback will occur (only for `ExecutionProvider.Auto`)
+
+## Consequences
+
+- No breaking changes to public API
+- Tests verify both strict and auto paths work correctly
+- Exception messages clarify when fallback occurred vs. strict failure
+
+---
+
+# Decision: ILogger Is Optional Throughout — Null Defaults Everywhere
+
+**Date:** 2026-03-29
+**Author:** Trinity (Core Dev)
+**Status:** Applied (committed to main, PR #8)
+
+## Context
+
+The library needed logging support for diagnostics, but many customers don't use Microsoft.Extensions.Logging or prefer no logging overhead in certain scenarios.
+
+## Decision
+
+`LocalChatClient` and `OnnxGenAIModel` accept optional logger parameters that default to `NullLogger`. No breaking changes to existing constructors or factory methods. DI path auto-resolves `ILoggerFactory` from the container.
+
+```csharp
+// Explicit logger
+var client = await LocalChatClient.CreateAsync(options, logger: myLogger);
+
+// Default null logger
+var client = await LocalChatClient.CreateAsync(options);  // No change to existing code
+
+// DI registration
+services.AddLocalLLMs();  // Auto-resolves ILoggerFactory if available
+```
+
+## Rationale
+
+- **Backward compatible:** Existing code works without changes
+- **DI-friendly:** Dependency injection discovers `ILoggerFactory` automatically
+- **Zero overhead:** Customers who don't log pay no performance cost
+- **Opt-in:** Logging enabled by passing explicit logger or registering with DI
+
+## Consequences
+
+- Logging is available to all internal operations (initialization, provider selection, warmup)
+- Structured logging with `ILogger<T>` patterns
+- Tests verify logging output without requiring a logger
+
+---
+
+# Decision: OptionsValidator Runs in CreateAsync Only, Not in Constructor
+
+**Date:** 2026-03-29
+**Author:** Trinity (Core Dev)
+**Status:** Applied (committed to main, PR #8)
+
+## Context
+
+Options validation was initially planned for the constructor, but this breaks existing code patterns where options are constructed, modified, and then validated later. The library needed to support both patterns.
+
+## Decision
+
+Validation runs in the async `CreateAsync` factory method, not the synchronous constructor. The constructor accepts any `LocalChatClientOptions` without validation.
+
+```csharp
+// Valid: constructor bypasses validation
+var options = new LocalChatClientOptions { ... };  // No validation
+options.ModelId = "invalid";                        // Still no error
+var client = await LocalChatClient.CreateAsync(options);  // Validation happens here, throws
+
+// Also valid: DI factory path
+await LocalChatClient.CreateAsync(/* validated by middleware */)
+```
+
+## Rationale
+
+- **No breaking changes:** Constructor-time validation would break code that constructs and modifies options
+- **Clear boundary:** Async factory is the validation gate
+- **Flexible:** Tests can construct invalid options for error testing
+- **DI path:** Options middleware can validate before factory is called
+
+## Consequences
+
+- Validation errors surface in `CreateAsync`, not constructor
+- Documentation clarifies validation timing
+- Exception messages reference `.squad/decisions.md` for remediation
+- Tests verify validation catches all invalid option combinations
+
 
 
 ---

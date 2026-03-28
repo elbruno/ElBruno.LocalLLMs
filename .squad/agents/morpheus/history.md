@@ -10,7 +10,28 @@
 - **Target models:** Phi-3.5-mini, Qwen2.5-3B, Llama-3.2-3B (small); Qwen2.5-7B, Phi-4 (medium)
 - **Created:** 2026-03-17
 
-## Latest: MCP Tool Routing Architecture Analysis
+## Latest: DX Implementation Documentation (2026-03-29)
+
+**2026-03-29:** Completed documentation cleanup for DX wave. Updated three key documents:
+
+1. **docs/architecture.md** — Clarified DX architecture sections. Added ILogger optional integration patterns, exception hierarchy, GPU diagnostics usage, builder fluent API patterns.
+
+2. **README.md** — Updated with:
+   - ILogger integration guide (DI registration, structured logging)
+   - Exception handling patterns (LocalLLMException hierarchy, ActionableSuggestion properties)
+   - Best practices for provider selection (ExecutionProvider.Auto with fallback, explicit provider no-fallback)
+   - Quick start updated with options validation timing
+
+3. **docs/troubleshooting.md** (new) — Comprehensive guide for common issues:
+   - Provider fallback scenarios (CUDA unavailable, DirectML not supported, graceful CPU fallback)
+   - GPU diagnostics usage (checking provider availability before initialization)
+   - Logger configuration (missing logs, log levels, structured logging formats)
+   - Options validation errors (invalid model IDs, unsupported providers, missing packages)
+   - Warmup failures and retry patterns
+
+**Impact:** Documentation supports Trinity's DX improvements and provides team reference for ILogger/exception/GPU patterns. All changes included in PR #8 squash-merge to main.
+
+## Previous: MCP Tool Routing Architecture Analysis
 
 **2026-03-29:** Completed comprehensive architecture analysis for integrating ElBruno.LocalLLMs with MCPToolRouter and LocalEmbeddings. Created decision document `.squad/decisions/inbox/morpheus-mcp-tool-routing-architecture.md` (29KB, 10 sections).
 

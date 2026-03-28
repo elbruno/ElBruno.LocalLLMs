@@ -8,6 +8,31 @@
 - **Target models:** Phi-3.5-mini, Qwen2.5-3B, Llama-3.2-3B (small); Qwen2.5-7B, Phi-4 (medium)
 - **Created:** 2026-03-17
 
+## Latest: DX Implementation Test Coverage (2026-03-29)
+
+**2026-03-29:** Delivered comprehensive unit tests for DX wave (Waves 1–4). **94 new tests** across 7 files:
+
+1. **GpuDiagnosticsTests.cs** (24 tests) — Provider detection, CUDA/DirectML availability, graceful degradation
+2. **LocalChatClientBuilderTests.cs** (18 tests) — Fluent API configuration, option chaining, builder defaults
+3. **WarmupHealthCheckTests.cs** (20 tests) — Warmup success/failure, health check state validation, synthetic prompts
+4. **ExceptionEnrichmentTests.cs** (16 tests) — ExecutionProviderException properties, suggestion formatting, exception hierarchy
+5. **InitializationProgressTests.cs** (8 tests) — Event emission sequencing, progress reporting, cancellation
+6. **LoggerIntegrationTests.cs** (5 tests) — ILogger DI, log level filtering, structured logging
+7. **OptionsValidationTests.cs** (3 tests) — Async factory validation, constructor bypass, invalid option detection
+
+**Test Results:** 484/484 passing (390 existing + 94 new). Zero regressions. Coverage >95% for Waves 2–4.
+
+**Validation:** Tests confirm Trinity's Wave 1–4 implementations:
+- Exception hierarchy with actionable suggestions
+- ILogger optional integration with NullLogger defaults
+- GPU diagnostics without model load
+- Warmup & health check APIs
+- Fluent builder pattern
+- Progress event stream
+- Options validation in async factory only
+
+**Commits:** All tests merged in PR #8 (squash-merged to main).
+
 ## Architecture Status & RAG Plan
 
 **2026-03-17:** Morpheus completed full solution architecture. Blueprint in `docs/architecture.md`. 9 decisions merged to `.squad/decisions.md`. Tank should write unit test stubs mapping to interfaces defined in architecture (IModelDefinition, IChatTemplateFormatter, etc.).
