@@ -320,3 +320,10 @@ Ready for phase 4c documentation and publishing.
 - `LocalChatClient.EnsureInitializedAsync` wires `_options.MaxSequenceLength` into model constructor
 - Version bumped to 0.7.0 (new public API property = minor version increment)
 - PR #6 opened closing issue #5; 390/390 tests pass, 0 warnings
+
+### 2025-07-25: Wave 1 DX Plan — Issue #7
+- **Auto fallback fix:** `ShouldFallbackToNextProvider` now accepts `initialProvider` parameter; when `Auto`, generic ONNX errors ("is not supported", "not available", "specified provider") trigger fallback without requiring provider-specific tokens. Two-arg overload preserved for strict matching.
+- **Custom exceptions:** `LocalLLMException` base → `ExecutionProviderException` (with Provider, Suggestion), `ModelCapacityExceededException`, `ModelNotAvailableException` in `Exceptions/` directory
+- **ILogger integration:** Optional `ILoggerFactory?` parameter on `LocalChatClient` constructors and `CreateAsync`; `OnnxGenAIModel` takes `ILogger?`. `LogMessages.cs` uses `LoggerMessage.Define` for zero-alloc logging. DI `AddLocalLLMs` resolves `ILoggerFactory` from container.
+- **OptionsValidator:** Validates MaxSequenceLength >= 1, GpuDeviceId >= 0, Temperature >= 0, ModelPath directory existence. Called in `CreateAsync`.
+- **No breaking changes:** All new parameters are optional with null defaults. 390/390 tests pass.
