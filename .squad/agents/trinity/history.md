@@ -311,3 +311,12 @@ Ready for phase 4c documentation and publishing.
 - LocalChatClient.ModelInfo delegates to internal model; null before initialization (safe pre-init access)
 - 18 unit tests added covering parser logic, error handling, and client property behavior
 - Pattern: metadata parsing is fire-and-forget (returns null on any failure) - never blocks model loading
+
+### 2025-07-25: Fix #5 — MaxSequenceLength effective runtime limit
+- `ModelMetadata.MaxSequenceLength` now reports `min(config_value, options.MaxSequenceLength)` — the effective runtime limit
+- New `ConfigMaxSequenceLength` property preserves the raw genai_config.json value (theoretical context window)
+- `GenAIConfigParser.TryParse` gained an optional `optionsMaxSequenceLength` parameter; zero-arg overload delegates with null
+- `OnnxGenAIModel` constructor takes optional `optionsMaxSequenceLength` and passes it through to parser
+- `LocalChatClient.EnsureInitializedAsync` wires `_options.MaxSequenceLength` into model constructor
+- Version bumped to 0.7.0 (new public API property = minor version increment)
+- PR #6 opened closing issue #5; 390/390 tests pass, 0 warnings

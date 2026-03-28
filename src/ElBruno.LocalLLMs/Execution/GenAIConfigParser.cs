@@ -13,7 +13,16 @@ internal static class GenAIConfigParser
     /// Attempts to parse model metadata from the genai_config.json in the given model directory.
     /// Returns null if the file does not exist or cannot be parsed.
     /// </summary>
-    internal static ModelMetadata? TryParse(string modelPath)
+    internal static ModelMetadata? TryParse(string modelPath) =>
+        TryParse(modelPath, optionsMaxSequenceLength: null);
+
+    /// <summary>
+    /// Attempts to parse model metadata from the genai_config.json in the given model directory.
+    /// When <paramref name="optionsMaxSequenceLength"/> is provided, <see cref="ModelMetadata.MaxSequenceLength"/>
+    /// is clamped to the minimum of the config value and the options value so it reflects
+    /// the effective runtime limit. Returns null if the file does not exist or cannot be parsed.
+    /// </summary>
+    internal static ModelMetadata? TryParse(string modelPath, int? optionsMaxSequenceLength)
     {
         if (string.IsNullOrWhiteSpace(modelPath))
             return null;
@@ -28,13 +37,25 @@ internal static class GenAIConfigParser
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
-            var maxSequenceLength = ResolveMaxSequenceLength(root);
+            var configMaxSequenceLength = ResolveMaxSequenceLength(root);
+            var effectiveMaxSequenceLength = configMaxSequenceLength;
+
+            if (optionsMaxSequenceLength.HasValue && optionsMaxSequenceLength.Value > 0 && configMaxSequenceLength > 0)
+            {
+                effectiveMaxSequenceLength = Math.Min(configMaxSequenceLength, optionsMaxSequenceLength.Value);
+            }
+            else if (optionsMaxSequenceLength.HasValue && optionsMaxSequenceLength.Value > 0 && configMaxSequenceLength == 0)
+            {
+                effectiveMaxSequenceLength = optionsMaxSequenceLength.Value;
+            }
+
             var modelName = ResolveModelName(root, modelPath);
             var vocabSize = ResolveVocabSize(root);
 
             return new ModelMetadata
             {
-                MaxSequenceLength = maxSequenceLength,
+                MaxSequenceLength = effectiveMaxSequenceLength,
+                ConfigMaxSequenceLength = configMaxSequenceLength,
                 ModelName = modelName,
                 VocabSize = vocabSize
             };

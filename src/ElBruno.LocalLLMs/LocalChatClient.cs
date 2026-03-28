@@ -260,7 +260,8 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
             _model = new OnnxGenAIModel(
                 _resolvedModelPath,
                 _options.ExecutionProvider,
-                _options.GpuDeviceId);
+                _options.GpuDeviceId,
+                _options.MaxSequenceLength);
         }
         finally
         {
