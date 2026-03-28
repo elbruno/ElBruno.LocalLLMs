@@ -5030,6 +5030,36 @@ Colab environments are ephemeral and dependency availability varies. Defensive i
 
 ---
 
+# Decision: MCPToolRouter Cleanup — Remove Sample from LocalLLMs
+
+**Date:** 2026-03-28  
+**Author:** Bruno Capuano (user directive, 2026-03-28T00:47)  
+**Executed by:** Trinity (Core Dev)  
+**Status:** Applied (committed 2a9e564, cbcd307)
+
+## Context
+
+The ElBruno.LocalLLMs repository temporarily contained a McpToolRouting sample and documentation (plan-rag-tool-routing.md) to explore prompt distillation + tool routing functionality. This was always intended as temporary exploration while the actual feature home is ElBruno.ModelContextProtocol.MCPToolRouter.
+
+## Decision
+
+Remove all McpToolRouting sample and documentation artifacts from ElBruno.LocalLLMs:
+- Delete `src/samples/McpToolRouting/` directory
+- Delete `docs/plan-rag-tool-routing.md`
+- Remove project reference from `ElBruno.LocalLLMs.slnx`
+- Clean references from CHANGELOG.md and planning docs
+
+**Rationale:** MCPToolRouter is the canonical home for tool routing and prompt distillation features. LocalLLMs should focus on local LLM inference primitives, not tool routing.
+
+## Consequences
+
+- Repository is cleaner and more focused
+- Developers looking for tool routing are directed to MCPToolRouter (the correct library)
+- Eliminated duplicated functionality and cross-library confusion
+- No breaking changes to LocalLLMs API or functionality
+
+---
+
 # DECISION INBOX: Fine-Tuning Model Scaling Strategy
 
 **From:** Mouse (Fine-Tuning Specialist)  
