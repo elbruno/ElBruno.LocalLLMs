@@ -296,3 +296,8 @@ Ready for phase 4c documentation and publishing.
 - `IsProviderNotInstalledError` wraps `ShouldFallbackToNextProvider` to give actionable "install the GPU NuGet" errors when a specific (non-Auto) provider is requested but missing
 - The "build from source" GPU instructions in docs were completely wrong — .Cuda and .DirectML NuGet packages have existed since 0.12.x
 - When applying external PRs that conflict, manually cherry-picking changes onto current main and including newly-added files the PR missed is cleaner than rebasing
+
+### 2025-07-25: McpToolRouting sample removed
+- McpToolRouting sample (`src/samples/McpToolRouting/`) deleted from repo — functionality moved to ElBruno.MCP library (`ElBruno.ModelContextProtocol.MCPToolRouter`)
+- Removed `docs/plan-rag-tool-routing.md` plan doc and cleaned up references in CHANGELOG.md and plan-finetune-qwen.md
+- Solution still builds clean (0 errors)
