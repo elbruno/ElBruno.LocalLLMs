@@ -1,4 +1,6 @@
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using ElBruno.LocalLLMs.Diagnostics;
 using ElBruno.LocalLLMs.Internal;
 using ElBruno.LocalLLMs.ToolCalling;
 using Microsoft.Extensions.AI;
@@ -126,6 +128,44 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
     /// Returns null before the model is loaded or if config is unavailable.
     /// </summary>
     public ModelMetadata? ModelInfo => _model?.Metadata;
+
+    // --- Environment Diagnostics ---
+
+    /// <summary>
+    /// Diagnoses the current environment for local LLM execution capabilities.
+    /// </summary>
+    public static EnvironmentDiagnostics DiagnoseEnvironment()
+    {
+        return new EnvironmentDiagnostics
+        {
+            CpuAvailable = true,
+            CudaAvailable = CheckProviderAvailability(ExecutionProvider.Cuda),
+            DirectMLAvailable = CheckProviderAvailability(ExecutionProvider.DirectML),
+            DotNetVersion = RuntimeInformation.FrameworkDescription,
+            ProcessorCount = Environment.ProcessorCount,
+            OSDescription = RuntimeInformation.OSDescription,
+            CacheDirectory = GetDefaultCacheDirectory(),
+            CacheSizeBytes = GetCacheSize(GetDefaultCacheDirectory())
+        };
+    }
+
+    // --- Model Warmup ---
+
+    /// <summary>
+    /// Warms up the model by running a short inference pass. Returns elapsed time.
+    /// Call after CreateAsync() to pre-warm the inference pipeline and reduce first-query latency.
+    /// </summary>
+    public async Task<TimeSpan> WarmupAsync(CancellationToken cancellationToken = default)
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var warmupMessages = new[] { new ChatMessage(ChatRole.User, "hi") };
+
+        await GetResponseAsync(warmupMessages, new ChatOptions { MaxOutputTokens = 1 }, cancellationToken).ConfigureAwait(false);
+
+        sw.Stop();
+        _logger.LogInformation("Model warmup completed in {ElapsedMs}ms", sw.ElapsedMilliseconds);
+        return sw.Elapsed;
+    }
 
     /// <inheritdoc />
     public async Task<ChatResponse> GetResponseAsync(
@@ -370,5 +410,37 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
         }
 
         return new ChatMessage(ChatRole.Assistant, contents);
+    }
+
+    private static bool CheckProviderAvailability(ExecutionProvider provider)
+    {
+        try
+        {
+            return provider switch
+            {
+                ExecutionProvider.Cuda => OperatingSystem.IsWindows() || OperatingSystem.IsLinux(),
+                ExecutionProvider.DirectML => OperatingSystem.IsWindows(),
+                _ => true
+            };
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static string GetDefaultCacheDirectory()
+    {
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".cache", "elbruno-local-llms");
+    }
+
+    private static long GetCacheSize(string? path)
+    {
+        if (string.IsNullOrEmpty(path) || !Directory.Exists(path)) return 0;
+        try
+        {
+            return new DirectoryInfo(path).EnumerateFiles("*", SearchOption.AllDirectories).Sum(f => f.Length);
+        }
+        catch { return 0; }
     }
 }
