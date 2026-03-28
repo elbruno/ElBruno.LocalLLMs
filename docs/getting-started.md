@@ -277,7 +277,34 @@ public class ChatService(IChatClient chatClient)
 
 ## GPU Acceleration
 
-By default, `LocalChatClient` runs on CPU. To use GPU for faster inference:
+ElBruno.LocalLLMs supports GPU inference out of the box via NuGet packages — no source builds required.
+
+### Installation
+
+Add the library **and** exactly one runtime package to your application project:
+
+```bash
+dotnet add package ElBruno.LocalLLMs
+```
+
+Then pick **one** runtime package for your hardware:
+
+```bash
+# 🖥️ CPU (works everywhere):
+dotnet add package Microsoft.ML.OnnxRuntimeGenAI
+
+# 🟢 NVIDIA GPU (CUDA 11.8+):
+dotnet add package Microsoft.ML.OnnxRuntimeGenAI.Cuda
+
+# 🔵 Any Windows GPU — AMD, Intel, NVIDIA (DirectML):
+dotnet add package Microsoft.ML.OnnxRuntimeGenAI.DirectML
+```
+
+> ⚠️ **Add exactly one runtime package.** Do not reference both `Microsoft.ML.OnnxRuntimeGenAI`
+> and `Microsoft.ML.OnnxRuntimeGenAI.Cuda` simultaneously — the native binaries conflict and
+> GPU support will silently fail.
+
+By default, `LocalChatClient` uses `ExecutionProvider.Auto` which tries GPU first and falls back to CPU. To use a specific provider:
 
 ### NVIDIA CUDA
 
@@ -329,62 +356,6 @@ using var client = await LocalChatClient.CreateAsync(options);
 - GPU inference is **5–20x faster** than CPU for large models
 - GPU memory is separate from system RAM (usually 2–24 GB)
 - CPU inference works everywhere but is slower (good for testing)
-
----
-
-## ⚠️ Important: GPU Support Requires Building from Source
-
-**The standard NuGet package is CPU-only.** To enable GPU acceleration (CUDA or DirectML), you must build ONNX Runtime GenAI from source with GPU support flags.
-
-### Why?
-
-The official NuGet packages for `Microsoft.ML.OnnxRuntimeGenAI` are compiled without GPU support by default. This is a limitation of the distributed binaries, not this library.
-
-### How to Enable GPU Support
-
-**Option 1: Build ONNX Runtime GenAI locally (Recommended)**
-
-```bash
-# Clone the repository
-git clone https://github.com/microsoft/onnxruntime-genai
-cd onnxruntime-genai
-
-# Build with GPU support
-# For CUDA (NVIDIA):
-python build.py --use_cuda
-
-# For DirectML (Windows, any GPU):
-python build.py --use_directml
-
-# For both:
-python build.py --use_cuda --use_directml
-```
-
-Then reference the locally-built binaries in your project's `.csproj`:
-
-```xml
-<ItemGroup>
-    <Reference Include="Microsoft.ML.OnnxRuntimeGenAI">
-        <HintPath>../path-to-built/Microsoft.ML.OnnxRuntimeGenAI.dll</HintPath>
-    </Reference>
-</ItemGroup>
-```
-
-**Option 2: Wait for official GPU NuGet packages**
-
-Monitor the [ONNX Runtime releases](https://github.com/microsoft/onnxruntime-genai/releases) for official GPU-enabled NuGet packages. As of March 2026, these would appear as separate package variants (e.g., `Microsoft.ML.OnnxRuntimeGenAI.Cuda`, `Microsoft.ML.OnnxRuntimeGenAI.DirectML`).
-
-### Verify GPU is Being Used
-
-After configuring, run any sample and check the output:
-
-```
-Requested provider: Auto
-Active provider:    DirectML    ← GPU is active (not Cpu)
-Selection:          Auto selected DirectML
-```
-
-If you still see `Active provider: Cpu`, the GPU library build did not include GPU support.
 
 ---
 
@@ -646,7 +617,8 @@ var response = await client.GetResponseAsync(messages, opts);
 **Problem:** `ExecutionProvider = ExecutionProvider.Cuda` but still using CPU.
 
 **Check:**
-- **NVIDIA Control Panel** — verify GPU is installed and working
+- **Correct NuGet package** — ensure you added `Microsoft.ML.OnnxRuntimeGenAI.Cuda` (not the CPU-only `Microsoft.ML.OnnxRuntimeGenAI`) to your **application** project
+- **Only one runtime package** — do not reference both `Microsoft.ML.OnnxRuntimeGenAI` and `Microsoft.ML.OnnxRuntimeGenAI.Cuda` at the same time; the native binaries conflict
 - **CUDA version** — run `nvidia-smi` in terminal; ensure CUDA 11.8+ is installed
 - **Driver updates** — update NVIDIA drivers to latest
 - **GpuDeviceId** — if you have multiple GPUs, verify you're targeting the right one

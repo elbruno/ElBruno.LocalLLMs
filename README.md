@@ -30,15 +30,22 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 dotnet add package ElBruno.LocalLLMs
 ```
 
-This works everywhere (CPU). To enable **GPU acceleration**, add one extra package:
+Then add **one** runtime package depending on your target hardware:
 
 ```bash
+# 🖥️ CPU (works everywhere — required for CPU-only apps):
+dotnet add package Microsoft.ML.OnnxRuntimeGenAI
+
 # 🟢 NVIDIA GPU (CUDA):
 dotnet add package Microsoft.ML.OnnxRuntimeGenAI.Cuda
 
 # 🔵 Any Windows GPU — AMD, Intel, NVIDIA (DirectML):
 dotnet add package Microsoft.ML.OnnxRuntimeGenAI.DirectML
 ```
+
+> ⚠️ **Add exactly one runtime package.** Do not reference both `Microsoft.ML.OnnxRuntimeGenAI`
+> and `Microsoft.ML.OnnxRuntimeGenAI.Cuda` simultaneously — the native binaries conflict and
+> GPU support will silently fail.
 
 > 🚀 The library defaults to `ExecutionProvider.Auto` — it tries GPU first and falls back to CPU automatically. No code changes needed.
 

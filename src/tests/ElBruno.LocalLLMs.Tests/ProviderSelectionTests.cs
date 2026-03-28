@@ -261,6 +261,44 @@ public class ProviderSelectionTests
     }
 
     // ──────────────────────────────────────────────
+    // IsProviderNotInstalledError
+    // ──────────────────────────────────────────────
+
+    [Fact]
+    public void IsProviderNotInstalledError_ReturnsTrue_ForCudaNotEnabledInThisBuild()
+    {
+        var ex = new InvalidOperationException("CUDA execution provider is not enabled in this build.");
+        Assert.True(OnnxGenAIModel.IsProviderNotInstalledError(ExecutionProvider.Cuda, ex));
+    }
+
+    [Theory]
+    [InlineData(ExecutionProvider.Cuda, "CUDA execution provider is not enabled in this build.")]
+    [InlineData(ExecutionProvider.Cuda, "Failed to load CUDA provider library")]
+    [InlineData(ExecutionProvider.Cuda, "CUDA library not found")]
+    [InlineData(ExecutionProvider.DirectML, "DirectML provider is not enabled in this build.")]
+    [InlineData(ExecutionProvider.DirectML, "DML provider not found")]
+    public void IsProviderNotInstalledError_ReturnsTrue_ForKnownMissingProviderMessages(
+        ExecutionProvider provider, string message)
+    {
+        var ex = new InvalidOperationException(message);
+        Assert.True(OnnxGenAIModel.IsProviderNotInstalledError(provider, ex));
+    }
+
+    [Fact]
+    public void IsProviderNotInstalledError_ReturnsFalse_ForUnrelatedErrors()
+    {
+        var ex = new InvalidOperationException("Model folder is missing genai_config.json.");
+        Assert.False(OnnxGenAIModel.IsProviderNotInstalledError(ExecutionProvider.Cuda, ex));
+    }
+
+    [Fact]
+    public void IsProviderNotInstalledError_NullException_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => OnnxGenAIModel.IsProviderNotInstalledError(ExecutionProvider.Cuda, null!));
+    }
+
+    // ──────────────────────────────────────────────
     // ShouldFallbackToNextProvider — mixed provider + keyword
     // ──────────────────────────────────────────────
 

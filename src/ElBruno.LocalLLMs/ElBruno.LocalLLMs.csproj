@@ -19,12 +19,16 @@
     <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.4.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
     <!--
-    CPU-only base package — works everywhere. GPU support is additive:
-    consumers add Microsoft.ML.OnnxRuntimeGenAI.Cuda or .DirectML to their
-    app project and the runtime auto-detects the provider. No code changes needed.
-    See README.md "GPU Support" section for details.
+    Base managed package for compilation. Native runtime binaries are intentionally
+    NOT exported to consumers (PrivateAssets="native") to prevent conflicts between
+    the CPU-only binaries and GPU variants (Microsoft.ML.OnnxRuntimeGenAI.Cuda or .DirectML).
+    Consumers must add exactly ONE runtime package to their app:
+      CPU:     dotnet add package Microsoft.ML.OnnxRuntimeGenAI
+      CUDA:    dotnet add package Microsoft.ML.OnnxRuntimeGenAI.Cuda
+      DirectML:dotnet add package Microsoft.ML.OnnxRuntimeGenAI.DirectML
+    See README.md "Installation" section for details.
     -->
-    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI" Version="0.12.2" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI" Version="0.12.2" PrivateAssets="native" />
   </ItemGroup>
 
   <ItemGroup>
