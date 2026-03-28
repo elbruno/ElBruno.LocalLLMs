@@ -6354,3 +6354,73 @@ python scripts/convert_to_onnx.py \
 
 **Decision:** Ready to implement with Qwen2.5-0.5B-Instruct + system prompt. No new models need conversion. Prioritize speed + zero setup overhead.
 
+# Decision: McpToolRouting Sample Patterns
+
+**Date:** 2026-03-28  
+**Author:** Trinity (Core Dev)  
+**Status:** Approved (Session 2026-03-28T0024)
+
+## Context
+
+Built the McpToolRouting sample that combines local LLM inference (ElBruno.LocalLLMs) with MCPToolRouter (ElBruno.ModelContextProtocol) for intelligent tool selection.
+
+## Decisions Made
+
+### 1. Prompt Distillation is Optional per Query Complexity
+
+Simple single-intent prompts ("Send an email to Alice") route directly to tools without distillation. Complex multi-part prompts benefit from LLM distillation first. The sample shows both paths — the application should decide based on prompt length or complexity heuristics.
+
+### 2. MCPToolRouter NuGet Version Pinning
+
+Used Version="*" (latest) for ElBruno.ModelContextProtocol.MCPToolRouter since the package is actively developed and the API surface used (ToolIndex.CreateAsync, SearchAsync) is stable. If a breaking change occurs, pin to a specific version.
+
+### 3. Token Estimation Heuristic
+
+Used ceil(length / 4.0) as a simple English-text token estimator. This is good enough for demonstrating savings ratios. Production code should use a proper tokenizer.
+
+## Consequences
+
+- The sample establishes the canonical pattern for combining local LLMs with MCPToolRouter in this repo
+- Future samples can reference this for the distillation + routing pipeline
+- The 40-tool ToolDefinitions.cs can be reused by other samples needing realistic MCP tool sets
+
+---
+
+# Decision: Benchmark-Driven Validation for Prompt Distillation Quality
+
+**Date:** 2026-03-28  
+**Author:** Tank (QA)  
+**Status:** Approved (Session 2026-03-28T0024)
+
+## Context
+
+The McpToolRouting sample uses local LLM inference to distill complex user prompts into single sentences before embedding-based tool routing. There is no existing standard for measuring whether the distillation preserves intent or whether the routing selects the correct tool.
+
+## Decision
+
+Adopt the 36-prompt benchmark suite (distillation-benchmarks.md) as the canonical quality gate for the McpToolRouting sample. Any change to the distillation system prompt, embedding model, or tool descriptions must be validated against this suite before merging.
+
+### Quality Targets
+
+- **Top-1 Accuracy:** ≥80% (correct tool is #1 result)
+- **Top-3 Recall:** ≥90% (all needed tools appear in top-3)
+- **Distillation Accuracy:** ≥85% (primary intent preserved in distilled sentence)
+- **Latency:** <500ms distillation on CPU
+- **Regression gate:** No metric drops >5 percentage points from baseline
+
+### Tool Description Standard
+
+All MCP tools registered with MCPToolRouter must follow the guidelines in 	ool-description-guide.md:
+- Description starts with an action verb
+- 10–25 words length
+- Includes key nouns and synonym verbs
+- Tested against 5 sample prompts before registration
+
+## Consequences
+
+- Trinity should use the benchmark prompts as integration test inputs when the sample is functional
+- Morpheus should validate tool descriptions against the guide when reviewing new tool registrations
+- Future model upgrades (e.g., embedding models, LLM versions) require a full benchmark re-run with results logged in the regression table
+
+---
+
