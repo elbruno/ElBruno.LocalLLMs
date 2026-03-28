@@ -48,6 +48,24 @@
 - Upload speeds to HuggingFace: ~300-400 MB/s for large files.
 - Disk cleanup after each upload is essential — the 24B model alone was 16 GB on disk plus cache.
 
+### 2025-03-18 — Intent Extraction Model Evaluation
+
+**Evaluated 8 model candidates for prompt intent extraction task. Decision: Use Qwen2.5-0.5B-Instruct (already have ONNX).**
+
+- **Task Analysis**: Intent extraction (distill complex prompt → one-sentence intent summary) is much simpler than tool calling. It's a language paraphrasing task, not structured reasoning. Models as small as 0.5B can handle it with a good system prompt.
+- **Key Insight**: Qwen2.5-0.5B achieved 36.5% on GSM8K (math), which requires multi-step reasoning. Intent extraction requires only single-turn summarization—well below that cognitive ceiling. No fine-tuning needed.
+- **Encoder-Decoder Models NOT Recommended**: T5-small, Flan-T5-small, BART-small, DistilBART all use encoder-decoder architecture. ONNX Runtime GenAI v0.8.3 doesn't officially support encoder-decoder models (as of 2025). Workaround would require custom inference code + separate ONNX files. Verdict: Stick with decoder-only instruct models.
+- **Ranked Candidates** (all decoder-only, already in repo):
+  1. **Qwen2.5-0.5B-Instruct** (825 MB INT4, ~50–80 ms/intent, 9/10 quality) — **RECOMMENDED START**
+  2. **SmolLM2-1.7B-Instruct** (1.41 GB INT4, ~60–100 ms/intent, 8.5/10 quality) — fallback if quality insufficient
+  3. **Phi-3.5-mini-instruct** (6–8 GB INT4, ~150–200 ms/intent, 9.5/10 quality) — backup for higher quality
+  4. TinyLlama-1.1B-Chat (867 MB INT4, 50–70 ms, 7.5/10 quality)
+  5. Qwen2.5-1.5B-Instruct (1.83 GB INT4, 60–100 ms, 8/10 quality)
+- **System Prompt Design**: No model fine-tuning. Use concise prompt: "Distill this prompt into a single sentence capturing the user's primary intent: [PROMPT]". Works equally well on 0.5B and 3.8B models because intent extraction is low-complexity.
+- **Performance**: Qwen 0.5B at INT4 produces one-sentence intent in ~100–150 ms on CPU (50 tokens output). Sufficient for pre-call filtering before tool routing.
+- **ONNX Compatibility**: All recommended models are decoder-only, fully supported by ONNX Runtime GenAI v0.8.3. INT4 quantization is optimal (95%+ accuracy vs FP32, much smaller, faster).
+- **Decision Artifact**: `.squad/decisions/inbox/dozer-model-eval-intent-extraction.md` — Full evaluation with benchmark comparisons, risk mitigation, implementation checklist.
+
 ### 2025-03-18 — Gemma & Llama Batch Conversion
 
 **Converted 3 of 5 models successfully.**

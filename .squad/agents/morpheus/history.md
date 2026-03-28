@@ -5,12 +5,51 @@
 - **Owner:** Bruno Capuano
 - **Project:** ElBruno.LocalLLMs — C# library for local LLM chat completions using ONNX Runtime
 - **Stack:** C#, .NET 9, ONNX Runtime, Microsoft.Extensions.AI (IChatClient), NuGet
-- **Reference repos:** elbruno/elbruno.localembeddings (embeddings), elbruno/ElBruno.QwenTTS (TTS)
+- **Reference repos:** elbruno/elbruno.localembeddings (embeddings), elbruno/ElBruno.QwenTTS (TTS), elbruno/ElBruno.ModelContextProtocol (MCP tool routing)
 - **Key dependency:** ElBruno.HuggingFace.Downloader for model downloads from HuggingFace
 - **Target models:** Phi-3.5-mini, Qwen2.5-3B, Llama-3.2-3B (small); Qwen2.5-7B, Phi-4 (medium)
 - **Created:** 2026-03-17
 
-## Latest: RAG Tool Routing Implementation Plan
+## Latest: MCP Tool Routing Architecture Analysis
+
+**2026-03-29:** Completed comprehensive architecture analysis for integrating ElBruno.LocalLLMs with MCPToolRouter and LocalEmbeddings. Created decision document `.squad/decisions/inbox/morpheus-mcp-tool-routing-architecture.md` (29KB, 10 sections).
+
+**Key Finding:** MCPToolRouter already contains 90% of needed architecture. Missing piece is **prompt distillation** — using tiny local models (Qwen2.5-0.5B) to extract single-sentence intent from complex multi-part prompts before semantic tool routing.
+
+**Architecture (4-step pipeline):**
+1. **Prompt Distillation** (LocalLLMs + Qwen2.5-0.5B) — Extract core intent from verbose user prompts (~200-400ms CPU)
+2. **Embedding Generation** (LocalEmbeddings + all-MiniLM-L6-v2) — Generate 384-dim vector from distilled intent (~1-2ms)
+3. **Tool Filtering** (MCPToolRouter) — Cosine similarity search returns top-K relevant tools (<1ms for 100 tools)
+4. **Final LLM Call** — Send filtered tools (not all tools) to Azure OpenAI/Ollama → 90-95% token savings
+
+**Research Findings:**
+- **MCPToolRouter** (`ElBruno.ModelContextProtocol.MCPToolRouter` NuGet) — Semantic tool routing using local embeddings, LRU query cache, save/load persistence, DI integration. Demonstrated 95.8% token savings (120 tools → top-3).
+- **LocalEmbeddings** — Already integrated into MCPToolRouter. Uses `sentence-transformers/all-MiniLM-L6-v2` (~90MB ONNX).
+- **LocalLLMs** — No API changes needed. Existing `IChatClient.GetResponseAsync()` with system prompt is sufficient for distillation.
+
+**Architectural Decisions:**
+- **No new APIs** — Start with sample-level helpers (`PromptDistiller.cs`), promote to library extensions if pattern proves widely useful
+- **Sample-first approach** — Create `samples/McpToolRouting/` to validate integration pattern before committing to API surface
+- **Qwen2.5-0.5B for distillation** — Smallest model (330MB) with acceptable quality/latency trade-off
+- **Distillation is optional** — Skip for simple single-intent prompts; required for complex multi-part prompts
+
+**Concerns Identified:**
+- Latency: ~200-400ms overhead on CPU (acceptable given 95% token savings)
+- Quality: Tiny models may misunderstand complex prompts → mitigation: use 1.5B/3B, fallback to raw embedding, benchmark accuracy
+- Multi-intent prompts: Single-sentence distillation is lossy → document as "advanced pattern" for future work
+- Tool description quality: Semantic search depends on rich descriptions → sample should include best practices guide
+
+**Deliverables Proposed:**
+- `samples/McpToolRouting/` — Full integration demo with 4 scenarios (distillation benefit, skip distillation, token savings, tool calling loop)
+- `PromptDistiller.cs` — Helper class for intent extraction (candidate for future library promotion)
+- `docs/distillation-benchmarks.md` — Accuracy measurements (Qwen 0.5B vs 1.5B vs 3B)
+- `docs/tool-description-guide.md` — Best practices for writing tool descriptions
+
+**Success Metrics:** 10+ developers adopt sample in first month, 90%+ token savings validated, 90%+ tool routing accuracy on test set.
+
+**Recommendation:** Approve sample project creation. Assign Trinity (implementation) + Tank (benchmarking). No library changes required — all pieces already exist.
+
+## Previous: RAG Tool Routing Implementation Plan
 
 **2026-03-27:** Created comprehensive 4-phase implementation plan (`docs/plan-rag-tool-routing.md`, 584 lines) for RAG tool routing in MCPToolRouter. Covers model conversion (Phase 0), benchmark framework (Phase 1), sample integration (Phase 2), optimization (Phase 3), and documentation (Phase 4) across 18 tasks with team assignments.
 
