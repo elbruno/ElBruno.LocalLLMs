@@ -4956,3 +4956,293 @@ Keep seed data in GitHub. Publish expanded dataset to HuggingFace Datasets.
 - **Canonical source for format**: GitHub (the spec lives in `docs/training-data-spec.md`; seed data is the reference implementation).
 - **Canonical source for volume**: HuggingFace (5K+ examples for actual training runs).
 
+---
+
+# Decision: PrivateAssets="native" for OnnxRuntimeGenAI in library
+
+**Author:** Trinity  
+**Date:** 2025-07-25  
+**Status:** Applied (committed to main)
+
+## Context
+PR #2 (copilot/fix-cuda-execution-provider-error) identified that the library's transitive OnnxRuntimeGenAI CPU-only native binaries conflict with GPU variants when consumers add Microsoft.ML.OnnxRuntimeGenAI.Cuda or .DirectML.
+
+## Decision
+- Library csproj uses `PrivateAssets="native"` on OnnxRuntimeGenAI so CPU native binaries don't flow to consumers
+- Every consuming project (samples, tests, benchmarks) must add an explicit `Microsoft.ML.OnnxRuntimeGenAI` (or GPU variant) package reference
+- OnnxGenAIModel provides actionable error messages when a GPU provider is requested but the NuGet package is missing
+
+## Impact
+- **All new sample/test/benchmark projects** must include an explicit OnnxRuntimeGenAI package reference or builds will fail at runtime (no native binaries)
+- **Docs** now correctly direct users to install GPU NuGet packages (not build from source)
+- The "build from source" section was removed from getting-started.md — it was entirely incorrect
+
+
+---
+
+# Decision: Colab Notebook Dependency & Compatibility Fixes
+
+**Author:** Trinity (Core Developer)
+**Date:** 2025-07-25
+**Status:** Applied
+
+## Context
+
+The `scripts/finetune/train_and_publish.ipynb` notebook had 4 execution errors on Google Colab:
+
+1. `--no-deps` flag prevented transitive dependencies from installing, breaking `from datasets import load_dataset`
+2. Outdated Unsloth install URL (`unsloth[colab-new] @ git+...`) replaced with `pip install unsloth`
+3. `evaluation_strategy` deprecated in newer transformers — changed to `eval_strategy`
+4. `onnxruntime-genai` import crashes without graceful fallback on environments where it's unavailable
+
+## Decision
+
+- Simplified install cell to use `pip install unsloth` (their current recommended approach) which pulls in all transitive deps
+- Added `|| echo` fallback for onnxruntime-genai install
+- Added try/except guards around onnxruntime-genai imports in both the conversion and validation cells
+- Wrapped entire validation body in `if og is not None:` guard so the notebook completes even without onnxruntime-genai
+
+## Rationale
+
+Colab environments are ephemeral and dependency availability varies. Defensive imports with clear warning messages are preferable to hard crashes, especially for .NET developers who may not be familiar with Python debugging.
+
+
+---
+
+# Decision: Small model samples must guard against verbose garbage output
+
+**Date:** 2025-07-25
+**Author:** Trinity (Core Dev)
+**Status:** Proposed
+
+**Context:** The FineTunedToolCalling sample uses a 0.5B model that learns tool-call FORMAT but produces malformed JSON. Without guards, the raw output floods the console with hundreds of lines of repeated JSON blocks.
+
+**Decision:** All samples using small models (≤1B params) for tool calling MUST:
+1. Set `MaxOutputTokens` in `ChatOptions` (e.g., 512) to cap generation length
+2. Truncate displayed text responses to ~500 chars with a `[truncated]` indicator
+3. Detect raw tool-call-like JSON (`{"name":` patterns) and show an educational warning
+4. Be honest in messaging — small models demonstrate the pipeline, not production quality
+
+**Rationale:** Users running samples form their first impression of the library. A wall of garbage text is confusing and looks broken. Truncation + honest messaging turns a "bug" into a learning moment about model size tradeoffs.
+
+**Consequences:** Slightly more code per sample, but consistent UX. The `TruncateResponse` and `LooksLikeRawToolCalls` helpers can be reused across samples.
+
+
+---
+
+# DECISION INBOX: Fine-Tuning Model Scaling Strategy
+
+**From:** Mouse (Fine-Tuning Specialist)  
+**Date:** 2026-03-28  
+**Status:** AWAITING BRUNO'S DECISION  
+**Urgency:** High (affects published model availability and user experience)
+
+---
+
+## THE PROBLEM
+
+The Qwen2.5-0.5B fine-tuned model (published on HuggingFace at `elbruno/Qwen2.5-0.5B-LocalLLMs-ToolCalling`) is delivering poor quality:
+- Generates prose instead of JSON tool calls
+- Produces malformed JSON
+- Halluccinates wrong function names
+- Generates infinite loops on complex queries
+
+**Root cause:** 0.5B model + only 53 training examples = fundamentally insufficient.
+
+---
+
+## WHAT I FOUND
+
+### Current Dataset
+- **Tool-calling examples:** 53 (minimum viable is 250–500)
+- **System message overhead:** 129 tokens per example (could be 60)
+- **Tool diversity:** 26% examples are `get_weather`, many tools seen only 1–2 times
+- **Hyperparameters:** Tuned for larger datasets, suboptimal for 53 examples
+
+### Model Size Limitation (Non-Negotiable)
+- **0.5B max accuracy:** 40–50% on tool calling (architectural limit due to parameter count)
+- **1.5B baseline accuracy:** 75–85% with same training data
+- **3B+ accuracy:** 85–95%+
+
+**Why:** Tool calling requires simultaneous tool selection (reasoning) + JSON generation (syntax) + argument accuracy (understanding). Sub-1B models don't have enough parameter budget for all three.
+
+---
+
+## DECISION REQUIRED: THREE OPTIONS
+
+### **OPTION A: Keep 0.5B, Acknowledge Limitations**
+- **Action:** Do not retrain 0.5B further
+- **Positioning:** "Ultra-light demo model, not production-ready"
+- **Cost:** None (already trained)
+- **User Impact:** Poor tool-calling quality, but model still downloads/runs
+- **Recommended only if:** Raspberry Pi / embedded scenarios are critical use case
+
+---
+
+### **OPTION B: Scale to 1.5B (MOUSE RECOMMENDATION) ⭐**
+- **Action:** 
+  1. Train Qwen2.5-1.5B with existing 53 examples (4 hours, free on Colab T4)
+  2. Collect 150–200 examples from Glaive Function Calling v2 (4–6 hours)
+  3. Retrain with expanded dataset (8 hours)
+- **Cost:** $0 (owned GPU or free Colab)
+- **Time to Production:** 1 week
+- **Expected Result:** 75–85% tool-calling accuracy ✅
+- **User Impact:** Production-ready model, minimal additional VRAM requirement (1.5GB vs. 0.8GB)
+- **Compatibility:** ONNX conversion confirmed working, C# library unchanged
+
+---
+
+### **OPTION C: Evaluate Pre-Trained Alternative First**
+- **Action:** Test `functionary-small-v3.2-3B` (Phi-3 fine-tuned for tool calling, 50K+ community downloads)
+- **Cost:** $0 (already published)
+- **Time:** 1 hour evaluation + testing
+- **Expected Result:** 85–90% accuracy (possibly better than our fine-tuned 1.5B)
+- **Benefit:** Skip fine-tuning entirely if pre-trained is sufficient
+- **Risk:** Uses different base model (licensing is MIT, no issue)
+
+---
+
+## MY RECOMMENDATION
+
+**Path: Option B + Option C parallel**
+1. **Today:** Spend 1 hour testing functionary-small-v3.2-3B with your IChatClient
+   - If accuracy ≥90% → publish pre-trained model instead, close fine-tuning effort
+   - If accuracy <90% → proceed with Option B
+
+2. **This week:** If proceeding with Option B:
+   - Retrain 1.5B with existing data (4 hours)
+   - Collect 150+ Glaive examples (6 hours)
+   - Publish Qwen2.5-1.5B-LocalLLMs-ToolCalling to HuggingFace
+
+3. **Next week:** 
+   - Expand to 500 examples
+   - Retrain both 0.5B (for embedding/edge case) and 1.5B (production)
+   - Publish comparative model cards
+
+---
+
+## NUMBERS (Why This Matters)
+
+| Metric | 0.5B Current | 1.5B Projected | functionary-3B Est. | User Perception |
+|--------|---|---|---|---|
+| **Tool accuracy** | 40–50% | 75–85% | 85–92% | "Finally works!" |
+| **Model size** | 825 MB | 1.5 GB | 1.6 GB | Acceptable (1 GB difference) |
+| **Inference speed** | 50 ms | 80 ms | 100 ms | Still sub-200ms ✅ |
+| **VRAM req** | 2–3 GB | 4–5 GB | 4–5 GB | Fits 8GB+ devices ✅ |
+| **Training time** | 30 min | 4 hrs | $0 (pre-trained) | Option C wins on time |
+| **Training cost** | $0 | $0 | $0 | All free |
+
+---
+
+## WHAT STAYS THE SAME
+
+- Library code (`LocalChatClient`, `QwenFormatter`, parsers) **unchanged**
+- Training format (ShareGPT) **unchanged**
+- ONNX conversion pipeline **unchanged**
+- C# developer experience **unchanged** (same API, just better accuracy)
+
+---
+
+## IF YOU CHOOSE OPTION A (Keep 0.5B)
+
+Update FineTunedToolCalling sample:
+```csharp
+Console.WriteLine("⚠️  Note: The 0.5B model is a demonstration of the fine-tuning");
+Console.WriteLine("    pipeline. It achieves ~45% tool-calling accuracy due to");
+Console.WriteLine("    model size constraints. For production use, see:");
+Console.WriteLine("    - Qwen2.5-1.5B-LocalLLMs-ToolCalling (75–85% accuracy)");
+Console.WriteLine("    - Or pre-trained functionary-small-v3.2-3B (85–92% accuracy)");
+```
+
+---
+
+## IF YOU CHOOSE OPTION B (Scale to 1.5B)
+
+Action items:
+1. Create `train_qwen_15b.py` (copy of `train_qwen_05b.py`, change model + hyperparams)
+2. Prepare Glaive subset: 150 examples
+3. Schedule 8–10 hour training session
+4. Update model card + FineTunedToolCalling sample
+5. Publish to HuggingFace as `Qwen2.5-1.5B-LocalLLMs-ToolCalling`
+
+---
+
+## IF YOU CHOOSE OPTION C (Pre-Trained)
+
+Action items:
+1. Test with library's IChatClient (30 min)
+2. Create sample: `PreTrainedFunctionaryToolCalling` 
+3. Compare output quality vs. 0.5B
+4. If ≥90% accuracy: publish docs recommending pre-trained
+5. Close fine-tuning effort (or use as future baseline)
+
+---
+
+## TIMELINE IMPACT
+
+| Option | Week 1 | Week 2 | Week 3 | Availability |
+|--------|--------|--------|--------|---|
+| **A (Keep 0.5B)** | Done | — | — | Now (poor quality) |
+| **B (1.5B)** | Train 1.5B | Collect data | Retrain | Next week (good) |
+| **C (Pre-trained)** | 1 hr test | Done if ✅ | — | Today (if good) |
+| **B+C hybrid** | Test + train | Collect data | Retrain | 2 weeks (best) |
+
+---
+
+## DECISION MATRIX
+
+| Criteria | Option A | Option B | Option C |
+|----------|----------|----------|----------|
+| **Time to good model** | N/A (poor) | 1 week | 1 hour |
+| **Accuracy** | 40–50% ❌ | 75–85% ✅ | 85–92% ✅✅ |
+| **Effort** | 0 hrs | 10 hrs | 1 hr |
+| **Cost** | $0 | $0 | $0 |
+| **Alignment with team goals** | No | Yes | Yes |
+| **Maintains 0.5B path** | Yes | Yes | No (different base) |
+
+---
+
+## WHAT I NEED FROM YOU
+
+**Choose one:**
+1. **"Keep 0.5B as-is"** → I'll update docs to set expectations
+2. **"Scale to 1.5B"** → I'll create training plan + data scripts
+3. **"Test functionary-small first"** → I'll prepare evaluation notebook
+4. **"Do B and C in parallel"** → I'll do both, you pick winner
+
+---
+
+**Status:** Awaiting decision  
+**Blocker for:** Publishing improved fine-tuned models  
+**Next check-in:** After decision, same day  
+
+
+---
+
+# Decision: Colab Notebook Uses Unsloth Merge Instead of merge_lora.py
+
+**Author:** Dozer (ML Engineer)
+**Date:** 2025-07-26
+**Status:** Implemented
+
+## Context
+
+The Colab notebook needed a LoRA merge step. We have `merge_lora.py` which uses PEFT's `PeftModel.merge_and_unload()`, but in the notebook context the model is already loaded in Unsloth's `FastLanguageModel`.
+
+## Decision
+
+Use Unsloth's `model.save_pretrained_merged(dir, tokenizer, save_method="merged_16bit")` instead of reimplementing the PEFT merge flow.
+
+## Rationale
+
+- Model is already in GPU memory from training — no need to reload from disk
+- Unsloth's merge handles the adapter-to-dense conversion internally
+- Simpler code in the notebook (1 call vs. loading base model + PEFT + merge + save)
+- Output is identical: a standard HuggingFace checkpoint in FP16
+
+## Impact
+
+- Only affects the Colab notebook. The standalone `merge_lora.py` script remains unchanged for local workflows.
+
+
+

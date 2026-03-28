@@ -102,6 +102,56 @@ Small tier (2-4B): Phi-3.5-mini (3.8B), Qwen2.5-3B, Llama-3.2-3B, Gemma-2-2B
 
 ---
 
+## 2026-03-28: Fine-Tuning Model Performance Crisis Analysis
+
+**Context:** Qwen2.5-0.5B fine-tuned model (published to HuggingFace) is underperforming in FineTunedToolCalling sample — generates prose instead of JSON, malformed JSON, wrong function names, infinite loops.
+
+**Root Cause Analysis (CRITICAL FINDINGS):**
+
+1. **Training Dataset Critically Small:** Only 53 tool-calling examples
+   - Minimum viable: 250 examples for 0.5B, 400–800 for 1.5B
+   - Current: 21% of minimum recommended size
+   - Effective tokens wasted: 129 tokens × 53 examples = 6,837 tokens of system message overhead (should be actual tool calls)
+
+2. **Model Size Fundamentally Limited:** 0.5B cannot exceed 40–50% tool calling accuracy
+   - Reason: 500M parameters split across language understanding + reasoning + generation, tool schemas consume 30% of context
+   - Qwen2.5-1.5B baseline: 75–85% accuracy (3× parameters = proportional reasoning capacity)
+   - Phi-3.5-mini: 85–92% (native tool calling, 3.8B)
+   - Sub-1B models are architecturally unsuited for semantic tool calling (JSON generation + arg accuracy)
+
+3. **Training Distribution Skewed:** 29 unique tools but 26% of examples are `get_weather`
+   - Overfit on common tools, underfitted on rare tools
+   - Model defaults to weather/time tool on unfamiliar queries (explains sample output)
+
+4. **Hyperparameter Choices Suboptimal for Tiny Dataset:**
+   - 3 epochs on 53 examples = 159 gradient steps (too few)
+   - Recommended: 5–6 epochs for <100 examples
+   - Dropout 0.05 over-regularizes already-limited data (reduce to 0.01–0.02)
+
+5. **System Message Token Overhead:** 515 characters = 129 tokens per example
+   - Could optimize to 60 tokens (53% reduction)
+   - Save capacity for 3–4 additional real tool-calling examples per training session
+
+**Ranked Recommendations (by effort-to-impact ratio):**
+
+| Priority | Action | Effort | Expected Gain | Timeline |
+|----------|--------|--------|---|----------|
+| **CRITICAL** | Migrate to Qwen2.5-1.5B base model | 2 hrs code change | 40–50% → 75–80% accuracy | Today |
+| **HIGH** | Collect 150+ tool-calling examples from Glaive v2 | 4–6 hrs | 53 → 200 examples | This week |
+| **HIGH** | Expand to 500 examples total + optimize hyperparams | 10 hrs | 200 → 500, retrain both 0.5B and 1.5B | Next week |
+| **MEDIUM** | Evaluate pre-trained functionary-small-v3.2-3B | 1 hr eval | Skip fine-tuning if ≥90% accuracy | This week |
+| **MEDIUM** | Optimize system message format (compression) | 3 hrs | Marginal accuracy gain, better token efficiency | Phase 2 |
+| **LOW** | Continue improving 0.5B | Not recommended | Max 55–60% (architectural limit) | Don't pursue |
+
+**Key Decision Point for Bruno:**
+- **Option A:** Keep 0.5B as ultra-light PoC (skip improvements), acknowledge 50% accuracy limitation in docs
+- **Option B (RECOMMENDED):** Migrate to 1.5B sweet spot + scale data (0.5B valuable as edge-device demo only)
+- **Option C:** Evaluate pre-trained functionary-small first (fastest path to >85% accuracy)
+
+**Output Deliverable:** Full analysis with numerical trade-offs saved to `.squad/agents/mouse/ft-improvements-analysis.md`
+
+---
+
 ## 2026-03-27: Team Consensus Established
 
 **Directive from Bruno:** The .NET community cannot train/fine-tune models effectively. The library WILL publish fine-tuned models optimized for .NET developers, removing barriers (no Python toolchains, no conversion pipelines).

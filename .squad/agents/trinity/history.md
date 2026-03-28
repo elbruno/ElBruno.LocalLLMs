@@ -272,3 +272,17 @@ Ready for phase 4c documentation and publishing.
 - `FineTunedToolCalling` sample now has try/catch fallback: if fine-tuned model repo doesn't exist, falls back to `KnownModels.Qwen25_05BInstruct` (base model) and continues the demo
 - Pattern: catch `InvalidOperationException` with `ex.Message.Contains("not found on HuggingFace")` to distinguish model-not-found from other failures
 - Fine-tuned model repos (e.g. `elbruno/Qwen2.5-0.5B-LocalLLMs-ToolCalling`) are placeholders until training is complete
+
+### 2026-03-27: FineTunedToolCalling sample — progress bar and output handling
+- Added `ConsoleDownloadProgressRenderer` progress bar to FineTunedToolCalling, matching ConsoleAppDemo pattern
+- 0.5B fine-tuned models learn the tool-call FORMAT but produce malformed JSON — must always truncate and detect raw patterns
+- `ChatOptions.MaxOutputTokens` is respected by `LocalChatClient` (overrides `LocalLLMsOptions.MaxSequenceLength`) — set it in samples to prevent runaway generation
+- `TruncateResponse` helper (500 char cap) + `LooksLikeRawToolCalls` regex detector are reusable patterns for any sample using small models
+- Sample messaging should be honest about model quality: 0.5B is a pipeline demo, 1.5B+ for production
+
+### 2026-03-27: GPU/CPU native binary conflict fix (PR #2)
+- `PrivateAssets="native"` on library's OnnxRuntimeGenAI prevents CPU-only native binaries from flowing to consumer apps
+- All consuming projects (samples, tests, benchmarks) must declare their own explicit OnnxRuntimeGenAI package reference
+- `IsProviderNotInstalledError` wraps `ShouldFallbackToNextProvider` to give actionable "install the GPU NuGet" errors when a specific (non-Auto) provider is requested but missing
+- The "build from source" GPU instructions in docs were completely wrong — .Cuda and .DirectML NuGet packages have existed since 0.12.x
+- When applying external PRs that conflict, manually cherry-picking changes onto current main and including newly-added files the PR missed is cleaner than rebasing
