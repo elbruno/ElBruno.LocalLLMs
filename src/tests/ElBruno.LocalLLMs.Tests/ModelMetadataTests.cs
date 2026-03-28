@@ -36,6 +36,7 @@ public class ModelMetadataTests : IDisposable
         var meta = new ModelMetadata();
 
         Assert.Equal(0, meta.MaxSequenceLength);
+        Assert.Equal(0, meta.ConfigMaxSequenceLength);
         Assert.Null(meta.ModelName);
         Assert.Null(meta.VocabSize);
     }
@@ -45,12 +46,14 @@ public class ModelMetadataTests : IDisposable
     {
         var meta = new ModelMetadata
         {
-            MaxSequenceLength = 4096,
+            MaxSequenceLength = 2048,
+            ConfigMaxSequenceLength = 4096,
             ModelName = "phi3",
             VocabSize = 32000
         };
 
-        Assert.Equal(4096, meta.MaxSequenceLength);
+        Assert.Equal(2048, meta.MaxSequenceLength);
+        Assert.Equal(4096, meta.ConfigMaxSequenceLength);
         Assert.Equal("phi3", meta.ModelName);
         Assert.Equal(32000, meta.VocabSize);
     }
@@ -58,8 +61,8 @@ public class ModelMetadataTests : IDisposable
     [Fact]
     public void ModelMetadata_RecordEquality()
     {
-        var a = new ModelMetadata { MaxSequenceLength = 128, ModelName = "test", VocabSize = 1000 };
-        var b = new ModelMetadata { MaxSequenceLength = 128, ModelName = "test", VocabSize = 1000 };
+        var a = new ModelMetadata { MaxSequenceLength = 128, ConfigMaxSequenceLength = 128, ModelName = "test", VocabSize = 1000 };
+        var b = new ModelMetadata { MaxSequenceLength = 128, ConfigMaxSequenceLength = 128, ModelName = "test", VocabSize = 1000 };
 
         Assert.Equal(a, b);
     }
@@ -90,6 +93,7 @@ public class ModelMetadataTests : IDisposable
         Assert.NotNull(result);
         // search.max_length takes priority
         Assert.Equal(2048, result.MaxSequenceLength);
+        Assert.Equal(2048, result.ConfigMaxSequenceLength);
         Assert.Equal("phi3", result.ModelName);
         Assert.Equal(32064, result.VocabSize);
     }
@@ -280,6 +284,96 @@ public class ModelMetadataTests : IDisposable
         Assert.Equal(0, result.MaxSequenceLength);
         Assert.Equal(Path.GetFileName(dir), result.ModelName);
         Assert.Null(result.VocabSize);
+    }
+
+    // ──────────────────────────────────────────────
+    // GenAIConfigParser — effective limit (options clamping)
+    // ──────────────────────────────────────────────
+
+    [Fact]
+    public void TryParse_OptionsSmaller_ClamsMaxSequenceLength()
+    {
+        var config = """
+        {
+            "search": { "max_length": 131072 }
+        }
+        """;
+
+        var dir = CreateTempModelDir(config);
+        var result = GenAIConfigParser.TryParse(dir, optionsMaxSequenceLength: 2048);
+
+        Assert.NotNull(result);
+        Assert.Equal(2048, result.MaxSequenceLength);
+        Assert.Equal(131072, result.ConfigMaxSequenceLength);
+    }
+
+    [Fact]
+    public void TryParse_ConfigSmaller_ConfigWins()
+    {
+        var config = """
+        {
+            "search": { "max_length": 512 }
+        }
+        """;
+
+        var dir = CreateTempModelDir(config);
+        var result = GenAIConfigParser.TryParse(dir, optionsMaxSequenceLength: 2048);
+
+        Assert.NotNull(result);
+        Assert.Equal(512, result.MaxSequenceLength);
+        Assert.Equal(512, result.ConfigMaxSequenceLength);
+    }
+
+    [Fact]
+    public void TryParse_NoOptionsMaxLength_UsesConfigValue()
+    {
+        var config = """
+        {
+            "search": { "max_length": 4096 }
+        }
+        """;
+
+        var dir = CreateTempModelDir(config);
+        var result = GenAIConfigParser.TryParse(dir);
+
+        Assert.NotNull(result);
+        Assert.Equal(4096, result.MaxSequenceLength);
+        Assert.Equal(4096, result.ConfigMaxSequenceLength);
+    }
+
+    [Fact]
+    public void TryParse_ConfigZero_OptionsProvided_UsesOptions()
+    {
+        var config = """
+        {
+            "model": { "type": "test" }
+        }
+        """;
+
+        var dir = CreateTempModelDir(config);
+        var result = GenAIConfigParser.TryParse(dir, optionsMaxSequenceLength: 2048);
+
+        Assert.NotNull(result);
+        Assert.Equal(2048, result.MaxSequenceLength);
+        Assert.Equal(0, result.ConfigMaxSequenceLength);
+    }
+
+    [Fact]
+    public void TryParse_ConfigMaxSequenceLength_PreservesRawValue()
+    {
+        var config = """
+        {
+            "model": { "context_length": 131072 },
+            "search": { "max_length": 131072 }
+        }
+        """;
+
+        var dir = CreateTempModelDir(config);
+        var result = GenAIConfigParser.TryParse(dir, optionsMaxSequenceLength: 2048);
+
+        Assert.NotNull(result);
+        Assert.Equal(131072, result.ConfigMaxSequenceLength);
+        Assert.Equal(2048, result.MaxSequenceLength);
     }
 
     // ──────────────────────────────────────────────

@@ -138,6 +138,16 @@ None — this is the initial release.
 
 ---
 
+## [0.7.0] - 2025-07-25
+
+### Fixed
+
+**ModelInfo.MaxSequenceLength effective runtime limit ([#5](https://github.com/elbruno/ElBruno.LocalLLMs/issues/5))**
+- `MaxSequenceLength` now reports the **effective** runtime limit — the minimum of the config-file value and `LocalLLMsOptions.MaxSequenceLength`. Previously it returned the raw config value (e.g. 131,072 for Phi-3.5 mini) which was far larger than the actual generation limit.
+- New `ConfigMaxSequenceLength` property on `ModelMetadata` preserves the raw value from `genai_config.json` for consumers that need the model's theoretical context window.
+
+---
+
 ## [0.6.0] - 2026-03-28
 
 ### Added

@@ -27,7 +27,7 @@ internal sealed class OnnxGenAIModel : IDisposable
     internal string? ProviderSelectionDetails { get; }
     internal ModelMetadata? Metadata { get; }
 
-    internal OnnxGenAIModel(string modelPath, ExecutionProvider provider, int gpuDeviceId)
+    internal OnnxGenAIModel(string modelPath, ExecutionProvider provider, int gpuDeviceId, int? optionsMaxSequenceLength = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(modelPath);
 
@@ -94,7 +94,7 @@ ModelInitialized:
     }
 
         _tokenizer = new Tokenizer(_model);
-        Metadata = GenAIConfigParser.TryParse(modelPath);
+        Metadata = GenAIConfigParser.TryParse(modelPath, optionsMaxSequenceLength);
     }
 
     internal static IReadOnlyList<ExecutionProvider> GetProviderFallbackOrder(ExecutionProvider provider) =>
