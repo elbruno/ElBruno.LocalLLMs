@@ -320,10 +320,10 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 **Made with ❤️ by [Bruno Capuano (ElBruno)](https://github.com/elbruno)**
 
 - 📝 **Blog**: [elbruno.com](https://elbruno.com)
-- 📺 **YouTube**: [youtube.com/@inthelabs](https://youtube.com/@inthelabs)
-- 🔗 **LinkedIn**: [linkedin.com/in/inthelabs](https://linkedin.com/in/inthelabs)
-- 𝕏 **Twitter**: [twitter.com/inthelabs](https://twitter.com/inthelabs)
-- 🎙️ **Podcast**: [inthelabs.dev](https://inthelabs.dev)
+- 📺 **YouTube**: [youtube.com/elbruno](https://youtube.com/elbruno)
+- 🔗 **LinkedIn**: [linkedin.com/in/elbruno](https://linkedin.com/in/elbruno)
+- 𝕏 **Twitter**: [twitter.com/elbruno](https://twitter.com/elbruno)
+- 🎙️ **Podcast**: [notienenombre.com](https://notienenombre.com)
 
 ## 🙏 Acknowledgments
 
