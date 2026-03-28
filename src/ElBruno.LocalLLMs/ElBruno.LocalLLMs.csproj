@@ -18,6 +18,7 @@
     <PackageReference Include="ElBruno.HuggingFace.Downloader" Version="0.6.0" />
     <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.4.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
     <!--
     Base managed package for compilation. Native runtime binaries are intentionally
     NOT exported to consumers (PrivateAssets="native") to prevent conflicts between

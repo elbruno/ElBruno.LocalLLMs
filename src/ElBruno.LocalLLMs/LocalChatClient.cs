@@ -2,6 +2,8 @@ using System.Runtime.CompilerServices;
 using ElBruno.LocalLLMs.Internal;
 using ElBruno.LocalLLMs.ToolCalling;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ElBruno.LocalLLMs;
 
@@ -15,6 +17,7 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
     private readonly IModelDownloader _downloader;
     private readonly IChatTemplateFormatter _formatter;
     private readonly IToolCallParser _toolCallParser;
+    private readonly ILogger _logger;
 
     private OnnxGenAIModel? _model;
     private string? _resolvedModelPath;
@@ -36,16 +39,25 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
     /// Creates a LocalChatClient with the specified options.
     /// </summary>
     public LocalChatClient(LocalLLMsOptions options)
-        : this(options, new ModelDownloader())
+        : this(options, new ModelDownloader(), loggerFactory: null)
     {
     }
 
-    internal LocalChatClient(LocalLLMsOptions options, IModelDownloader downloader)
+    /// <summary>
+    /// Creates a LocalChatClient with the specified options and logger factory.
+    /// </summary>
+    public LocalChatClient(LocalLLMsOptions options, ILoggerFactory? loggerFactory)
+        : this(options, new ModelDownloader(), loggerFactory)
+    {
+    }
+
+    internal LocalChatClient(LocalLLMsOptions options, IModelDownloader downloader, ILoggerFactory? loggerFactory = null)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _downloader = downloader ?? throw new ArgumentNullException(nameof(downloader));
         _formatter = ChatTemplateFactory.Create(options.Model.ChatTemplate);
         _toolCallParser = ToolCallParserFactory.Create(options.Model.ChatTemplate);
+        _logger = loggerFactory?.CreateLogger<LocalChatClient>() ?? NullLogger<LocalChatClient>.Instance;
 
         Metadata = new ChatClientMetadata(
             providerName: "elbruno-local-llms",
@@ -61,7 +73,7 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
     public static async Task<LocalChatClient> CreateAsync(
         CancellationToken cancellationToken = default)
     {
-        return await CreateAsync(new LocalLLMsOptions(), progress: null, cancellationToken).ConfigureAwait(false);
+        return await CreateAsync(new LocalLLMsOptions(), progress: null, loggerFactory: null, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -72,7 +84,20 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
         IProgress<ModelDownloadProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        var client = new LocalChatClient(options);
+        return await CreateAsync(options, progress, loggerFactory: null, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Async factory with options, progress reporting, and logger factory.
+    /// </summary>
+    public static async Task<LocalChatClient> CreateAsync(
+        LocalLLMsOptions options,
+        IProgress<ModelDownloadProgress>? progress,
+        ILoggerFactory? loggerFactory,
+        CancellationToken cancellationToken = default)
+    {
+        OptionsValidator.Validate(options);
+        var client = new LocalChatClient(options, loggerFactory);
         await client.EnsureInitializedAsync(progress, cancellationToken).ConfigureAwait(false);
         return client;
     }
@@ -113,6 +138,7 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
 
         await EnsureInitializedAsync(progress: null, cancellationToken).ConfigureAwait(false);
 
+        LogMessages.InferenceStart(_logger, _options.Model.Id, streaming: false);
         var messageList = messages as IList<ChatMessage> ?? messages.ToList();
         var tools = options?.Tools;
         var prompt = _formatter.FormatMessages(messageList, tools);
@@ -149,6 +175,7 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
 
         await EnsureInitializedAsync(progress: null, cancellationToken).ConfigureAwait(false);
 
+        LogMessages.InferenceStart(_logger, _options.Model.Id, streaming: true);
         var messageList = messages as IList<ChatMessage> ?? messages.ToList();
         var tools = options?.Tools;
         var prompt = _formatter.FormatMessages(messageList, tools);
@@ -250,18 +277,25 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
                         "Set ModelPath to a local model directory or enable EnsureModelDownloaded.");
                 }
 
+                LogMessages.ModelDownloadStart(_logger, _options.Model.Id);
                 _resolvedModelPath = await _downloader.EnsureModelAsync(
                     _options.Model,
                     _options.CacheDirectory,
                     progress,
                     cancellationToken).ConfigureAwait(false);
+                LogMessages.ModelDownloadComplete(_logger, _options.Model.Id, _resolvedModelPath);
             }
 
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            LogMessages.ModelLoadingStart(_logger, _resolvedModelPath, _options.ExecutionProvider);
             _model = new OnnxGenAIModel(
                 _resolvedModelPath,
                 _options.ExecutionProvider,
                 _options.GpuDeviceId,
-                _options.MaxSequenceLength);
+                _options.MaxSequenceLength,
+                _logger);
+            sw.Stop();
+            LogMessages.ModelLoadingComplete(_logger, _resolvedModelPath, _model.ActiveProvider, sw.Elapsed.TotalMilliseconds);
         }
         finally
         {
