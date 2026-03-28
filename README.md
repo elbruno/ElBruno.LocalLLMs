@@ -85,6 +85,21 @@ await foreach (var update in client.GetStreamingResponseAsync([
 }
 ```
 
+## Model Metadata
+
+Inspect model capabilities at runtime — context window size, model name, and vocabulary:
+
+```csharp
+using var client = await LocalChatClient.CreateAsync();
+
+var metadata = client.ModelInfo;
+Console.WriteLine($"Model:          {metadata?.ModelName}");
+Console.WriteLine($"Context window: {metadata?.MaxSequenceLength}");
+Console.WriteLine($"Vocab size:     {metadata?.VocabSize}");
+```
+
+This is useful for prompt-length validation, adaptive chunking, and model selection logic.
+
 ## Dependency Injection
 
 ```csharp

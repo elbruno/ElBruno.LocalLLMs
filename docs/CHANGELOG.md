@@ -138,6 +138,27 @@ None — this is the initial release.
 
 ---
 
+## [0.6.0] - 2026-03-28
+
+### Added
+
+**Model Metadata API**
+- `ModelMetadata` public sealed record exposing `MaxSequenceLength`, `ModelName`, and `VocabSize`
+- `LocalChatClient.ModelInfo` property — populated after model initialization
+- `GenAIConfigParser` (internal) — reads `genai_config.json` from model directory
+  - Resolution priority: `search.max_length` > `model.context_length` > `model.max_length`
+  - Model name from `model.type`, fallback to directory name
+  - Vocab size from `model.vocab_size`
+- 18 new unit tests for metadata parsing and property behavior (385 total)
+- README updated with ModelMetadata usage example
+- Closes [#3](https://github.com/elbruno/ElBruno.LocalLLMs/issues/3)
+
+**GPU Fix**
+- `PrivateAssets="native"` on library's OnnxRuntimeGenAI reference prevents native binary conflicts between CPU/CUDA/DirectML
+- Consumers now explicitly choose one runtime package (documented in README)
+
+---
+
 ## [Unreleased]
 
 ### Added
