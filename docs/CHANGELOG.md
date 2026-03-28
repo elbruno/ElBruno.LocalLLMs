@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+
+**Wave 1.5: DX Improvements**
+- Custom exception hierarchy for structured error handling:
+  - `ExecutionProviderException` — GPU/provider-specific errors
+  - `ModelCapacityExceededException` — Prompt/context window exceeded
+- ILogger integration for diagnostics and debugging
+- Options validation on initialization
+- GPU diagnostics API to check execution provider at runtime
+
+**Wave 2.2: README First-Run Guidance**
+- "First Run" section explaining model download (~2-4 GB, 30-60 seconds)
+- Progress reporting example with `IProgress<ModelDownloadProgress>`
+- "GPU Fallback" section documenting `ExecutionProvider.Auto` behavior (CUDA → DirectML → CPU)
+- "Troubleshooting" quick-reference subsection in README
+- Updated "Dependency Injection" example
+
+**Wave 2.3: Troubleshooting Guide**
+- New comprehensive `docs/troubleshooting-guide.md`:
+  - GPU setup validation checklists (CUDA, DirectML, CPU)
+  - Common errors table with solutions
+  - Package conflict warnings and resolution
+  - Model capacity guidance (MaxSequenceLength vs ConfigMaxSequenceLength)
+  - Performance tips by hardware tier
+  - Advanced diagnostics and benchmarking
+
+**Wave 1.5-2.3: Documentation**
+- Fixed `docs/architecture.md` — `ExecutionProvider` default is now `Auto` (not `Cpu`)
+- Synchronized defaults across all docs (Temperature: 0.7f, TopP: 0.9f, MaxSequenceLength: 2048)
+- Updated all code examples for consistency
+- Added links from README to troubleshooting guide
+
+### Changed
+- Default `ExecutionProvider` clarified as `Auto` (tries CUDA → DirectML → CPU)
+- Documentation structure reflects user workflow: Quick Start → First Run → Streaming → GPU → DI → Error Handling → Troubleshooting
+
+---
+
 ## [0.1.0] - 2026-03-18
 
 ### Added

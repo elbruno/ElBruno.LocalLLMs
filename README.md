@@ -65,6 +65,35 @@ var response = await client.GetResponseAsync([
 Console.WriteLine(response.Text);
 ```
 
+## First Run
+
+The first time you create a `LocalChatClient`, the model is downloaded from HuggingFace to your local cache directory (~2-4 GB). This typically takes **30-60 seconds** depending on your internet connection.
+
+**Track download progress:**
+```csharp
+using var client = await LocalChatClient.CreateAsync(
+    new LocalLLMsOptions { Model = KnownModels.Phi35MiniInstruct },
+    progress: new Progress<ModelDownloadProgress>(p =>
+    {
+        var percent = (p.BytesDownloaded * 100) / p.TotalBytes;
+        Console.WriteLine($"{p.FileName}: {percent:F1}%");
+    })
+);
+```
+
+**Subsequent runs load instantly** from cache (`%LOCALAPPDATA%/ElBruno/LocalLLMs/models`).
+
+**Skip auto-download** if using a pre-downloaded model:
+```csharp
+var options = new LocalLLMsOptions
+{
+    Model = KnownModels.Phi35MiniInstruct,
+    ModelPath = "/path/to/local/model",
+    EnsureModelDownloaded = false
+};
+using var client = await LocalChatClient.CreateAsync(options);
+```
+
 ## Streaming
 
 ```csharp
@@ -84,6 +113,32 @@ await foreach (var update in client.GetStreamingResponseAsync([
     Console.Write(update.Text);
 }
 ```
+
+## GPU Acceleration
+
+By default, `ExecutionProvider.Auto` tries GPU first (CUDA → DirectML) and falls back to CPU automatically:
+
+```csharp
+// Use explicit GPU provider (fails if CUDA not installed; use Auto to fallback to CPU)
+var options = new LocalLLMsOptions
+{
+    ExecutionProvider = ExecutionProvider.Cuda
+};
+
+// Multi-GPU systems: select device ID
+var options2 = new LocalLLMsOptions
+{
+    ExecutionProvider = ExecutionProvider.Cuda,
+    GpuDeviceId = 1  // Use second GPU
+};
+```
+
+**Auto fallback behavior:**
+- **CUDA available** → uses NVIDIA GPU
+- **CUDA unavailable, DirectML available** → uses AMD/Intel Arc GPU
+- **GPU unavailable** → falls back to CPU (no errors, just slower)
+
+See [Troubleshooting: GPU Setup](docs/troubleshooting-guide.md#gpu-setup-validation) for debugging GPU issues.
 
 ## Model Metadata
 
@@ -112,6 +167,57 @@ builder.Services.AddLocalLLMs(options =>
 // Inject IChatClient anywhere
 public class MyService(IChatClient chatClient) { ... }
 ```
+
+## Error Handling
+
+The library provides structured exception types for graceful error handling:
+
+```csharp
+using ElBruno.LocalLLMs;
+using Microsoft.Extensions.AI;
+
+try
+{
+    using var client = await LocalChatClient.CreateAsync();
+    var response = await client.GetResponseAsync([
+        new(ChatRole.User, "Your question here")
+    ]);
+}
+catch (ExecutionProviderException ex)
+{
+    // GPU/provider-specific error (no CUDA, DirectML not available, etc.)
+    Console.WriteLine($"Provider error: {ex.Message}");
+}
+catch (ModelCapacityExceededException ex)
+{
+    // Prompt/response too long for model's context window
+    Console.WriteLine($"Capacity error: {ex.Message}");
+    // Solution: use a larger model or truncate the prompt
+}
+catch (InvalidOperationException ex)
+{
+    // General operation error (model not found, download failed, etc.)
+    Console.WriteLine($"Operation error: {ex.Message}");
+}
+```
+
+## Troubleshooting
+
+**GPU not working?** Use `ExecutionProvider.Cpu` explicitly. See [GPU Setup Validation](docs/troubleshooting-guide.md#gpu-setup-validation).
+
+**Out of memory?** Try a smaller model:
+```csharp
+var options = new LocalLLMsOptions
+{
+    Model = KnownModels.Qwen25_05BInstruct  // 0.5B instead of 3.8B
+};
+```
+
+**Model download fails?**
+- Check your internet connection
+- For private HuggingFace models, set the `HF_TOKEN` environment variable
+
+For detailed troubleshooting, see [docs/troubleshooting-guide.md](docs/troubleshooting-guide.md).
 
 ## Supported Models
 
