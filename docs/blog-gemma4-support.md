@@ -1,59 +1,54 @@
-# 🌟 Gemma 4 Support Coming to ElBruno.LocalLLMs
+# 🌟 Gemma 4 Is Here — And My C# Library Is (Almost) Ready
 
-⚠️ _This blog post was created with the help of AI tools._
+> **🎨 Image prompt:** "A futuristic crystal gemstone glowing with four distinct colorful facets (blue, green, yellow, red) floating above an open laptop running C# code, with neural network patterns radiating outward, dark background with subtle Google colors, 16:9 aspect ratio, cinematic lighting, digital art style"
+
+⚠️ _This blog post was created with the help of AI tools. The geeky fun and the 🤖 in C# are 100% mine._
 
 ---
 
 Hi!
 
-Google just dropped **Gemma 4** — their most capable open model family yet — and we're adding support to **ElBruno.LocalLLMs**! Here's what's ready and what's next.
+So Google just dropped **Gemma 4** — their most capable open model family yet — and I couldn't resist. I spent a good chunk of time digging into the architecture, trying to convert models, hitting walls, finding workarounds, and hitting more walls. Here's where things stand with **ElBruno.LocalLLMs**.
+
+Spoiler: the library is _ready_ for Gemma 4. The ONNX runtime... not so much. But let me tell you the whole story.
 
 ---
 
-## What Is Gemma 4?
+## Wait, What's Gemma 4?
 
-Released April 2, 2026, Gemma 4 is a family of **four models** with groundbreaking architecture features:
+Google released four new models on April 2, 2026, and they're pretty wild:
 
-| Model | Parameters | Architecture | Context |
+| Model | Parameters | What's Cool | Context |
 |-------|-----------|-------------|---------|
-| **E2B IT** | 5.1B (2.3B effective) | Dense + PLE | 128K |
-| **E4B IT** | 8B (4.5B effective) | Dense + PLE | 128K |
-| **26B A4B IT** | 25.2B (3.8B active) | MoE + PLE | 256K |
-| **31B IT** | 30.7B | Dense | 256K |
+| **E2B IT** | 5.1B (only 2.3B active!) | Tiny but punches above its weight | 128K |
+| **E4B IT** | 8B (4.5B active) | Sweet spot for most use cases | 128K |
+| **26B A4B IT** | 25.2B (3.8B active) | MoE — only fires 3.8B params per token 🤯 | 256K |
+| **31B IT** | 30.7B | The big one, dense, no tricks | 256K |
 
-**Key innovations:**
-- 🧩 **Per-Layer Embeddings (PLE)** — each transformer layer gets its own embedding input, enabling smaller effective parameter counts with higher quality
-- 🔀 **Mixture of Experts** — the 26B variant activates only 3.8B parameters per token
-- 🌍 **Multimodal** — text, image, audio, and video understanding
-- ✅ **Apache 2.0** — fully open, no gating
+The magic sauce is something called **Per-Layer Embeddings (PLE)** — basically, each transformer layer gets its own little embedding input. That's how a 5.1B model acts like a 2.3B one. Clever stuff.
 
-All four models support **tool calling** and have a **128K–256K context window**.
+Oh, and they're all **Apache 2.0**. No gating, no license hoops. I like that.
 
 ---
 
-## What's Ready Now (v0.8.0)
+## What I Got Working (v0.8.0)
 
-### ✅ Model Definitions
+### ✅ Model Definitions — Done
 
-All four Gemma 4 variants are registered in `KnownModels`:
+All four Gemma 4 variants are registered and ready to go:
 
 ```csharp
-// Use any Gemma 4 model (when ONNX conversion is available)
 var options = new LocalLLMsOptions
 {
     Model = KnownModels.Gemma4E2BIT  // Smallest, edge-optimized
 };
 ```
 
-Available models:
-- `KnownModels.Gemma4E2BIT` — 2.3B effective, great for edge/mobile
-- `KnownModels.Gemma4E4BIT` — 4.5B effective, balanced performance
-- `KnownModels.Gemma4_26BA4BIT` — MoE, 3.8B active, efficient large model
-- `KnownModels.Gemma4_31BIT` — 30.7B dense, maximum quality
+I added `Gemma4E2BIT`, `Gemma4E4BIT`, `Gemma4_26BA4BIT`, and `Gemma4_31BIT`. The moment ONNX models exist, you just point and shoot.
 
-### ✅ Chat Template Support
+### ✅ Chat Template — Already Works
 
-Gemma 4 uses the same chat template as Gemma 2 and 3:
+Here's the fun part: Gemma 4 uses the **exact same chat template** as Gemma 2 and 3:
 
 ```
 <start_of_turn>user
@@ -61,76 +56,75 @@ What is the capital of France?<end_of_turn>
 <start_of_turn>model
 ```
 
-The existing `GemmaFormatter` handles this perfectly — no changes needed. System messages are folded into the first user turn, exactly like previous Gemma versions.
+My existing `GemmaFormatter` handles it perfectly. Zero code changes needed. System messages fold into the first user turn, tool calling works — the whole thing just... works. I love when that happens.
 
-### ✅ Tool Calling Support
+### ✅ Tool Calling — Yep, That Too
 
-Gemma 4 natively supports function/tool calling. Our formatter handles the Gemma tool-calling format with proper JSON function definitions.
+Gemma 4 natively supports function calling, and my formatter already handles the Gemma tool-calling format with proper JSON function definitions. No changes needed.
 
-### ✅ Comprehensive Test Coverage
+### ✅ Tests — A Lot of Them
 
-We added **215+ new tests** for Gemma 4:
+I went a bit overboard here (no regrets):
 
-- **6 model definition tests** — verify all four variants are correctly registered
-- **9 tool-calling formatter tests** — validate function calling with Gemma 4 models
-- **195 multilingual tests** — 20+ languages and scripts across all formatters (CJK, Cyrillic, Arabic, Hebrew, Indic, European diacritics, emoji, zero-width characters)
+- **6 model definition tests** — making sure all four variants are correctly registered
+- **9 tool-calling tests** — validating function calling scenarios with Gemma 4
+- **195 multilingual tests** — this one deserves its own section (see below)
 
 All **697 tests** pass. ✅
 
-### ✅ Conversion Scripts Ready
+### ✅ Conversion Scripts — Ready and Waiting
 
-Dedicated Python and PowerShell conversion scripts are prepared:
+I wrote dedicated Python and PowerShell conversion scripts:
 
 ```bash
-# Convert Gemma 4 E2B (smallest)
 python scripts/convert_gemma4.py --model-size e2b --output-dir ./models/gemma4-e2b
-
-# PowerShell
-.\scripts\convert_gemma4.ps1 -ModelSize e2b -OutputDir .\models\gemma4-e2b
 ```
+
+They're ready. They just need a runtime that can handle Gemma 4. Which brings me to...
 
 ---
 
-## ⏳ What's Pending: ONNX Runtime Support
+## ⏳ The Honest Part: ONNX Conversion Is Blocked
 
-Here's the honest truth: **the ONNX conversion is blocked** by the current `onnxruntime-genai` runtime (v0.12.2).
+OK, here's where I hit a wall. **The ONNX conversion doesn't work yet.** And it's not because I didn't try — trust me, I _really_ tried.
 
-### Why?
+### What's the Problem?
 
-Gemma 4 introduces three architectural features that the GenAI runtime doesn't support yet:
+Gemma 4 has three architectural features that `onnxruntime-genai` v0.12.2 simply doesn't support:
 
-1. **Per-Layer Embeddings (PLE)** — Each transformer layer receives a separate `per_layer_inputs` tensor from the embedding layer. The runtime expects a single embedding output.
+1. **Per-Layer Embeddings (PLE)** — each layer needs a separate `per_layer_inputs` tensor. The runtime expects one embedding output. Not three dozen.
 
-2. **Variable Attention Head Dimensions** — Sliding attention layers use `head_dim=256`, while full attention layers (every 5th) use `global_head_dim=512`. The runtime's `genai_config.json` only supports a single `head_size`.
+2. **Variable Head Dimensions** — sliding attention layers use `head_dim=256`, full attention layers (every 5th one) use `512`. The runtime config only has ONE `head_size` field. Pick one? Yeah, no.
 
-3. **KV Cache Sharing** — 35 layers share only 15 unique KV cache pairs. The runtime expects one KV cache per layer.
+3. **KV Cache Sharing** — 35 layers share only 15 unique KV cache pairs. The runtime expects a 1:1 mapping. Math doesn't math.
 
-### What We Tried
+### What I Tried (The Fun Part)
 
-We didn't just accept "not supported" — we investigated thoroughly:
+I didn't just shrug and move on. Here's my adventure:
 
-- ✅ Patched the GenAI builder to route Gemma 4 through Gemma 3 pipeline — conversion produced 1.6GB ONNX file, but runtime failed with shape mismatch at full attention layers
-- ✅ Examined onnx-community models — correct I/O structure but incompatible with GenAI's KV cache management
-- ✅ Attempted loading as `Gemma4ForCausalLM` — weights stored under multimodal prefix, mismatch
-- ✅ Searched for pre-release GenAI builds — none available
-- ✅ Checked GitHub issues/PRs — no Gemma 4 support tracked
+- 🔧 **Patched the GenAI builder** to route Gemma 4 through the Gemma 3 pipeline — it actually produced a 1.6GB ONNX file! But then the runtime choked with a shape mismatch at the full attention layers. So close.
+- 🔍 **Examined the onnx-community models** — they have the right structure, but the I/O format is incompatible with GenAI's KV cache management.
+- 🧪 **Tried loading as `Gemma4ForCausalLM`** — nope, weights are stored under a multimodal prefix. Mismatch everywhere.
+- 🔎 **Searched for pre-release builds** — nothing. 0.12.2 is the latest.
+- 📋 **Checked GitHub issues/PRs** — zero Gemma 4 mentions in the repo.
 
-### When Will It Work?
+### So When Will It Work?
 
-The moment `onnxruntime-genai` adds Gemma 4 support, we're ready:
+The moment `onnxruntime-genai` adds Gemma 4 support, I'm ready to go:
+
 - Model definitions ✅
 - Chat template ✅
 - Tests ✅
 - Conversion scripts ✅
 - Documentation ✅
 
-Monitor: [microsoft/onnxruntime-genai releases](https://github.com/microsoft/onnxruntime-genai/releases)
+I'm watching: [microsoft/onnxruntime-genai releases](https://github.com/microsoft/onnxruntime-genai/releases)
 
 ---
 
-## The Bigger Picture: Multilingual Testing
+## Bonus: I Went Multilingual
 
-While working on Gemma 4, we also added **195 multilingual formatter tests** covering:
+While I was in testing mode, I figured — why not make sure all my formatters handle every language properly? So I added **195 multilingual tests** covering:
 
 | Script/Language | Examples |
 |----------------|----------|
@@ -145,19 +139,19 @@ While working on Gemma 4, we also added **195 multilingual formatter tests** cov
 | Emoji | 🤖, 👋, 🌍 |
 | Zero-width | ZWJ, ZWNJ characters |
 
-These tests validate all **7 formatters** (ChatML, Phi3, Llama3, Qwen, Mistral, Gemma, DeepSeek) handle Unicode correctly — important for a library that runs models locally across all locales.
+All **7 formatters** (ChatML, Phi3, Llama3, Qwen, Mistral, Gemma, DeepSeek) handle Unicode correctly. If you're running models locally, you probably care about this. I know I do.
 
 ---
 
-## Get Started
+## Try It Out
 
-Update to v0.8.0:
+Grab v0.8.0:
 
 ```bash
 dotnet add package ElBruno.LocalLLMs --version 0.8.0
 ```
 
-While Gemma 4 ONNX models aren't available yet, you can use the other **25+ supported models** right now:
+Gemma 4 ONNX models aren't ready yet, but there are **25+ other models** that work right now:
 
 ```csharp
 using ElBruno.LocalLLMs;
@@ -177,14 +171,14 @@ Console.WriteLine(response.Text);
 ## Links
 
 - 📦 [NuGet Package](https://www.nuget.org/packages/ElBruno.LocalLLMs)
-- 📖 [Supported Models](supported-models.md)
-- 🔧 [ONNX Conversion Guide](onnx-conversion.md)
-- 🚫 [Blocked Models Reference](blocked-models.md)
+- 📖 [Supported Models](https://github.com/elbruno/ElBruno.LocalLLMs/blob/main/docs/supported-models.md)
+- 🔧 [ONNX Conversion Guide](https://github.com/elbruno/ElBruno.LocalLLMs/blob/main/docs/onnx-conversion.md)
+- 🚫 [Blocked Models Reference](https://github.com/elbruno/ElBruno.LocalLLMs/blob/main/docs/blocked-models.md)
 - 🌐 [Google Gemma 4 Announcement](https://blog.google/innovation-and-ai/technology/developers-tools/gemma-4/)
 - 🐙 [GitHub Repository](https://github.com/elbruno/ElBruno.LocalLLMs)
 
 ---
 
-_Happy local LLM-ing!_ 🤖
+Happy coding! 🤖
 
 — Bruno
