@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.8.0] - 2026-04-03
+
+### Added
+
+**Gemma 4 Model Family**
+- 4 new model definitions: Gemma-4-E2B-IT, Gemma-4-E4B-IT, Gemma-4-26B-A4B-IT, Gemma-4-31B-IT
+- Dedicated ONNX conversion scripts: `scripts/convert_gemma4.py` and `scripts/convert_gemma4.ps1`
+- 6 new KnownModels unit tests for Gemma 4 variants
+- 9 new GemmaFormatter tool-calling tests for Gemma 4
+- Existing GemmaFormatter handles Gemma 4 chat template (same as Gemma 2/3)
+- ONNX status: ⏳ Pending runtime support from onnxruntime-genai (PLE architecture blocker)
+
+**Multilingual Test Suite**
+- 195 new multilingual formatter tests across all 7 formatters
+- Coverage for 20+ languages/scripts: CJK, Cyrillic, Arabic, Hebrew, Devanagari, Tamil, Thai, European diacritics, emoji, zero-width characters
+- Validates correct Unicode handling in ChatML, Phi3, Llama3, Qwen, Mistral, Gemma, and DeepSeek formatters
+
+**Documentation**
+- New blog post: `docs/blog-gemma4-support.md` — announcing Gemma 4 support
+- Updated `docs/supported-models.md` with Gemma 4 entries
+- Updated `docs/onnx-conversion.md` with Gemma 4 section and technical blocker details
+- Updated `docs/blocked-models.md` with Gemma 4 architecture analysis
+- Updated README.md supported models table
+
+---
+
 ## [Unreleased]
 
 ### Added

@@ -7,8 +7,8 @@
     <PackageProjectUrl>https://github.com/elbruno/ElBruno.LocalLLMs</PackageProjectUrl>
     <PackageIcon>nuget_logo.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageTags>llm;onnx;ai;local;chat;microsoft-extensions-ai;ichatclient;phi;qwen;llama;genai</PackageTags>
-    <Version>0.7.0</Version>
+    <PackageTags>llm;onnx;ai;local;chat;microsoft-extensions-ai;ichatclient;phi;qwen;llama;gemma;gemma4;genai</PackageTags>
+    <Version>0.8.0</Version>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>

@@ -19,6 +19,7 @@ Use `Llama-3.1-8B-Instruct` (already converted, native ONNX) or `Llama-3.2-3B-In
 
 | Model | Params | Blocker | Status | Next Step |
 |-------|--------|---------|--------|-----------|
+| **Gemma-4 Family** | 5.1B–30.7B | PLE architecture not supported | ⏳ Pending | Wait for onnxruntime-genai to add PLE/variable head dim support |
 | **StableLM-2-1.6B-Chat** | 1.6B | Unsupported architecture | ⛔ Blocked | Wait for builder support or use standard ONNX |
 | **Mixtral-8x7B-Instruct-v0.1** | 46.7B (MoE) | MoE routing not supported | ⛔ Blocked | Wait for builder MoE support or use Mistral-7B |
 | **DeepSeek-R1-Distill-Llama-70B** | 70B | RAM: ~450GB needed for INT4 | ⛔ Blocked | Use 512GB+ machine, cloud GPU, or smaller DeepSeek-R1-Distill-Qwen-14B |
@@ -28,6 +29,58 @@ Use `Llama-3.1-8B-Instruct` (already converted, native ONNX) or `Llama-3.2-3B-In
 ---
 
 ## Architecture Limitations (No Current Builder Support)
+
+### Gemma 4 Family (E2B, E4B, 26B, 31B)
+
+**Models:**
+- google/gemma-4-E2B-it (5.1B total, 2.3B effective)
+- google/gemma-4-E4B-it (8B total, 4.5B effective)
+- google/gemma-4-26B-A4B-it (25.2B total, 3.8B active MoE)
+- google/gemma-4-31B-it (30.7B dense)
+
+**HuggingFace:** https://huggingface.co/google/gemma-4-E2B-it  
+**License:** Apache 2.0 (open, no gating)  
+**Status:** ⏳ Pending — model definitions and tests ready, conversion blocked
+
+#### Why It's Blocked
+
+Gemma 4 introduces three novel architectural features that `onnxruntime-genai` v0.12.2 cannot handle:
+
+| Feature | What It Does | Why It Breaks GenAI |
+|---------|-------------|-------------------|
+| **Per-Layer Embeddings (PLE)** | Each layer receives a separate `per_layer_inputs` [batch, seq, 35, 256] tensor | GenAI runtime expects single embedding output, no `per_layer_inputs` input |
+| **Variable Head Dimensions** | Sliding attention: head_dim=256, Full attention (every 5th layer): global_head_dim=512 | `genai_config.json` has single `head_size` field — can't represent variable dims |
+| **KV Cache Sharing** | 35 layers share only 15 unique KV cache pairs | Runtime allocates one KV cache per layer — can't handle shared caches |
+
+All three are **runtime-level** limitations — not just builder/conversion issues. The C++ inference code needs new logic to handle these patterns.
+
+#### What We Tried
+
+1. **Patched GenAI builder** to route Gemma 4 through Gemma 3 pipeline → produced 1.6GB ONNX file, but runtime failed with `ShapeInferenceError` at full attention layers (head dim mismatch)
+2. **Examined onnx-community models** → correct ONNX structure but incompatible with GenAI's external KV cache management
+3. **Attempted `Gemma4ForCausalLM` loading** → weights stored under multimodal prefix, mismatch
+4. **Searched for pre-release builds** → none available, 0.12.2 is latest
+
+#### What's Ready (Waiting for Runtime)
+
+- ✅ Model definitions in `KnownModels.cs` (all 4 variants)
+- ✅ Chat template (GemmaFormatter works — same as Gemma 2/3)
+- ✅ Conversion scripts (`scripts/convert_gemma4.py`, `scripts/convert_gemma4.ps1`)
+- ✅ Unit tests (6 model + 9 tool-calling + 195 multilingual)
+- ✅ Documentation (supported-models, onnx-conversion, this page)
+
+#### Recommended Alternatives
+
+- **Gemma-2-2B-IT** (2.6B) — ✅ converted, smallest Gemma in ONNX
+- **Gemma-2-9B-IT** (9B) — ✅ converted, production Gemma quality
+- **Phi-3.5-mini-instruct** (3.8B) — ✅ native ONNX, excellent for edge
+
+#### Monitor
+
+- https://github.com/microsoft/onnxruntime-genai/releases
+- https://github.com/microsoft/onnxruntime-genai/issues
+
+---
 
 ### StableLM-2-1.6B-Chat
 
@@ -378,6 +431,7 @@ These models are in the `team.md` roadmap but haven't been added to the library 
 - ✅ Gemma-3-12B-IT (likely works with current builder)
 
 **Unlikely without builder updates:**
+- ❌ Gemma-4 family (PLE architecture — requires runtime-level support for per-layer embeddings, variable head dims, KV sharing)
 - ❌ Mixtral-8x7B, Llama-4-Scout, Llama-4-Maverick (all MoE — requires builder update)
 - ❌ StableLM-2-1.6B-Chat (unsupported architecture — requires builder update)
 - ❌ DeepSeek-V3 (671B + MoE + impractical for local)
@@ -397,6 +451,10 @@ These models are in the `team.md` roadmap but haven't been added to the library 
 
 | Model | Realistic Timeline | Effort Level |
 |-------|-------------------|--------------|
+| Gemma-4-E2B-IT | 2026 (when GenAI supports PLE) | 🟡 Medium (conversion scripts ready) |
+| Gemma-4-E4B-IT | 2026 (when GenAI supports PLE) | 🟡 Medium (conversion scripts ready) |
+| Gemma-4-26B-A4B-IT | 2026+ (PLE + MoE support needed) | 🔴 High (MoE + PLE) |
+| Gemma-4-31B-IT | 2026 (when GenAI supports PLE) | 🟡 Medium (dense + PLE) |
 | Qwen3-8B, Qwen3-32B | 2025 | ✅ Low (architecture compatible) |
 | Gemma-3-12B-IT | 2025 | ✅ Low (Gemma-2 compatible) |
 | Mixtral-8x7B | 2025–2026 | 🔴 High (requires MoE builder support) |
