@@ -48,6 +48,17 @@
 - QNN is Qualcomm/ARM-only (Android native), WinML is a system component (no separate NuGet) — neither relevant for .NET desktop/server
 - ExecutionProvider enum (Auto/Cpu/Cuda/DirectML) covers all available .NET providers — no new entries needed
 - `ShouldFallbackToNextProvider` expanded with 4 additional error patterns: "no available provider", "unable to find", "cannot load", "not available"
+
+### 2026-03-29: Gemma 4 Model Definitions Added
+- Added 4 Gemma 4 models from Google's latest release (Gemma 4 E2B, E4B, 26B A4B, 31B)
+- Gemma 4 uses existing `ChatTemplateFormat.Gemma` — same `<start_of_turn>role\ncontent<end_of_turn>` format as Gemma 1/2
+- All 4 models support native function calling (`SupportsToolCalling: true`) per Google's release notes
+- E2B (2B active / 5.1B total) in Tiny tier; E4B (4B active / 8B total) in Small tier; 26B A4B (MoE, 3.8B active) and 31B (dense) in Large tier
+- None have ONNX weights yet (`HasNativeOnnx: false`) — all require conversion from HuggingFace PyTorch checkpoints
+- Model IDs: `gemma-4-e2b-it`, `gemma-4-e4b-it`, `gemma-4-26b-a4b-it`, `gemma-4-31b-it`
+- KnownModels.cs fields: `Gemma4E2BIT`, `Gemma4E4BIT`, `Gemma4_26BA4BIT`, `Gemma4_31BIT` (following existing naming pattern)
+- Updated README.md and docs/supported-models.md with full specs (context window, active params, tier placement)
+- Fixed Gemma chat template display in supported-models.md: separated Gemma format from ChatML (was incorrectly grouped)
 - ConsoleAppDemo.csproj shows GPU enablement via commented-out package refs — clean pattern for samples
 - README GPU section placed after Quick Start, documents fallback order per OS
 

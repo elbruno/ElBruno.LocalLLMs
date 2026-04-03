@@ -135,6 +135,166 @@ The output directory will contain `.onnx` files plus any associated data files, 
 
 > **Tip:** Clean up the intermediate files after conversion. Only the final output directory is needed at runtime.
 
+## Gemma 4 Conversion
+
+Google Gemma 4 is a new model family with four sizes featuring advanced architectures like Per-Layer Embeddings (PLE) and Mixture of Experts (MoE). A dedicated conversion script handles these models with GenAI-compatible output.
+
+### Gemma 4 Model Variants
+
+| Model | Size | Architecture | Context | HuggingFace ID |
+|-------|------|--------------|---------|----------------|
+| **E2B IT** | 2.3B effective (5.1B total) | Dense + PLE | 128K | `google/gemma-4-E2B-it` |
+| **E4B IT** | 4.5B effective (8B total) | Dense + PLE | 128K | `google/gemma-4-E4B-it` |
+| **26B A4B IT** | 3.8B active / 25.2B total | MoE (8/128 experts + 1 shared) | 256K | `google/gemma-4-26B-A4B-it` |
+| **31B IT** | 30.7B | Dense | 256K | `google/gemma-4-31B-it` |
+
+### Hardware Requirements
+
+| Model | RAM (Conversion) | Disk Space | Recommended RAM (Inference INT4) |
+|-------|-----------------|------------|----------------------------------|
+| E2B | 8-12 GB | ~30 GB | 4-6 GB |
+| E4B | 16-20 GB | ~50 GB | 6-10 GB |
+| 26B | 48-64 GB | ~150 GB | 24-32 GB |
+| 31B | 64-80 GB | ~180 GB | 24-40 GB |
+
+### Quick Start
+
+**Convert Gemma 4 E2B (smallest, edge-optimized):**
+
+```bash
+python scripts/convert_gemma4.py --model-size e2b --output-dir ./models/gemma4-e2b
+```
+
+**Convert Gemma 4 26B MoE (largest, production):**
+
+```bash
+python scripts/convert_gemma4.py --model-size 26b --output-dir ./models/gemma4-26b --quantize int8
+```
+
+**PowerShell (Windows):**
+
+```powershell
+.\scripts\convert_gemma4.ps1 -ModelSize e4b -OutputDir .\models\gemma4-e4b
+```
+
+### Conversion Script Features
+
+The `convert_gemma4.py` script is purpose-built for Gemma 4 and includes:
+
+- ✅ **GenAI compatibility** — Uses `onnxruntime_genai.models.builder` for proper `genai_config.json` and tokenizer setup
+- ✅ **Automatic trust_remote_code** — Gemma 4 requires remote code execution for custom architecture
+- ✅ **MoE support** — Handles the complex Mixture of Experts routing in the 26B model
+- ✅ **Pre-flight checks** — Validates RAM, disk space, and dependencies before starting
+- ✅ **Output validation** — Ensures all required files are present after conversion
+- ✅ **Clear progress output** — Shows real-time conversion status
+
+### Usage Examples
+
+**E2B — Edge/Mobile (INT4, smallest):**
+
+```bash
+python scripts/convert_gemma4.py \
+    --model-size e2b \
+    --output-dir ./models/gemma4-e2b \
+    --quantize int4
+```
+
+**E4B — Laptop/Desktop (INT8, better quality):**
+
+```bash
+python scripts/convert_gemma4.py \
+    --model-size e4b \
+    --output-dir ./models/gemma4-e4b \
+    --quantize int8
+```
+
+**26B MoE — Server/Workstation (FP16, best quality):**
+
+```bash
+python scripts/convert_gemma4.py \
+    --model-size 26b \
+    --output-dir ./models/gemma4-26b \
+    --quantize fp16
+```
+
+**31B Dense — High-end Server:**
+
+```bash
+python scripts/convert_gemma4.py \
+    --model-size 31b \
+    --output-dir ./models/gemma4-31b \
+    --quantize int4
+```
+
+### Quantization Recommendations
+
+| Model | INT4 | INT8 | FP16 | Recommended |
+|-------|------|------|------|-------------|
+| E2B | ~1.5 GB | ~2.5 GB | ~5 GB | **INT4** (best for edge) |
+| E4B | ~2.5 GB | ~4.5 GB | ~9 GB | **INT8** (quality/size balance) |
+| 26B | ~13 GB | ~25 GB | ~50 GB | **INT8** (manageable size, good quality) |
+| 31B | ~16 GB | ~31 GB | ~62 GB | **INT4** (only option for most systems) |
+
+### Using the Converted Model
+
+After conversion, point your C# code to the output directory:
+
+```csharp
+using ElBruno.LocalLLMs;
+
+var options = new LocalLLMsOptions
+{
+    ModelPath = @"./models/gemma4-e2b",  // Path to converted model
+    MaxTokens = 2048,
+    Temperature = 0.7f
+};
+
+using var client = await LocalChatClient.CreateAsync(options);
+
+var response = await client.CompleteAsync(
+    "Explain quantum computing in simple terms."
+);
+Console.WriteLine(response);
+```
+
+### Architecture Notes
+
+**Per-Layer Embeddings (PLE)** — E2B and E4B models use a unique architecture where embeddings are distributed across layers rather than concentrated at the input. This is transparent during conversion and inference.
+
+**Mixture of Experts (MoE)** — The 26B model contains 128 expert networks plus 1 shared expert, but only 8 are active for any given token. This provides 25.2B total parameters with only 3.8B active, giving near-31B quality at much lower inference cost. The ONNX conversion properly handles the expert routing mechanism.
+
+### Troubleshooting Gemma 4
+
+| Problem | Solution |
+|---------|----------|
+| **"trust_remote_code" error** | The script adds this automatically; if you see this error, update transformers: `pip install -U transformers` |
+| **Out of memory during conversion** | Close other applications, or use a machine with more RAM. The 26B/31B models genuinely need 64-80 GB. |
+| **MoE conversion fails (26B)** | Ensure you have onnxruntime-genai 0.4.0+: `pip install -U onnxruntime-genai` |
+| **Converted model outputs gibberish** | Try higher precision: use `--quantize int8` or `--quantize fp16` instead of int4 |
+| **Missing genai_config.json** | Use `convert_gemma4.py` not `convert_to_onnx.py` — the GenAI builder is required |
+| **Slow inference on 26B model** | This is expected — MoE routing adds overhead. Use GPU if available (requires CUDA provider). |
+
+### Important Notes
+
+- **Always use `convert_gemma4.py`** for Gemma 4, not the generic `convert_to_onnx.py`. The GenAI builder is required for proper tokenizer and config setup.
+- **Gemma 4 requires trust_remote_code** — The script handles this automatically via `--extra_options`.
+- **Conversion is CPU-only** — The script targets CPU execution (`-e cpu`). For GPU inference, you'll need to separately configure the CUDA execution provider in your C# code.
+- **Disk space doubles during conversion** — Ensure you have 2-3x the final model size free during conversion for intermediate files.
+
+### Dependencies
+
+The Gemma 4 conversion script requires:
+
+```bash
+pip install onnxruntime-genai>=0.4.0 huggingface-hub transformers torch
+```
+
+Or install all conversion dependencies:
+
+```bash
+pip install -r scripts/requirements.txt
+```
+
 ## See Also
 
 - [scripts/README.md](../scripts/README.md) — conversion script reference and usage examples

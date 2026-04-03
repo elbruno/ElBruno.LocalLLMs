@@ -120,6 +120,20 @@ public static class KnownModels
         HasNativeOnnx = true
     };
 
+    /// <summary>Gemma 4 E2B IT — Google's edge model, effective 2B params (5.1B total), 128K context.</summary>
+    public static readonly ModelDefinition Gemma4E2BIT = new()
+    {
+        Id = "gemma-4-e2b-it",
+        DisplayName = "Gemma-4-E2B-IT",
+        HuggingFaceRepoId = "google/gemma-4-E2B-it",
+        RequiredFiles = ["*"],
+        ModelType = OnnxModelType.GenAI,
+        ChatTemplate = ChatTemplateFormat.Gemma,
+        Tier = ModelTier.Tiny,
+        HasNativeOnnx = false,
+        SupportsToolCalling = true
+    };
+
     /// <summary>StableLM 2 Zephyr 1.6B — Stability AI's compact chat model.</summary>
     public static readonly ModelDefinition StableLM2_16BChat = new()
     {
@@ -190,6 +204,20 @@ public static class KnownModels
         ChatTemplate = ChatTemplateFormat.Gemma,
         Tier = ModelTier.Small,
         HasNativeOnnx = true
+    };
+
+    /// <summary>Gemma 4 E4B IT — Google's edge/laptop model, effective 4B params (8B total), 128K context.</summary>
+    public static readonly ModelDefinition Gemma4E4BIT = new()
+    {
+        Id = "gemma-4-e4b-it",
+        DisplayName = "Gemma-4-E4B-IT",
+        HuggingFaceRepoId = "google/gemma-4-E4B-it",
+        RequiredFiles = ["*"],
+        ModelType = OnnxModelType.GenAI,
+        ChatTemplate = ChatTemplateFormat.Gemma,
+        Tier = ModelTier.Small,
+        HasNativeOnnx = false,
+        SupportsToolCalling = true
     };
 
     // ────────────────────────────────────────────────────────
@@ -372,6 +400,34 @@ public static class KnownModels
         HasNativeOnnx = false
     };
 
+    /// <summary>Gemma 4 26B A4B IT — Google's MoE model, 3.8B active / 25.2B total, 256K context.</summary>
+    public static readonly ModelDefinition Gemma4_26BA4BIT = new()
+    {
+        Id = "gemma-4-26b-a4b-it",
+        DisplayName = "Gemma-4-26B-A4B-IT",
+        HuggingFaceRepoId = "google/gemma-4-26B-A4B-it",
+        RequiredFiles = ["*"],
+        ModelType = OnnxModelType.GenAI,
+        ChatTemplate = ChatTemplateFormat.Gemma,
+        Tier = ModelTier.Large,
+        HasNativeOnnx = false,
+        SupportsToolCalling = true
+    };
+
+    /// <summary>Gemma 4 31B IT — Google's dense flagship, 30.7B params, 256K context.</summary>
+    public static readonly ModelDefinition Gemma4_31BIT = new()
+    {
+        Id = "gemma-4-31b-it",
+        DisplayName = "Gemma-4-31B-IT",
+        HuggingFaceRepoId = "google/gemma-4-31B-it",
+        RequiredFiles = ["*"],
+        ModelType = OnnxModelType.GenAI,
+        ChatTemplate = ChatTemplateFormat.Gemma,
+        Tier = ModelTier.Large,
+        HasNativeOnnx = false,
+        SupportsToolCalling = true
+    };
+
     /// <summary>
     /// Returns all known model definitions.
     /// </summary>
@@ -386,12 +442,14 @@ public static class KnownModels
         Qwen25_05B_Instruct_FineTuned,
         Qwen25_15BInstruct,
         Gemma2BIT,
+        Gemma4E2BIT,
         StableLM2_16BChat,
         // Small
         Phi35MiniInstruct,
         Qwen25_3BInstruct,
         Llama32_3BInstruct,
         Gemma2_2BIT,
+        Gemma4E4BIT,
         // Medium
         Qwen25_7BInstruct,
         Llama31_8BInstruct,
@@ -407,6 +465,8 @@ public static class KnownModels
         Mixtral8x7BInstructV01,
         DeepSeekR1DistillLlama70B,
         CommandR35B,
+        Gemma4_26BA4BIT,
+        Gemma4_31BIT,
     ];
 
     /// <summary>

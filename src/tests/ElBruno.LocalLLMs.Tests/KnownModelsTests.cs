@@ -197,6 +197,84 @@ public class KnownModelsTests
     }
 
     // ──────────────────────────────────────────────
+    // Gemma 4 models
+    // ──────────────────────────────────────────────
+
+    [Fact]
+    public void Gemma4E2BIT_HasCorrectProperties()
+    {
+        var model = KnownModels.Gemma4E2BIT;
+
+        Assert.Equal("gemma-4-e2b-it", model.Id);
+        Assert.Equal("Gemma-4-E2B-IT", model.DisplayName);
+        Assert.Equal(ChatTemplateFormat.Gemma, model.ChatTemplate);
+        Assert.False(model.HasNativeOnnx);
+        Assert.True(model.SupportsToolCalling);
+        Assert.False(string.IsNullOrWhiteSpace(model.HuggingFaceRepoId));
+    }
+
+    [Fact]
+    public void Gemma4E4BIT_HasCorrectProperties()
+    {
+        var model = KnownModels.Gemma4E4BIT;
+
+        Assert.Equal("gemma-4-e4b-it", model.Id);
+        Assert.Equal("Gemma-4-E4B-IT", model.DisplayName);
+        Assert.Equal(ChatTemplateFormat.Gemma, model.ChatTemplate);
+        Assert.False(model.HasNativeOnnx);
+        Assert.True(model.SupportsToolCalling);
+        Assert.False(string.IsNullOrWhiteSpace(model.HuggingFaceRepoId));
+    }
+
+    [Fact]
+    public void Gemma4_26BA4BIT_HasCorrectProperties()
+    {
+        var model = KnownModels.Gemma4_26BA4BIT;
+
+        Assert.Equal("gemma-4-26b-a4b-it", model.Id);
+        Assert.Equal("Gemma-4-26B-A4B-IT", model.DisplayName);
+        Assert.Equal(ChatTemplateFormat.Gemma, model.ChatTemplate);
+        Assert.False(model.HasNativeOnnx);
+        Assert.True(model.SupportsToolCalling);
+        Assert.False(string.IsNullOrWhiteSpace(model.HuggingFaceRepoId));
+    }
+
+    [Fact]
+    public void Gemma4_31BIT_HasCorrectProperties()
+    {
+        var model = KnownModels.Gemma4_31BIT;
+
+        Assert.Equal("gemma-4-31b-it", model.Id);
+        Assert.Equal("Gemma-4-31B-IT", model.DisplayName);
+        Assert.Equal(ChatTemplateFormat.Gemma, model.ChatTemplate);
+        Assert.False(model.HasNativeOnnx);
+        Assert.True(model.SupportsToolCalling);
+        Assert.False(string.IsNullOrWhiteSpace(model.HuggingFaceRepoId));
+    }
+
+    [Theory]
+    [InlineData("gemma-4-e2b-it")]
+    [InlineData("gemma-4-e4b-it")]
+    [InlineData("gemma-4-26b-a4b-it")]
+    [InlineData("gemma-4-31b-it")]
+    public void FindById_Gemma4Models_ReturnsCorrectModel(string modelId)
+    {
+        var model = KnownModels.FindById(modelId);
+
+        Assert.NotNull(model);
+        Assert.Equal(modelId, model!.Id);
+    }
+
+    [Fact]
+    public void All_ContainsAllGemma4Models()
+    {
+        Assert.Contains(KnownModels.All, m => m.Id == "gemma-4-e2b-it");
+        Assert.Contains(KnownModels.All, m => m.Id == "gemma-4-e4b-it");
+        Assert.Contains(KnownModels.All, m => m.Id == "gemma-4-26b-a4b-it");
+        Assert.Contains(KnownModels.All, m => m.Id == "gemma-4-31b-it");
+    }
+
+    // ──────────────────────────────────────────────
     // Static field references
     // ──────────────────────────────────────────────
 

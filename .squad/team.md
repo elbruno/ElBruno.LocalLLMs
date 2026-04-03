@@ -62,6 +62,10 @@
 | 🟣 Next-Gen | Qwen3-8B | 8B | Qwen/Qwen3-8B | ~8-12 GB | 🔄 Convert |
 | 🟣 Next-Gen | Qwen3-32B | 32B | Qwen/Qwen3-32B | ~24-32 GB | 🔄 Convert |
 | 🟣 Next-Gen | Gemma-3-12B-IT | 12B | google/gemma-3-12b-it | ~12-16 GB | 🔄 Convert |
+| 🟣 Next-Gen | Gemma-4-E2B-IT | E2B (2.3B eff) | google/gemma-4-E2B-it | ~4-6 GB | 🔄 Convert |
+| 🟣 Next-Gen | Gemma-4-E4B-IT | E4B (4.5B eff) | google/gemma-4-E4B-it | ~6-10 GB | 🔄 Convert |
+| 🟣 Next-Gen | Gemma-4-26B-A4B-IT | 26B MoE (3.8B active) | google/gemma-4-26B-A4B-it | ~24-32 GB | 🔄 Convert |
+| 🟣 Next-Gen | Gemma-4-31B-IT | 31B | google/gemma-4-31B-it | ~24-40 GB | 🔄 Convert |
 | 🟣 Next-Gen | DeepSeek-V3 | 671B (MoE) | deepseek-ai/DeepSeek-V3 | ~128+ GB | 🔄 Convert |
 
 #### ONNX Status Legend

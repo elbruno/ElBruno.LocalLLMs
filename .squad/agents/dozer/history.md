@@ -19,6 +19,28 @@
 
 ## Learnings
 
+### 2025-03-17 — Gemma 4 Conversion Infrastructure
+
+**Created dedicated Gemma 4 conversion resources for all four model sizes.**
+
+- **Architecture diversity** — Gemma 4 family includes Dense+PLE (E2B, E4B), MoE (26B), and pure Dense (31B). Each architecture needs specific handling.
+- **GenAI builder is mandatory** — Used `python -m onnxruntime_genai.models.builder` instead of optimum. This generates proper `genai_config.json` and tokenizer setup needed for C# compatibility. The generic `convert_to_onnx.py` would fail because it doesn't create GenAI-compatible output.
+- **trust_remote_code is required** — All Gemma 4 models need `--extra_options trust_remote_code=True` passed to the builder. This is now baked into `convert_gemma4.py` automatically.
+- **MoE conversion** — The 26B model (8 active / 128 total experts + 1 shared) requires onnxruntime-genai 0.4.0+ to properly handle expert routing. Earlier versions may fail or produce invalid ONNX graphs.
+- **Per-Layer Embeddings (PLE)** — The E2B/E4B models use a unique architecture where embeddings are distributed across layers. This is transparent to ONNX Runtime but important to document for debugging.
+- **RAM requirements scale non-linearly** — The MoE model (26B) needs more RAM than expected (~64 GB) because the entire expert pool must be loaded during conversion, even though only 8 are active at inference.
+- **Key files:**
+  - `scripts/convert_gemma4.py` — dedicated Gemma 4 conversion script with pre-flight checks
+  - `scripts/convert_gemma4.ps1` — PowerShell wrapper for Windows users
+  - `docs/onnx-conversion.md` — comprehensive Gemma 4 section added
+  - `scripts/requirements.txt` — updated with onnxruntime-genai, huggingface-hub, psutil
+  - `.squad/team.md` — Target Models table now includes all 4 Gemma 4 variants
+- **Dependencies added:** `onnxruntime-genai>=0.4.0`, `huggingface-hub>=0.20.0`, `psutil>=5.9.0` (for RAM checks)
+- **Conversion script features:** Pre-flight checks for RAM/disk, automatic trust_remote_code, output validation, clear error messages, progress reporting, usage instructions after completion.
+- **Documentation approach:** Included architecture notes (PLE, MoE), hardware requirements table, quantization recommendations, troubleshooting for Gemma 4 specific issues, usage examples for all 4 sizes.
+
+**Pattern for future model families:** When a new model family has unique architecture variants (like Gemma 4's PLE/MoE/Dense mix), create a dedicated conversion script rather than extending the generic one. This allows for model-specific validation, error handling, and user guidance.
+
 ### 2025-07-15 — Tiny Tier Batch Conversion
 
 **Converted 4 of 6 Tiny tier models successfully.**

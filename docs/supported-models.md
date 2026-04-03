@@ -12,16 +12,18 @@ ElBruno.LocalLLMs supports **29 LLMs** across 5 tiers. This guide details each m
 | ⚪ Tiny | SmolLM2-1.7B-Instruct | 1.7B | HuggingFaceTB/SmolLM2-1.7B-Instruct | ✅ Native | ChatML | — | 2–4 GB | ⚡⚡⚡ |
 | ⚪ Tiny | Qwen2.5-0.5B-Instruct | 0.5B | Qwen/Qwen2.5-0.5B-Instruct | ✅ Native | Qwen | ✅ | 1–2 GB | ⚡⚡⚡ |
 | ⚪ Tiny | Qwen2.5-1.5B-Instruct | 1.5B | Qwen/Qwen2.5-1.5B-Instruct | ✅ Native | Qwen | ✅ | 2–4 GB | ⚡⚡⚡ |
-| ⚪ Tiny | Gemma-2B-IT | 2B | elbruno/Gemma-2B-IT-onnx | ✅ Native | ChatML | — | 4 GB | ⚡⚡⚡ |
+| ⚪ Tiny | Gemma-2B-IT | 2B | elbruno/Gemma-2B-IT-onnx | ✅ Native | Gemma | — | 4 GB | ⚡⚡⚡ |
+| ⚪ Tiny | Gemma-4-E2B-IT | 5.1B (2B active) | google/gemma-4-E2B-it | 🔄 Convert | Gemma | ✅ | 4–6 GB | ⚡⚡⚡ |
 | ⚪ Tiny | StableLM-2-1.6B-Chat | 1.6B | stabilityai/stablelm-2-zephyr-1_6b | 🔄 Convert | ChatML | — | 3–4 GB | ⚡⚡⚡ |
 | 🟢 Small | Phi-3.5-mini-instruct | 3.8B | microsoft/Phi-3.5-mini-instruct-onnx | ✅ Native | Phi3 | ✅ | 6–8 GB | ⚡⚡ |
 | 🟢 Small | Qwen2.5-3B-Instruct | 3B | Qwen/Qwen2.5-3B-Instruct | ✅ Native | Qwen | ✅ | 6–8 GB | ⚡⚡ |
 | 🟢 Small | Llama-3.2-3B-Instruct | 3B | elbruno/Llama-3.2-3B-Instruct-onnx | ✅ Native | Llama3 | — | 6–8 GB | ⚡⚡ |
-| 🟢 Small | Gemma-2-2B-IT | 2.6B | elbruno/Gemma-2-2B-IT-onnx | ✅ Native | ChatML | — | 6 GB | ⚡⚡ |
+| 🟢 Small | Gemma-2-2B-IT | 2.6B | elbruno/Gemma-2-2B-IT-onnx | ✅ Native | Gemma | — | 6 GB | ⚡⚡ |
+| 🟢 Small | Gemma-4-E4B-IT | 8B (4B active) | google/gemma-4-E4B-it | 🔄 Convert | Gemma | ✅ | 8–10 GB | ⚡⚡ |
 | 🟡 Medium | Qwen2.5-7B-Instruct | 7B | Qwen/Qwen2.5-7B-Instruct | ✅ Native | Qwen | ✅ | 8–12 GB | ⚡ |
 | 🟡 Medium | Llama-3.1-8B-Instruct | 8B | meta-llama/Llama-3.1-8B-Instruct | ✅ Native | Llama3 | — | 8–12 GB | ⚡ |
 | 🟡 Medium | Mistral-7B-Instruct-v0.3 | 7B | mistralai/Mistral-7B-Instruct-v0.3 | ✅ Native | Mistral | — | 8–12 GB | ⚡ |
-| 🟡 Medium | Gemma-2-9B-IT | 9B | elbruno/Gemma-2-9B-IT-onnx | ✅ Native | ChatML | — | 12 GB | ⚡ |
+| 🟡 Medium | Gemma-2-9B-IT | 9B | elbruno/Gemma-2-9B-IT-onnx | ✅ Native | Gemma | — | 12 GB | ⚡ |
 | 🟡 Medium | Phi-4 | 14B | microsoft/phi-4 | ✅ Native | Phi3 | ✅ | 12–16 GB | ⚡ |
 | 🟡 Medium | DeepSeek-R1-Distill-Qwen-14B | 14B | deepseek-ai/DeepSeek-R1-Distill-Qwen-14B | ✅ Native | ChatML | — | 12–16 GB | ⚡ |
 | 🟡 Medium | Mistral-Small-24B-Instruct | 24B | mistralai/Mistral-Small-24B-Instruct-2501 | ✅ Native | Mistral | — | 16–20 GB | ⚡ |
@@ -31,6 +33,8 @@ ElBruno.LocalLLMs supports **29 LLMs** across 5 tiers. This guide details each m
 | 🔴 Large | Mixtral-8x7B-Instruct-v0.1 | 46.7B (MoE) | mistralai/Mixtral-8x7B-Instruct-v0.1 | 🔄 Convert | Mistral | — | 24–32 GB | 🐢 |
 | 🔴 Large | DeepSeek-R1-Distill-Llama-70B | 70B | deepseek-ai/DeepSeek-R1-Distill-Llama-70B | 🔄 Convert | Llama3 | — | 40+ GB | 🐢 |
 | 🔴 Large | Command-R (35B) | 35B | CohereForAI/c4ai-command-r-v01 | 🔄 Convert | ChatML | — | 24–32 GB | 🐢 |
+| 🔴 Large | Gemma-4-26B-A4B-IT | 25.2B (3.8B active) | google/gemma-4-26B-A4B-it | 🔄 Convert | Gemma | ✅ | 20–28 GB | ⚡ |
+| 🔴 Large | Gemma-4-31B-IT | 30.7B | google/gemma-4-31B-it | 🔄 Convert | Gemma | ✅ | 24–32 GB | 🐢 |
 | 🟣 Next-Gen | Llama-4-Scout | ~17B (MoE) | meta-llama/Llama-4-Scout-17B-16E-Instruct | 🔄 Convert | Llama3 | — | 24–32 GB | ⚡ |
 | 🟣 Next-Gen | Llama-4-Maverick | ~17B (MoE) | meta-llama/Llama-4-Maverick-17B-128E-Instruct | 🔄 Convert | Llama3 | — | 64+ GB | 🐢 |
 | 🟣 Next-Gen | Qwen3-8B | 8B | Qwen/Qwen3-8B | 🔄 Convert | Qwen | ✅ | 8–12 GB | ⚡ |
@@ -236,7 +240,8 @@ Each model family uses a different **prompt format**. The library handles this a
 
 | Format | Models | Example | Notes |
 |--------|--------|---------|-------|
-| **ChatML** | Qwen, Gemma, Mistral (old) | `<\|im_start\|>user\nQuestion<\|im_end\|>` | Standard multi-turn format |
+| **ChatML** | Qwen, Mistral (old) | `<\|im_start\|>user\nQuestion<\|im_end\|>` | Standard multi-turn format |
+| **Gemma** | Gemma, Gemma 2, Gemma 4 | `<start_of_turn>user\nQuestion<end_of_turn>` | Google's format |
 | **Phi3** | Phi-3, Phi-3.5, Phi-4 | `<\|user\|>\nQuestion<\|end\|>` | Microsoft's format |
 | **Llama3** | Llama-3.x, Llama-4 | `<\|start_header_id\|>user<\|end_header_id\|>` | Meta's modern format |
 | **Qwen** | Qwen series | `<\|im_start\|>user\nQuestion<\|im_end\|>` | Alibaba's format |
