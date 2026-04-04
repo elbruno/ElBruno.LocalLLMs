@@ -21,6 +21,7 @@
     <Project Path="src/samples/ToolCallingAgent/ToolCallingAgent.csproj" />
     <Project Path="src/samples/FineTunedToolCalling/FineTunedToolCalling.csproj" />
     <Project Path="src/samples/RagChatbot/RagChatbot.csproj" />
+    <Project Path="src/samples/ZeroCloudRag/ZeroCloudRag.csproj" />
     <Project Path="src/samples/OpenAiServer/OpenAiServer.csproj" />
   </Folder>
 </Solution>

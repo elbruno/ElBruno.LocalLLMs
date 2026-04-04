@@ -842,6 +842,49 @@ var embedder2 = new LocalEmbeddingGenerator(model: "other");  // 768 dimensions
 
 ---
 
+## Zero-Cloud RAG Sample
+
+The **ZeroCloudRag** sample demonstrates a complete end-to-end RAG pipeline using **all local models**—no cloud APIs, everything runs on your machine.
+
+### What It Shows
+
+- **Local Embeddings** — document indexing with `ElBruno.LocalEmbeddings`
+- **Local LLM** — inference with `ElBruno.LocalLLMs`
+- **RAG Pipeline** — combining embeddings + retrieval + chat
+- **Dependency Injection** — clean registration in ASP.NET Core
+- **Production patterns** — error handling, chunking, retrieval monitoring
+
+### Key Architecture
+
+```csharp
+// The DI pattern: embeddings + LLMs + RAG pipeline
+builder.Services.AddLocalEmbeddings();  // Local embeddings
+builder.Services.AddLocalLLMs();        // Local LLM inference
+builder.Services.AddRagPipeline();      // RAG orchestration
+
+// Inject and use anywhere
+public class RagService(
+    IEmbeddingGenerator embeddingGenerator,
+    IChatClient chatClient,
+    IRagPipeline ragPipeline)
+{
+    // Build your RAG system
+}
+```
+
+### Why Zero-Cloud?
+
+- **🔒 Privacy** — documents never leave your machine
+- **⚡ Speed** — no network round-trips
+- **💰 Cost** — zero API charges
+- **🛠️ Control** — you own the entire pipeline
+
+### Location
+
+See the full working sample at: [`src/samples/ZeroCloudRag/`](../src/samples/ZeroCloudRag/)
+
+---
+
 ## See Also
 
 - 📖 [Getting Started Guide](getting-started.md) — basic chat completions

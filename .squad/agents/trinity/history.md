@@ -361,3 +361,12 @@ Ready for phase 4c documentation and publishing.
 - OpenAI-compatible wire format (SnakeCaseLower JSON) enables local models as drop-in OpenAI replacements
 - Default: Phi-3.5-mini (native ONNX, zero-config)
 - Next: Dozer to convert Qwen2.5-Coder-7B to ONNX GenAI format
+
+### 2026-07-04: ZeroCloudRag Sample — Full Local RAG Pipeline (Issue #9)
+- Created `src/samples/ZeroCloudRag/` — complete zero-cloud RAG console app with real local embeddings
+- Uses `ElBruno.LocalEmbeddings` v1.0.1 (`LocalEmbeddingGenerator` + `LocalEmbeddingsOptions`) for real ONNX-based embeddings (all-MiniLM-L6-v2)
+- Namespace is `LocalEmbeddings` / `LocalEmbeddings.Options` (not `ElBruno.LocalEmbeddings`)
+- Package targets `net10.0` only — sample must target net10.0 (not net8.0)
+- Pipeline: Documents → SlidingWindowChunker → LocalEmbeddingGenerator → InMemoryDocumentStore → RetrieveContextAsync → LocalChatClient (Phi-3.5-mini) → streamed grounded answer
+- Stepped console output pattern (Step 1..11) with emoji labels for clear demo flow
+- RAG context injected as system message: "Answer using ONLY the context provided"

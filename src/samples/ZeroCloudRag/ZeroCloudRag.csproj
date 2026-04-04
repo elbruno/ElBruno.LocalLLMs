@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\ElBruno.LocalLLMs\ElBruno.LocalLLMs.csproj" />
+    <ProjectReference Include="..\..\ElBruno.LocalLLMs.Rag\ElBruno.LocalLLMs.Rag.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ElBruno.LocalEmbeddings" Version="1.0.1" />
+
+    <!--
+    Explicit CPU runtime — required because the library marks its own
+    OnnxRuntimeGenAI reference with PrivateAssets="native".
+    For GPU support, replace with ONE of the following:
+      <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI.Cuda" Version="0.12.2" />
+      <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI.DirectML" Version="0.12.2" />
+    -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI" Version="0.12.2" />
+  </ItemGroup>
+</Project>
