@@ -23,7 +23,9 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: |
+            8.0.x
+            10.0.x
 
       - name: Determine version
         id: version
@@ -44,16 +46,28 @@ jobs:
           echo "📦 Publishing version: $VERSION"
 
       - name: Restore
-        run: dotnet restore ElBruno.LocalLLMs.slnx -p:TargetFrameworks=net8.0
+        run: |
+          dotnet restore src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj
+          dotnet restore src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj
+          dotnet restore src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj
+          dotnet restore src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj
 
       - name: Build
-        run: dotnet build ElBruno.LocalLLMs.slnx -c Release --no-restore -p:TargetFrameworks=net8.0 -p:Version=${{ steps.version.outputs.version }}
+        run: |
+          dotnet build src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
+          dotnet build src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
+          dotnet build src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
+          dotnet build src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
 
       - name: Unit Tests
-        run: dotnet test src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj -c Release --no-build --framework net8.0 --verbosity normal
+        run: |
+          dotnet test src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj -c Release --no-build --framework net8.0 --verbosity normal
+          dotnet test src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj -c Release --no-build --framework net8.0 --verbosity normal
 
       - name: Pack
-        run: dotnet pack src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj -c Release --no-build -p:TargetFrameworks=net8.0 -p:Version=${{ steps.version.outputs.version }} -o artifacts
+        run: |
+          dotnet pack src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
+          dotnet pack src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
 
       - name: NuGet login (OIDC → temp API key)
         uses: NuGet/login@v1
