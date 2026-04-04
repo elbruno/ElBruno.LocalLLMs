@@ -121,3 +121,13 @@
 - **Test results:** 99 total tests (95 passing, 4 skipped integration tests) — 60 new + 25 existing + 10 pipeline + 4 integration
 - **Zero regressions:** All existing tests still pass
 - **Pattern:** MSTest framework, same as existing RAG test suite
+
+## RAG Test Suite & API Coverage (2026-04-04)
+
+**2026-04-04:** RAG package test coverage completed. Created 60 new unit tests across 4 test files achieving 100% API coverage of RAG package public types. Test breakdown: RagRecordTests (30 tests), SqliteDocumentStoreTests (16 tests), RagServiceExtensionsTests (14 tests), LocalRagPipelineConstructorTests (6 tests). All follow MSTest framework conventions. Results: 95 passing, 4 skipped integration tests (optional), 0 regressions. Added Microsoft.Extensions.DependencyInjection v9.0.3 to test project for DI validation. Tests serve as usage examples and validate Trinity's implementations. Coordinator released as v0.11.0.
+
+**Key Patterns:**
+- DI Registration: AddLocalRagPipeline requires explicit embedding generator in tests
+- In-Memory SQLite: Use Data Source=:memory: for fast, isolated persistence tests
+- Mock Reuse: Leveraged existing MockEmbeddingGenerator from LocalRagPipelineTests
+- MSTest Framework: Consistent with existing codebase convention
