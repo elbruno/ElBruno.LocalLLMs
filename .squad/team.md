@@ -45,6 +45,7 @@
 | 🟢 Small | Llama-3.2-3B-Instruct | 3B | meta-llama/Llama-3.2-3B-Instruct | ~6-8 GB | 🔄 Convert |
 | 🟢 Small | Gemma-2-2B-IT | 2.6B | google/gemma-2-2b-it | ~6 GB | 🔄 Convert |
 | 🟡 Medium | Qwen2.5-7B-Instruct | 7B | Qwen/Qwen2.5-7B-Instruct | ~8-12 GB | 🔄 Convert |
+| 🟡 Medium | Qwen2.5-Coder-7B-Instruct | 7B | Qwen/Qwen2.5-Coder-7B-Instruct | ~8-12 GB | 🔄 Convert |
 | 🟡 Medium | Llama-3.1-8B-Instruct | 8B | meta-llama/Llama-3.1-8B-Instruct | ~8-12 GB | 🔄 Convert |
 | 🟡 Medium | Mistral-7B-Instruct-v0.3 | 7B | mistralai/Mistral-7B-Instruct-v0.3 | ~8-12 GB | 🔄 Convert |
 | 🟡 Medium | Gemma-2-9B-IT | 9B | google/gemma-2-9b-it | ~12 GB | 🔄 Convert |
@@ -68,9 +69,13 @@
 | 🟣 Next-Gen | Gemma-4-31B-IT | 31B | google/gemma-4-31B-it | ~24-40 GB | 🔄 Convert |
 | 🟣 Next-Gen | DeepSeek-V3 | 671B (MoE) | deepseek-ai/DeepSeek-V3 | ~128+ GB | 🔄 Convert |
 
+| ⛔ Blocked | Codestral-22B-v0.1 | 22B | mistralai/Codestral-22B-v0.1 | ~16-20 GB | ⛔ MNPL License |
+| ⛔ Blocked | Devstral-Small-2-24B | 24B | mistralai/Devstral-Small-2-24B-Instruct-2512 | ~16-20 GB | ⛔ No ONNX Path |
+
 #### ONNX Status Legend
 - **✅ Native ONNX** — Published ONNX weights on HuggingFace, ready to use directly
 - **🔄 Convert** — Requires HuggingFace → ONNX conversion (use Python scripts in /scripts)
+- **⛔ Blocked** — Cannot be converted or distributed due to license or architecture constraints
 
 #### Notes on Model Tiers
 - **⚪ Tiny** — Edge/mobile, IoT, fast prototyping. Limited chat quality but great for testing & demos.

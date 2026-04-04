@@ -43,6 +43,8 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+- **2026-03-29:** Qwen2.5-Coder-7B-Instruct test coverage added: 8 new tests (1 All_Contains, 1 FindById dedicated, 1 InlineData addition to Theory, 5 property checks for ChatTemplate/Tier/SupportsToolCalling/HasNativeOnnx/HuggingFaceRepoId) plus StaticFields assertion update. Tests reference `KnownModels.Qwen25Coder_7BInstruct` — will compile once Trinity adds the model definition. Build fails with expected CS0117 until then. Pattern: non-native ONNX model (HasNativeOnnx=false) with tool calling support, Qwen chat template, Medium tier.
+
 - **2026-03-19:** Tool calling test suite created with 41 tests across 3 files: `JsonToolCallParserTests` (29 tests), `ChatMLFormatterToolTests` (12 tests), `FunctionCallContentIntegrationTests` (20 tests). 24 tests pass, 17 require Trinity's parser implementation. All tests compile successfully with stub implementations.
 - **2026-03-19:** Microsoft.Extensions.AI v10.4.0 FunctionCallContent API: constructor takes (callId, name, arguments). FunctionResultContent constructor takes (callId, result) — no "name" parameter. ChatResponseUpdate requires (role, contents) in constructor, not an object initializer with Contents property.
 - **2026-03-19:** Trinity has already implemented partial tool support in ChatMLFormatter.FormatMessages with tool definitions injected into system message, plus FunctionCallContent/FunctionResultContent handling in message formatting. AIFunction properties are Name and Description (not Metadata.Name).
@@ -71,3 +73,11 @@
 - **2026-03-29:** Gemma 4 model test coverage added: 10 new tests in `KnownModelsTests.cs` and `GemmaFormatterTests.cs` for the 4 new Gemma 4 models (gemma-4-e2b-it, gemma-4-e4b-it, gemma-4-26b-a4b-it, gemma-4-31b-it). All models use ChatTemplateFormat.Gemma, have HasNativeOnnx=false, and SupportsToolCalling=true. Tests verify model properties, FindById lookup, presence in KnownModels.All collection, and tool-calling formatter compatibility with system message injection.
 - **2026-03-29:** GemmaFormatter tool calling behavior: tools are injected into the system message content (similar to ChatMLFormatter). Tests for tool calling MUST include a System message for tools to be added to the prompt — without a system message, tools passed to FormatMessages are ignored. FunctionResultContent should be in ChatRole.User messages (not ChatRole.Tool) to be properly formatted via FormatUserMessage().
 
+
+### 2026-04-04: Qwen2.5-Coder-7B-Instruct Test Coverage
+- Added 8 comprehensive tests to KnownModelsTests.cs for Qwen25Coder_7BInstruct
+- Tests: All_Contains, FindById (dedicated + InlineData), ChatTemplate (Qwen), Tier (Medium), ToolCalling (true), HasNativeOnnx (false), HuggingFaceRepoId
+- Updated StaticFields_AreSameInstanceesAsInAll assertion to include new model field
+- All 705 tests pass (390 existing + 315 from DX wave), zero regressions
+- Tests validated Trinity's model definition matches expected contract
+- Next: Dozer to convert model to ONNX GenAI format

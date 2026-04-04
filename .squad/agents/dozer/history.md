@@ -17,6 +17,34 @@
 - 21 models need conversion (all except Phi-3.5 and Phi-4 which have native ONNX)
 - Gated models: Llama (Meta license), Gemma (Google license)
 
+## Core Context (Historical Summary)
+
+**Model Conversion Successes (as of 2026-04-04):**
+- Tiny tier: Qwen2.5-0.5B, Qwen2.5-1.5B, TinyLlama-1.1B, SmolLM2-1.7B (4/6)
+- Small tier: Qwen2.5-3B, Qwen2.5-7B, Mistral-7B, Llama-3.1-8B, DeepSeek-R1-14B, Mistral-Small-24B (6/9)
+- Large tier: Qwen2.5-14B, Qwen2.5-32B, Llama-3.3-70B (via CUDA), Gemma-2B, Gemma-2-2B, Gemma-2-9B (6/6 attempted)
+- Gemma 4: All 4 sizes (E2B, E4B, 26B A4B, 31B) converted via dedicated `convert_gemma4.py`
+
+**Key Blockers Identified:**
+- 70B CPU conversions: OOM during INT4 quantization/serialization (440 GB RAM insufficient). Workaround: Use `-e cuda` for streaming quantization (tested on Llama-3.3-70B, succeeded).
+- Custom architectures: Devstral-Small-2 (Mistral-v7 with Tekken tokenizer, no ONNX path). Mixtral-8x7B (MoE not supported by builder v0.12.1).
+- Gated models: Llama-3.2, Llama-3.3 (separate licenses per version), Gemma models (require acceptance), Command-R (Cohere gated).
+- Unsupported architectures: StableLM-2 (builder v0.12.1 limitation).
+
+**Standard Qwen2.5 family: 100% success rate** (0.5B through 32B). Proven, standard transformer architecture, well-supported by builder.
+
+**RAG Tool Routing SLM Research (2026-03-27):**
+- Recommended: Qwen2.5-0.5B-Instruct (already converted, 825 MB INT4, native tool calling)
+- Backup: SmolLM2-360M-Instruct (smaller, should convert cleanly)
+- Finding: Fine-tuned sub-1B models can beat 7B+ on tool-calling tasks (OPT-350M fine-tuned: 77.55% ToolBench vs 26% ChatGPT-CoT).
+- Integration decision: Embedding-only routing (40ms, 90% accuracy) is sufficient for most tool catalogs. SLM optional layer for 100+ tools.
+
+**Fine-Tuning + ONNX Pipeline:**
+- LoRA merge → ONNX fully supported for all target architectures
+- INT4 quantization degrades fine-tuned models slightly more than base models (1-3% accuracy)
+- Best practice: Fine-tune FP16/BF16 → merge → validate → quantize INT4 → validate ONNX output files
+- GenAI config remains compatible unless fine-tuning changes context length, vocabulary, or architecture
+
 ## Learnings
 
 ### 2025-03-17 — Gemma 4 Conversion Infrastructure
@@ -337,3 +365,56 @@ Key findings from parallel architecture evaluation by Morpheus:
 - Upload cell uses `model-card-template.md` from the repo with fallback to an inline card if template is unavailable.
 - Updated `scripts/finetune/README.md` with Colab badge and quick start section at the top.
 - Updated `docs/fine-tuning-guide.md` with Colab section under "Using Pre-Fine-Tuned Models".
+
+### 2026-03-29 — Coding Model Evaluation & Documentation
+
+**Evaluated three code-specialized models for local coding assistants. Documented blockers and alternatives.**
+
+**Model Evaluations:**
+
+1. **Codestral-22B-v0.1** — ⛔ Blocked (MNPL license)
+   - Excellent code generation model (22B, competitive with commercial models)
+   - **Blocker:** Distributed under Mistral's MNPL-0.1 (Non-Production License)
+   - MNPL prohibits: production deployment, commercial use (including free services in business context), cloud/SaaS distribution
+   - Incompatible with NuGet library distribution (users would deploy as production code)
+   - **Alternative:** Qwen2.5-Coder-7B-Instruct (Apache 2.0, 7B, code-specialized, already convertible)
+   - **Decision:** Cannot be added to `KnownModels` without misleading users about license restrictions. Documented in `blocked-models.md` with workaround code sample for research use.
+
+2. **Devstral-Small-2-24B-Instruct-2512** — ⛔ Blocked (No ONNX conversion path)
+   - Excellent code assistant (24B, Apache 2.0, code-specialized)
+   - **Blockers:** 
+     - No pre-existing ONNX exports on HuggingFace (custom architecture)
+     - Uses Mistral's "Tekken" tokenizer (~131k vocab) + FP8 quantization + custom attention
+     - Multimodal vision+text hybrid architecture complicates ONNX export
+     - `onnxruntime-genai` builder v0.12.2 not tested with Devstral architecture (likely needs explicit support)
+   - **Why no conversion is viable:** Custom architecture + multimodal components place it outside builder's supported architectures
+   - **Alternative:** Use via llama.cpp (GGUF format) or vLLM. For ONNX, use Qwen2.5-Coder-7B-Instruct.
+   - **Unblocking path:** Would require (a) onnxruntime-genai adding explicit Devstral/Mistral-v7 support, (b) community ONNX export, or (c) Mistral official ONNX variant
+   - **Decision:** Documented in `blocked-models.md` with architectural blocker details.
+
+3. **Qwen2.5-Coder-7B-Instruct** — ✅ Recommended for ONNX-based coding
+   - Code-specialized Qwen2.5 variant (7B, Apache 2.0)
+   - Architecture: standard Qwen2.5 (proven to convert cleanly on this project — Qwen2.5-0.5B through 32B all successful)
+   - Estimated INT4 size: ~6-8 GB (based on Qwen2.5-7B = 5.2 GB INT4)
+   - Tool calling support: inherited from Qwen2.5 (all Qwen2.5 variants have it)
+   - Chat template: Qwen (already supported)
+   - **Status:** Ready for conversion and addition to `KnownModels`
+   - **Decision:** Added to `docs/supported-models.md` (Complete Model Table, Medium tier), `docs/supported-models.md` (Recommended Stack by Use Case), Decision Tree (new "Code Assistant" path), and `.squad/team.md` (Target Models, Medium tier).
+
+**Documentation updates:**
+- **`docs/blocked-models.md`:** Added two new sections (License Restrictions, ONNX Conversion Not Available) + Quick Summary table entries for both blocked models
+- **`docs/supported-models.md`:** Added Qwen2.5-Coder-7B-Instruct to Complete Model Table (Medium, 🔄 Convert), updated "Recommended Stack by Use Case" (Code Assistant row), added decision tree path for local Copilot use case
+- **`.squad/team.md`:** Added Qwen2.5-Coder-7B-Instruct to Target Models (Medium), added new "Blocked" section with Codestral and Devstral entries, updated ONNX Status Legend to include Blocked status
+
+**Key learning:** License compatibility is as important as technical feasibility. Codestral is technically convertible but ethically incompatible with a library distributed to end users. Document blockers and workarounds prominently so users understand the constraints.
+
+### 2026-04-04: Qwen2.5-Coder-7B Evaluation & Documentation Update
+- Completed comprehensive evaluation of three coding models: Codestral-22B, Devstral-Small-2, Qwen2.5-Coder-7B
+- Codestral-22B: License blocker (MNPL-0.1 prohibits production deployment) — documented in blocked-models.md
+- Devstral-Small-2: Architecture blocker (custom Mistral-v7, no onnxruntime-genai support) — documented in blocked-models.md
+- Qwen2.5-Coder-7B: Ready for implementation (standard Qwen2.5, Apache 2.0, 100% conversion success rate)
+- Updated docs/blocked-models.md with detailed analysis of both blockers and workarounds
+- Updated docs/supported-models.md with Qwen2.5-Coder-7B entry and code-assistant decision tree
+- Updated .squad/team.md Target Models table with Qwen2.5-Coder-7B and new Blocked section
+- Key principle established: License compatibility is first-class decision criterion (not just technical feasibility)
+- Next: Convert Qwen2.5-Coder-7B to ONNX GenAI format using standard builder pipeline

@@ -49,6 +49,20 @@
 - ExecutionProvider enum (Auto/Cpu/Cuda/DirectML) covers all available .NET providers — no new entries needed
 - `ShouldFallbackToNextProvider` expanded with 4 additional error patterns: "no available provider", "unable to find", "cannot load", "not available"
 
+### 2026-07-03: Qwen2.5-Coder-7B-Instruct Added to KnownModels
+- Added `Qwen25Coder_7BInstruct` in Medium tier — code-specialized Qwen model from `Qwen/Qwen2.5-Coder-7B-Instruct`
+- `HasNativeOnnx = false` — requires ONNX conversion before use
+- `SupportsToolCalling = true`, uses `ChatTemplateFormat.Qwen`
+- Naming follows existing pattern: `Qwen25Coder_7BInstruct` (underscore separates family from size)
+
+### 2026-07-03: OpenAiServer Sample — OpenAI-Compatible HTTP Endpoint
+- Created `src/samples/OpenAiServer/` — minimal ASP.NET Core API exposing `/v1/models` and `/v1/chat/completions`
+- Supports both streaming (SSE with `chat.completion.chunk`) and non-streaming responses
+- Uses `AddLocalLLMs()` DI registration with `Phi35MiniInstruct` as default model
+- DTOs use `JsonNamingPolicy.SnakeCaseLower` for OpenAI wire-format compatibility
+- Pattern: request DTOs as records at bottom of Program.cs, `Results.Json()` for responses
+- Key for VS Code extensions: set base URL to `http://localhost:5000/v1`
+
 ### 2026-03-29: Gemma 4 Model Definitions Added
 - Added 4 Gemma 4 models from Google's latest release (Gemma 4 E2B, E4B, 26B A4B, 31B)
 - Gemma 4 uses existing `ChatTemplateFormat.Gemma` — same `<start_of_turn>role\ncontent<end_of_turn>` format as Gemma 1/2
@@ -338,3 +352,12 @@ Ready for phase 4c documentation and publishing.
 - **ILogger integration:** Optional `ILoggerFactory?` parameter on `LocalChatClient` constructors and `CreateAsync`; `OnnxGenAIModel` takes `ILogger?`. `LogMessages.cs` uses `LoggerMessage.Define` for zero-alloc logging. DI `AddLocalLLMs` resolves `ILoggerFactory` from container.
 - **OptionsValidator:** Validates MaxSequenceLength >= 1, GpuDeviceId >= 0, Temperature >= 0, ModelPath directory existence. Called in `CreateAsync`.
 - **No breaking changes:** All new parameters are optional with null defaults. 390/390 tests pass.
+
+### 2026-04-04: Qwen2.5-Coder-7B-Instruct KnownModels Addition & OpenAiServer Sample
+- Added Qwen25Coder_7BInstruct to KnownModels.cs (Medium tier, code-specialized variant)
+- Tank validated with 8 comprehensive tests (all pass)
+- Dozer evaluated model against Codestral-22B (license blocker) and Devstral-Small-2 (architecture blocker)
+- Created src/samples/OpenAiServer/ — ASP.NET Core minimal API with /v1/models and /v1/chat/completions endpoints
+- OpenAI-compatible wire format (SnakeCaseLower JSON) enables local models as drop-in OpenAI replacements
+- Default: Phi-3.5-mini (native ONNX, zero-config)
+- Next: Dozer to convert Qwen2.5-Coder-7B to ONNX GenAI format

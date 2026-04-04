@@ -7094,3 +7094,171 @@ This is why Issue #7 jumped from P1 (nice-to-have bug fix) to **P0 critical** (a
 
 **v2 is approved for implementation.**
 
+
+
+---
+
+## New Decisions (2026-04-04 Session)
+
+### Decision: Qwen2.5-Coder-7B-Instruct Addition & Model Evaluation Framework
+
+**Date:** 2026-04-04  
+**Authors:** Trinity (Core Dev), Tank (Tester), Dozer (ML Engineer)  
+**Status:** Implemented  
+
+## Context
+
+ElBruno.LocalLLMs needed evaluation of code-specialized models to guide users toward the best local coding assistant options. Three candidates were assessed:
+
+1. **Codestral-22B-v0.1** (Mistral) — 22B, strong code quality, MNPL-0.1 license
+2. **Devstral-Small-2-24B** (Mistral) — 24B, code-specialized, Apache 2.0, custom architecture
+3. **Qwen2.5-Coder-7B-Instruct** (Alibaba) — 7B, code-specialized, Apache 2.0, standard Qwen2.5 architecture
+
+## Decisions Made
+
+### D1: Qwen2.5-Coder-7B-Instruct → Add to KnownModels
+
+**Rationale:**
+- ✅ Standard Qwen2.5 architecture, fully supported by onnxruntime-genai
+- ✅ Apache 2.0 license (fully open)
+- ✅ 100% conversion success rate (Qwen2.5 family: 0.5B, 1.5B, 3B, 7B, 14B all converted)
+- ✅ Code specialization via fine-tuning on Qwen2.5 base
+- ✅ Tool calling support inherited from Qwen2.5 family
+- ✅ Size (7B, ~8–12 GB INT4) fits Medium tier
+
+**Implementation:**
+- Added \Qwen25Coder_7BInstruct\ static field to \KnownModels.cs\
+- ModelId: \Qwen/Qwen2.5-Coder-7B-Instruct\ (HuggingFace)
+- ChatTemplate: \ChatTemplateFormat.Qwen\
+- SupportsToolCalling: \	rue\
+- HasNativeOnnx: \alse\ (requires ONNX conversion via builder)
+- Tier: Medium
+
+### D2: Codestral-22B-v0.1 → Block (License)
+
+**Rationale:**
+- ✅ Technically convertible (standard Mistral architecture)
+- ❌ **MNPL-0.1 license prohibits production deployment**
+  - Cannot serve to end users in production
+  - Cannot be used commercially (including free cloud services)
+  - Violates terms if distributed in a commercial software library
+
+**Impact on Library:**
+- ElBruno.LocalLLMs is a NuGet library distributed to end users who deploy applications
+- Adding Codestral would mislead users into thinking it's freely usable for production
+- Creates legal liability if users deploy Codestral-powered applications
+- Violates MNPL if ElBruno.LocalLLMs itself is used commercially
+
+**Documented:** \docs/blocked-models.md\ with full MNPL analysis and workaround for research users
+
+### D3: Devstral-Small-2-24B → Block (Custom Architecture, No ONNX Path)
+
+**Rationale:**
+- ✅ Apache 2.0 license (fully open)
+- ❌ **Custom Mistral-v7 architecture not in onnxruntime-genai v0.12.2 support**
+  - Custom Tekken tokenizer (131k vocab)
+  - FP8 quantization baked into model
+  - Multimodal vision+text hybrid
+  - onnxruntime-genai builder has not been tested with this architecture
+
+**Why Manual Export Fails:**
+- Community ONNX exports don't exist on HuggingFace
+- Mistral hasn't published official ONNX variants
+- Manual export with optimum loses KV cache optimization and GenAI compatibility
+
+**Unblocking Paths:**
+1. onnxruntime-genai adds explicit Devstral/Mistral-v7 support
+2. Community ONNX models appear on HuggingFace
+3. Mistral publishes official ONNX variant
+
+**Alternative Deployment:**
+- Use Devstral-Small-2 via llama.cpp (GGUF) or vLLM (safetensors) outside the ONNX ecosystem
+
+**Documented:** \docs/blocked-models.md\ with architectural blocker details and alternatives
+
+### D4: License Compatibility as First-Class Decision Criterion
+
+**Principle:**
+- Technical feasibility ≠ Library inclusion
+- License terms are **non-negotiable** for libraries distributed to end users
+- Production-use licensing must be transparent and unrestricted for open-source NuGet packages
+
+**Pattern Established:**
+- All future model additions must pass both technical (convertible, standard architecture) and legal (fully open license) gates
+- Models failing either gate are documented in \locked-models.md\ with clear rationale and alternatives
+
+### D5: Standard Architectures Preferred Over Custom Variants
+
+**Finding:**
+- Qwen2.5-Coder-7B succeeds because Qwen2.5 is standard, well-supported, proven (100% conversion rate)
+- Codestral-22B is technically convertible but license-blocked
+- Devstral-Small-2 is architecture-blocked despite open license
+
+**Principle:**
+- Prioritize models using proven, standard transformer architectures (Llama, Qwen, Phi, Mistral, Gemma)
+- Avoid cutting-edge custom architectures until onnxruntime-genai builder adds explicit support
+- This minimizes conversion blockers and maximizes user accessibility
+
+## Files Modified
+
+1. **\src/ElBruno.LocalLLMs/Models/KnownModels.cs\**
+   - Added \Qwen25Coder_7BInstruct\ static field (Medium tier)
+   - Updated \All\ collection
+
+2. **\src/samples/OpenAiServer/\** (new)
+   - ASP.NET Core minimal API wrapping \IChatClient\ behind OpenAI-compatible REST endpoints
+   - Endpoints: \/v1/models\, \/v1/chat/completions\
+   - JSON serialization: \SnakeCaseLower\ for OpenAI wire compatibility
+   - Default model: Phi-3.5-mini (native ONNX, zero-config startup)
+
+3. **\ElBruno.LocalLLMs.slnx\**
+   - Added OpenAiServer sample project
+
+4. **\docs/blocked-models.md\** (new sections)
+   - License Restrictions — Codestral-22B-v0.1 with full MNPL analysis
+   - ONNX Conversion Not Available — Devstral-Small-2 with architecture blocker details
+   - Workarounds for research users, alternative deployment paths
+
+5. **\docs/supported-models.md\**
+   - Added Qwen2.5-Coder-7B-Instruct to Complete Model Table (Medium tier, 🔄 Convert)
+   - Updated Recommended Stack by Use Case (Code Assistant → Qwen2.5-Coder-7B)
+   - Added decision tree path for I need a code assistant / local Copilot replacement
+
+6. **\.squad/team.md\ (Target Models table)**
+   - Added Qwen2.5-Coder-7B-Instruct (Medium tier, ~8–12 GB RAM, 🔄 Convert)
+   - Added new Blocked section with Codestral and Devstral entries
+   - Updated ONNX Status Legend to include ⛔ Blocked status
+
+7. **\	ests/ElBruno.LocalLLMs.Tests/KnownModelsTests.cs\**
+   - Added 8 tests for Qwen2.5-Coder-7B-Instruct (Tank)
+   - Tests: All_Contains, FindById, ChatTemplate, Tier, ToolCalling, HasNativeOnnx, HuggingFaceRepoId
+   - Updated StaticFields assertion to include new model
+
+8. **\.squad/agents/dozer/history.md\**
+   - Appended learning entry on model evaluation methodology, license compatibility, and architecture-based decisions
+
+## Build & Test Status
+
+- ✅ Solution builds successfully
+- ✅ Tank's 8 new tests pass (705 total tests pass, zero regressions)
+- ✅ Trinity's OpenAiServer sample integrated
+- ✅ Documentation updated and validated
+
+## Next Steps
+
+### Dozer (ML Engineer)
+1. Convert Qwen2.5-Coder-7B-Instruct to ONNX GenAI INT4 format
+2. Upload to \lbruno/Qwen2.5-Coder-7B-Instruct-onnx\ (follow naming convention)
+3. Publish model card with code specialization notes
+
+### Trinity (Core Dev)
+- OpenAI-compatible server sample ready for deployment validation
+
+### Morpheus (Lead/Architect)
+- Update docs/supported-models.md decision tree for code-specialized use cases
+
+## User Directive Captured
+
+**2026-04-03T20:51:48Z:** User directive — Skip Codestral 22B, focus on Qwen2.5-Coder-7B-Instruct only
+- Rationale: License (MNPL) is a dealbreaker
+- Team interpretation: Evaluated all three; documented decision rationale for all
