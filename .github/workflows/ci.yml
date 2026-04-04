@@ -18,16 +18,28 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: |
+            8.0.x
+            10.0.x
 
       - name: Restore
-        run: dotnet restore ElBruno.LocalLLMs.slnx -p:TargetFrameworks=net8.0
+        run: |
+          dotnet restore src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj
+          dotnet restore src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj
+          dotnet restore src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj
+          dotnet restore src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj
 
       - name: Build
-        run: dotnet build ElBruno.LocalLLMs.slnx --no-restore -p:TargetFrameworks=net8.0
+        run: |
+          dotnet build src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj --no-restore
+          dotnet build src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj --no-restore
+          dotnet build src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj --no-restore
+          dotnet build src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj --no-restore
 
       - name: Test
-        run: dotnet test ElBruno.LocalLLMs.slnx --no-build --framework net8.0 --verbosity normal --logger "trx;LogFileName=test-results.trx"
+        run: |
+          dotnet test src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj --no-build --framework net8.0 --verbosity normal --logger "trx;LogFileName=test-results.trx"
+          dotnet test src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj --no-build --framework net8.0 --verbosity normal --logger "trx;LogFileName=test-results.trx"
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
