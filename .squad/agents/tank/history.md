@@ -103,3 +103,21 @@
 - **Decision:** RAG Pipeline Test Strategy approved; documented in decisions.md
 - **Result:** 757 total passing (730 existing + 27 new), zero regressions
 - Reusable patterns: mock embedding generator, SynchronousProgress model, integration test gating
+
+### 2026-04-04: RAG Package Public API Test Coverage — Issue #11
+
+- **Task:** Comprehensive unit tests for `ElBruno.LocalLLMs.Rag` package public API
+- **Created 4 new test files:** 60 new unit tests (95 total RAG tests, all passing)
+  1. **RagRecordTests.cs** (30 tests): Document, DocumentChunk, RagContext, RagIndexProgress, RagOptions record types — construction, equality, immutability, default values, metadata handling
+  2. **SqliteDocumentStoreTests.cs** (16 tests): SqliteDocumentStore persistence — schema creation, CRUD operations, similarity search ordering, topK/minSimilarity filtering, in-memory SQLite (`Data Source=:memory:`), disposal
+  3. **RagServiceExtensionsTests.cs** (14 tests): DI registration — AddLocalRagPipeline with/without options, embedding generator registration, AddSqliteDocumentStore, singleton lifetime, service resolution (IRagPipeline, IDocumentStore, IDocumentChunker, RagOptions)
+  4. **LocalRagPipelineConstructorTests.cs** (6 tests): Constructor validation — null parameter checks for chunker/store/embeddingGenerator (ArgumentNullException with correct ParamName)
+- **Key patterns:**
+  - DI tests require embedding generator (AddLocalRagPipeline overload without generator doesn't register IEmbeddingGenerator, so LocalRagPipeline can't resolve)
+  - SQLite tests use in-memory database (`Data Source=:memory:`) for fast, isolated tests
+  - Reused existing MockEmbeddingGenerator from LocalRagPipelineTests.cs (avoided duplicate definitions)
+  - Added `Microsoft.Extensions.DependencyInjection` v9.0.3 package reference to test project
+- **Coverage:** All public record types, SqliteDocumentStore, RagServiceExtensions, LocalRagPipeline constructor validation
+- **Test results:** 99 total tests (95 passing, 4 skipped integration tests) — 60 new + 25 existing + 10 pipeline + 4 integration
+- **Zero regressions:** All existing tests still pass
+- **Pattern:** MSTest framework, same as existing RAG test suite
