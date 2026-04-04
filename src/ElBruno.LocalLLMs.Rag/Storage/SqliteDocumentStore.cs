@@ -3,11 +3,18 @@ using Microsoft.Data.Sqlite;
 
 namespace ElBruno.LocalLLMs.Rag.Storage;
 
+/// <summary>
+/// A SQLite-based implementation of a document store that persists chunks to disk.
+/// </summary>
 public sealed class SqliteDocumentStore : IDocumentStore, IDisposable
 {
     private readonly SqliteConnection _connection;
     private bool _disposed;
 
+    /// <summary>
+    /// Initializes a new instance of the SqliteDocumentStore with the specified connection string.
+    /// </summary>
+    /// <param name="connectionString">The SQLite database connection string.</param>
     public SqliteDocumentStore(string connectionString)
     {
         _connection = new SqliteConnection(connectionString);
@@ -31,6 +38,12 @@ public sealed class SqliteDocumentStore : IDocumentStore, IDisposable
         cmd.ExecuteNonQuery();
     }
 
+    /// <summary>
+    /// Adds a document chunk to the SQLite store.
+    /// </summary>
+    /// <param name="chunk">The document chunk to add.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public async Task AddChunkAsync(DocumentChunk chunk, CancellationToken cancellationToken = default)
     {
         using var cmd = _connection.CreateCommand();
@@ -49,6 +62,14 @@ public sealed class SqliteDocumentStore : IDocumentStore, IDisposable
         await cmd.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Searches for document chunks similar to the query embedding using cosine similarity.
+    /// </summary>
+    /// <param name="queryEmbedding">The query embedding vector.</param>
+    /// <param name="topK">The maximum number of results to return.</param>
+    /// <param name="minSimilarity">The minimum similarity threshold (0.0 to 1.0).</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A list of document chunks ordered by similarity.</returns>
     public async Task<IReadOnlyList<DocumentChunk>> SearchAsync(
         ReadOnlyMemory<float> queryEmbedding,
         int topK = 5,
@@ -90,6 +111,11 @@ public sealed class SqliteDocumentStore : IDocumentStore, IDisposable
             .ToList();
     }
 
+    /// <summary>
+    /// Clears all document chunks from the store.
+    /// </summary>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public async Task ClearAsync(CancellationToken cancellationToken = default)
     {
         using var cmd = _connection.CreateCommand();
@@ -137,6 +163,9 @@ public sealed class SqliteDocumentStore : IDocumentStore, IDisposable
         return dotProduct / denominator;
     }
 
+    /// <summary>
+    /// Disposes the SQLite connection and releases resources.
+    /// </summary>
     public void Dispose()
     {
         if (!_disposed)

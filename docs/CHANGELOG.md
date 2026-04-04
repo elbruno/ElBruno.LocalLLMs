@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.11.0] - 2026-04-04
+
+### Fixed
+
+**XML Documentation — RAG Package (Issue #12)**
+- Added comprehensive XML doc comments to all 13 public types in `ElBruno.LocalLLMs.Rag`
+- Covers records (`Document`, `DocumentChunk`, `RagContext`, `RagIndexProgress`), interfaces (`IDocumentChunker`, `IDocumentStore`, `IRagPipeline`), classes (`LocalRagPipeline`, `RagOptions`, `InMemoryDocumentStore`, `SqliteDocumentStore`, `SlidingWindowChunker`, `RagServiceExtensions`)
+- Eliminated all 116 CS1591 warnings — build now produces 0 warnings
+
+### Added
+
+**Comprehensive RAG Unit Tests (Issue #11)**
+- `RagRecordTests.cs` — 27 tests for all record types (construction, equality, immutability, defaults)
+- `SqliteDocumentStoreTests.cs` — 14 tests for SQLite persistence (add, search, clear, dispose, similarity filtering)
+- `RagServiceExtensionsTests.cs` — 13 tests for DI registration (service resolution, custom options, embedding generator)
+- `LocalRagPipelineConstructorTests.cs` — 6 tests for constructor null-guard validation
+- Total: 60 new tests, 813 total (718 xUnit + 95 MSTest), all pass
+
+---
+
 ## [0.10.0] - 2026-04-04
 
 ### Added

@@ -5,8 +5,17 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ElBruno.LocalLLMs.Rag;
 
+/// <summary>
+/// Extension methods for configuring RAG services in dependency injection.
+/// </summary>
 public static class RagServiceExtensions
 {
+    /// <summary>
+    /// Adds the local RAG pipeline with in-memory document store to the service collection.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configureOptions">Optional action to configure RAG options.</param>
+    /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddLocalRagPipeline(
         this IServiceCollection services,
         Action<RagOptions>? configureOptions = null)
@@ -23,6 +32,13 @@ public static class RagServiceExtensions
         return services;
     }
 
+    /// <summary>
+    /// Adds the local RAG pipeline with a specific embedding generator and in-memory document store to the service collection.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="embeddingGenerator">The embedding generator to use for creating document embeddings.</param>
+    /// <param name="configureOptions">Optional action to configure RAG options.</param>
+    /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddLocalRagPipeline(
         this IServiceCollection services,
         IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator,
@@ -32,6 +48,12 @@ public static class RagServiceExtensions
         return services.AddLocalRagPipeline(configureOptions);
     }
 
+    /// <summary>
+    /// Adds a SQLite-based document store to the service collection.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="connectionString">The SQLite database connection string.</param>
+    /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddSqliteDocumentStore(
         this IServiceCollection services,
         string connectionString)

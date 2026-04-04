@@ -370,3 +370,25 @@ Ready for phase 4c documentation and publishing.
 - Pipeline: Documents → SlidingWindowChunker → LocalEmbeddingGenerator → InMemoryDocumentStore → RetrieveContextAsync → LocalChatClient (Phi-3.5-mini) → streamed grounded answer
 - Stepped console output pattern (Step 1..11) with emoji labels for clear demo flow
 - RAG context injected as system message: "Answer using ONLY the context provided"
+
+### 2026-04-04: ZeroCloudRag Sample — Real ONNX Embeddings + RAG Pipeline
+
+- Created src/samples/ZeroCloudRag/ using **real ONNX embeddings** (ElBruno.LocalEmbeddings 1.0.1, not mock)
+- Full RAG pipeline: document chunking → embedding → cosine similarity retrieval → LLM generation
+- Sample targets 
+et10.0 exclusively (LocalEmbeddings constraint, not local design choice)
+- Uses Phi-3.5-mini LLM (proven small model, good quality)
+- Dynamic index building from sample documents (no pre-indexed models shipped)
+- **Decision:** ZeroCloudRag targets net10.0; documented in decisions.md
+- **Impact:** Issue #9 resolved; developers now have production-ready RAG sample to reference
+- Reusable pattern: embedding model selection → chunk size tuning → similarity threshold adjustment
+
+### 2026-04-05: XML Documentation for ElBruno.LocalLLMs.Rag Package (Issue #12)
+- Added comprehensive XML documentation comments to all 13 public types and members in `src/ElBruno.LocalLLMs.Rag/`
+- Documented records: RagContext, RagIndexProgress, Document, DocumentChunk (with `<param>` tags for positional parameters)
+- Documented classes: RagOptions, RagServiceExtensions, InMemoryDocumentStore, SqliteDocumentStore, LocalRagPipeline, SlidingWindowChunker
+- Documented interfaces: IDocumentChunker, IDocumentStore, IRagPipeline
+- All documentation includes `<summary>`, `<param>`, `<returns>`, and `<exception>` tags where applicable
+- Build verified: 0 CS1591 warnings (previously 116 warnings with `<GenerateDocumentationFile>true</GenerateDocumentationFile>`)
+- Files modified: RagContext.cs, RagIndexProgress.cs, RagOptions.cs, RagServiceExtensions.cs, InMemoryDocumentStore.cs, SqliteDocumentStore.cs, Document.cs, DocumentChunk.cs, IDocumentChunker.cs, IDocumentStore.cs, IRagPipeline.cs, LocalRagPipeline.cs, SlidingWindowChunker.cs
+- IntelliSense now provides helpful descriptions for all public APIs in the RAG package

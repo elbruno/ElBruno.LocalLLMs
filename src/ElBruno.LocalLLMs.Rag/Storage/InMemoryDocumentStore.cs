@@ -2,16 +2,33 @@ using System.Collections.Concurrent;
 
 namespace ElBruno.LocalLLMs.Rag.Storage;
 
+/// <summary>
+/// An in-memory implementation of a document store that stores chunks in RAM.
+/// </summary>
 public sealed class InMemoryDocumentStore : IDocumentStore
 {
     private readonly ConcurrentBag<DocumentChunk> _chunks = new();
 
+    /// <summary>
+    /// Adds a document chunk to the in-memory store.
+    /// </summary>
+    /// <param name="chunk">The document chunk to add.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A completed task.</returns>
     public Task AddChunkAsync(DocumentChunk chunk, CancellationToken cancellationToken = default)
     {
         _chunks.Add(chunk);
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Searches for document chunks similar to the query embedding using cosine similarity.
+    /// </summary>
+    /// <param name="queryEmbedding">The query embedding vector.</param>
+    /// <param name="topK">The maximum number of results to return.</param>
+    /// <param name="minSimilarity">The minimum similarity threshold (0.0 to 1.0).</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A list of document chunks ordered by similarity.</returns>
     public Task<IReadOnlyList<DocumentChunk>> SearchAsync(
         ReadOnlyMemory<float> queryEmbedding,
         int topK = 5,
@@ -33,6 +50,11 @@ public sealed class InMemoryDocumentStore : IDocumentStore
         return Task.FromResult<IReadOnlyList<DocumentChunk>>(results);
     }
 
+    /// <summary>
+    /// Clears all document chunks from the store.
+    /// </summary>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A completed task.</returns>
     public Task ClearAsync(CancellationToken cancellationToken = default)
     {
         _chunks.Clear();
