@@ -81,3 +81,13 @@
 - All 705 tests pass (390 existing + 315 from DX wave), zero regressions
 - Tests validated Trinity's model definition matches expected contract
 - Next: Dozer to convert model to ONNX GenAI format
+
+### 2026-04-04: Comprehensive RAG Pipeline & Zero-Cloud RAG Test Coverage
+- Added 24 new tests across 3 files for RAG pipeline testing:
+  1. **LocalRagPipelineTests.cs** (10 tests, MSTest): IndexDocuments empty/single/multi, progress reporting, retrieve after indexing, empty index, topK limiting, minSimilarity filtering, clear index, cancellation token, chunk content verification
+  2. **RagPipelineIntegrationTests.cs** (4 tests, MSTest): Full E2E pipeline, multi-query retrieval, large document set scale (15 docs), clear-and-reindex cycle. All gated by `[TestCategory("Integration")]` + `RUN_INTEGRATION_TESTS` env var
+  3. **RagDocumentTests.cs** (13 tests, xUnit): Document/DocumentChunk/RagContext/RagIndexProgress record creation, metadata handling, record equality, empty content validation
+- Created `MockEmbeddingGenerator` (384-dim deterministic vectors via `Random(text.GetHashCode())`) and `SynchronousProgress<T>` helper to avoid `Progress<T>` thread-pool ordering issues in tests
+- Key learning: mock embedding generator produces essentially random cosine similarities; tests that need guaranteed retrieval must use `minSimilarity: -1.0f` to bypass filtering
+- Test results: RAG project 39/39 passing (25 existing + 10 new unit + 4 integration), xUnit project 718/718 passing (705 existing + 13 new)
+- Phi35MiniInstruct `HasNativeOnnx = true` test already existed in KnownModelsTests.cs line 171 — verified, no changes needed

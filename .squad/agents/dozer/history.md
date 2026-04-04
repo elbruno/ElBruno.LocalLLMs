@@ -418,3 +418,14 @@ Key findings from parallel architecture evaluation by Morpheus:
 - Updated .squad/team.md Target Models table with Qwen2.5-Coder-7B and new Blocked section
 - Key principle established: License compatibility is first-class decision criterion (not just technical feasibility)
 - Next: Convert Qwen2.5-Coder-7B to ONNX GenAI format using standard builder pipeline
+
+### 2026-04-05: Documentation Updates for ZeroCloudRag Sample (Issue #9)
+- Added ZeroCloudRag to Samples table in README.md: "Zero-cloud RAG pipeline with real local embeddings and LLM inference"
+- Added new section "Zero-Cloud RAG Sample" to docs/rag-guide.md explaining the end-to-end RAG pattern using local models only
+  - Emphasizes privacy, speed, cost benefits of zero-cloud approach
+  - Shows DI pattern combining ElBruno.LocalEmbeddings + ElBruno.LocalLLMs + RAG pipeline
+  - References src/samples/ZeroCloudRag/ for working example
+- Updated docs/supported-models.md "Recommended Stack by Use Case" table to add RAG Pipeline row:
+  - Recommends Phi-3.5-mini (CUDA) due to native ONNX support and excellent quality-to-size ratio
+  - Notes: "Native ONNX, excellent quality-to-size ratio, proven for RAG"
+- Key insight: Phi-3.5-mini-instruct is ideal for RAG scenarios due to native ONNX weights + strong instruction-following + compact size (3.8B)

@@ -446,6 +446,7 @@ START: Choosing a model?
 | Learning / Testing | Phi-3.5-mini | CPU | 6 GB | Default, native ONNX, instant download |
 | Simple Chatbot | Qwen2.5-3B | CPU | 8 GB | Great instruction-following, needs conversion |
 | Production API | Phi-4 | CUDA | 14 GB | Best reasoning, native ONNX, fast on GPU |
+| RAG Pipeline | Phi-3.5-mini | CUDA | 6 GB | Native ONNX, excellent quality-to-size ratio, proven for RAG |
 | Real-time App | Qwen2.5-0.5B | CUDA | 2 GB | Tiny, ultra-fast, weak quality |
 | Content Gen | Qwen2.5-7B | CUDA | 12 GB | Excellent writing, powerful instruction-follow |
 | Code Assistant | Qwen2.5-Coder-7B | CUDA | 10 GB | Code-specialized, Qwen architecture, needs conversion |

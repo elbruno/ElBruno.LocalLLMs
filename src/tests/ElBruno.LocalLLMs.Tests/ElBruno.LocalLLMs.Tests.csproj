@@ -21,5 +21,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\ElBruno.LocalLLMs\ElBruno.LocalLLMs.csproj" />
+    <ProjectReference Include="..\..\ElBruno.LocalLLMs.Rag\ElBruno.LocalLLMs.Rag.csproj" />
   </ItemGroup>
 </Project>

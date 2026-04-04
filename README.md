@@ -276,6 +276,7 @@ See the [Supported Models Guide](docs/supported-models.md) for detailed model ca
 | [ToolCallingAgent](src/samples/ToolCallingAgent) | Function calling and tool use |
 | [FineTunedToolCalling](src/samples/FineTunedToolCalling) | Fine-tuned model for improved tool calling |
 | [RagChatbot](src/samples/RagChatbot) | RAG pipeline with document retrieval |
+| [ZeroCloudRag](src/samples/ZeroCloudRag) | Zero-cloud RAG pipeline with real local embeddings and LLM inference |
 | [ConsoleAppDemo](src/samples/ConsoleAppDemo) | Interactive console application |
 
 ## Requirements

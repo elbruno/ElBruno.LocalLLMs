@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.0] - 2026-04-04
+
+### Added
+
+**Zero-Cloud RAG Sample (Issue #9)**
+- New `src/samples/ZeroCloudRag/` — complete offline RAG pipeline console app
+- Uses `ElBruno.LocalEmbeddings` for real ONNX-based local embeddings (all-MiniLM model)
+- Uses `ElBruno.LocalLLMs` with Phi-3.5-mini-instruct for grounded text generation
+- Uses `LocalRagPipeline` with `SlidingWindowChunker` and `InMemoryDocumentStore`
+- 11-step demo: document loading → chunking → embedding → indexing → query → retrieval → LLM answer
+- Everything runs locally — zero cloud APIs needed
+
+**New Tests**
+- 10 MSTest unit tests for `LocalRagPipeline` (indexing, retrieval, progress, cancellation, clear)
+- 4 MSTest integration tests (E2E pipeline, multi-query, scale, clear-and-reindex) gated behind `RUN_INTEGRATION_TESTS`
+- 13 xUnit tests for RAG record types (`Document`, `DocumentChunk`, `RagContext`, `RagIndexProgress`)
+- Total: 718 xUnit + 39 MSTest = 757 tests (all pass)
+
+**Documentation**
+- Updated `docs/rag-guide.md` with Zero-Cloud RAG section and DI architecture
+- Updated `README.md` samples table with ZeroCloudRag entry
+- Updated `docs/supported-models.md` with RAG model recommendations
+
+### Changed
+- `ZeroCloudRag` targets `net10.0` (required by `ElBruno.LocalEmbeddings` >= 1.0.1)
+
+---
+
 ## [0.9.0] - 2026-04-04
 
 ### Added
