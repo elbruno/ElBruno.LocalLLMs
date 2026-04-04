@@ -42,6 +42,12 @@ public class KnownModelsTests
     }
 
     [Fact]
+    public void All_ContainsQwen25Coder7BInstruct()
+    {
+        Assert.Contains(KnownModels.All, m => m.Id == "qwen2.5-coder-7b-instruct");
+    }
+
+    [Fact]
     public void All_HasAtLeastThreeModels()
     {
         Assert.True(KnownModels.All.Count >= 3);
@@ -108,6 +114,7 @@ public class KnownModelsTests
     [InlineData("phi-3.5-mini-instruct")]
     [InlineData("phi-4")]
     [InlineData("qwen2.5-0.5b-instruct")]
+    [InlineData("qwen2.5-coder-7b-instruct")]
     public void FindById_KnownId_ReturnsModel(string modelId)
     {
         var model = KnownModels.FindById(modelId);
@@ -194,6 +201,59 @@ public class KnownModelsTests
         Assert.Equal(ChatTemplateFormat.Qwen, model.ChatTemplate);
         Assert.Equal(ModelTier.Tiny, model.Tier);
         Assert.True(model.HasNativeOnnx);
+    }
+
+    // ──────────────────────────────────────────────
+    // Qwen2.5-Coder-7B-Instruct model
+    // ──────────────────────────────────────────────
+
+    [Fact]
+    public void FindById_Qwen25Coder7BInstruct_ReturnsModel()
+    {
+        var model = KnownModels.FindById("qwen2.5-coder-7b-instruct");
+
+        Assert.NotNull(model);
+        Assert.Equal("qwen2.5-coder-7b-instruct", model!.Id);
+    }
+
+    [Fact]
+    public void Qwen25Coder7BInstruct_HasCorrectChatTemplate()
+    {
+        var model = KnownModels.Qwen25Coder_7BInstruct;
+
+        Assert.Equal(ChatTemplateFormat.Qwen, model.ChatTemplate);
+    }
+
+    [Fact]
+    public void Qwen25Coder7BInstruct_HasCorrectTier()
+    {
+        var model = KnownModels.Qwen25Coder_7BInstruct;
+
+        Assert.Equal(ModelTier.Medium, model.Tier);
+    }
+
+    [Fact]
+    public void Qwen25Coder7BInstruct_SupportsToolCalling()
+    {
+        var model = KnownModels.Qwen25Coder_7BInstruct;
+
+        Assert.True(model.SupportsToolCalling);
+    }
+
+    [Fact]
+    public void Qwen25Coder7BInstruct_HasNativeOnnx()
+    {
+        var model = KnownModels.Qwen25Coder_7BInstruct;
+
+        Assert.True(model.HasNativeOnnx);
+    }
+
+    [Fact]
+    public void Qwen25Coder7BInstruct_HasCorrectHuggingFaceRepoId()
+    {
+        var model = KnownModels.Qwen25Coder_7BInstruct;
+
+        Assert.Equal("elbruno/Qwen2.5-Coder-7B-Instruct-onnx", model.HuggingFaceRepoId);
     }
 
     // ──────────────────────────────────────────────
@@ -284,5 +344,6 @@ public class KnownModelsTests
         Assert.Contains(KnownModels.Phi35MiniInstruct, KnownModels.All);
         Assert.Contains(KnownModels.Phi4, KnownModels.All);
         Assert.Contains(KnownModels.Qwen25_05BInstruct, KnownModels.All);
+        Assert.Contains(KnownModels.Qwen25Coder_7BInstruct, KnownModels.All);
     }
 }

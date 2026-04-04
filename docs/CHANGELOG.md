@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.9.0] - 2026-04-04
+
+### Added
+
+**Qwen2.5-Coder-7B-Instruct — Code Assistant Model**
+- New `KnownModels.Qwen25Coder_7BInstruct` for local code development
+- ONNX INT4 model converted and published to `elbruno/Qwen2.5-Coder-7B-Instruct-onnx` on HuggingFace
+- Uses Qwen chat template (same as Qwen2.5 family) — no new formatter needed
+- Supports tool calling for agent-based coding workflows
+- 8 new unit tests for model definition and properties
+
+**OpenAI-Compatible HTTP Server Sample**
+- New `src/samples/OpenAiServer` — ASP.NET Core minimal API server
+- `POST /v1/chat/completions` with streaming SSE and non-streaming modes
+- `GET /v1/models` lists all available models
+- VS Code Copilot custom model integration guide with `chatLanguageModels.json` config
+- Works with Continue, Cody, and any OpenAI SDK client
+
+**Blocked Models Documentation**
+- Codestral 22B v0.1 — blocked due to MNPL-0.1 non-production license
+- Devstral Small 2 (24B) — blocked, no ONNX conversion path (custom Tekken tokenizer, FP8 quantization)
+
+### Changed
+- `Qwen25Coder_7BInstruct.HasNativeOnnx` upgraded from `false` to `true` (ONNX model now published)
+- `Qwen25Coder_7BInstruct.HuggingFaceRepoId` updated to `elbruno/Qwen2.5-Coder-7B-Instruct-onnx`
+
+---
+
 ## [0.8.0] - 2026-04-03
 
 ### Added

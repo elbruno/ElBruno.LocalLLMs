@@ -25,6 +25,8 @@ Use `Llama-3.1-8B-Instruct` (already converted, native ONNX) or `Llama-3.2-3B-In
 | **DeepSeek-R1-Distill-Llama-70B** | 70B | RAM: ~450GB needed for INT4 | ⛔ Blocked | Use 512GB+ machine, cloud GPU, or smaller DeepSeek-R1-Distill-Qwen-14B |
 | **Command-R (35B)** | 35B | Gated model / license issue | ⛔ Blocked | Verify HuggingFace license or use CohereForAI/c4ai-command-r-plus |
 | **Llama-3.3-70B-Instruct** | 70B | ~~RAM: ~450GB needed for INT4~~ | ✅ Resolved | CUDA conversion succeeded; uploaded to elbruno/Llama-3.3-70B-Instruct-onnx |
+| **Codestral-22B-v0.1** | 22B | MNPL license (non-production only) | ⛔ Blocked | Use Devstral Small 2 (Apache 2.0) or Qwen2.5-Coder-7B-Instruct instead |
+| **Devstral-Small-2-24B** | 24B | No ONNX conversion path exists | ⛔ Blocked | Wait for onnxruntime-genai support or use GGUF via llama.cpp |
 
 ---
 
@@ -276,6 +278,80 @@ Without explicit license acceptance from your HuggingFace account, the model can
 - **Qwen2.5-32B-Instruct** (32B) — native ONNX, excellent instruction-following
 - **Phi-4** (14B) — native ONNX, strongest reasoning for its size
 - **Llama-3.1-8B-Instruct** (8B) — native ONNX, balanced performance
+
+---
+
+## License Restrictions
+
+### Codestral 22B v0.1
+
+**Model:** mistralai/Codestral-22B-v0.1
+**HuggingFace:** https://huggingface.co/mistralai/Codestral-22B-v0.1
+**License:** MNPL-0.1 (Mistral AI Non-Production License)
+**Status:** ⛔ Blocked — license incompatible with production use
+
+#### Why It's Blocked
+
+Codestral 22B is distributed under Mistral's **Non-Production License (MNPL-0.1)**, which prohibits:
+- Production deployment (serving outputs to end users)
+- Commercial activity of any kind (including free services in a business context)
+- Distribution in commercial software, cloud services, or hosted platforms
+
+This makes it incompatible with a NuGet library where users would deploy applications using the model. Including it in `KnownModels` would mislead users into thinking it's freely usable.
+
+#### Workaround
+
+Users who accept the MNPL license for research purposes can still use the model manually:
+
+```csharp
+var codestral = new ModelDefinition
+{
+    Id = "codestral-22b-v0.1",
+    DisplayName = "Codestral-22B-v0.1",
+    HuggingFaceRepoId = "mistralai/Codestral-22B-v0.1",
+    RequiredFiles = ["*"],
+    ModelType = OnnxModelType.GenAI,
+    ChatTemplate = ChatTemplateFormat.Mistral,
+    Tier = ModelTier.Large,
+    HasNativeOnnx = false
+};
+```
+
+**Alternatives:** Use `Qwen2.5-Coder-7B-Instruct` (Apache 2.0, code-specialized, 7B) or `Devstral-Small-2` via llama.cpp.
+
+---
+
+## ONNX Conversion Not Available
+
+### Devstral Small 2 (24B)
+
+**Model:** mistralai/Devstral-Small-2-24B-Instruct-2512
+**HuggingFace:** https://huggingface.co/mistralai/Devstral-Small-2-24B-Instruct-2512
+**License:** Apache 2.0 ✅
+**Status:** ⛔ Blocked — no ONNX conversion path
+
+#### Why It's Blocked
+
+Devstral Small 2 is an excellent code-focused model with an open license, but ONNX conversion is not currently feasible:
+
+| Blocker | Details |
+|---------|---------|
+| **No ONNX exports exist** | No community or official ONNX versions on HuggingFace |
+| **Custom architecture** | Uses Mistral's "Tekken" tokenizer (~131k vocab), FP8 quantization, and custom attention mechanisms |
+| **Multimodal components** | Vision+text hybrid architecture adds ONNX conversion complexity |
+| **onnxruntime-genai builder** | Not tested with Devstral architecture; likely needs explicit support |
+
+#### What Would Unblock It
+
+1. `onnxruntime-genai` adding explicit Devstral/Mistral-v7 architecture support in the model builder
+2. Community ONNX export appearing on HuggingFace
+3. Mistral publishing an official ONNX variant
+
+#### Alternative
+
+Use Devstral Small 2 via **llama.cpp** (GGUF format) or **vLLM** (safetensors) for local code development. These are well-supported deployment paths.
+
+For ONNX-based local code assistance, use **Qwen2.5-Coder-7B-Instruct** instead — same Qwen2.5 architecture already supported by the library.
 
 ---
 

@@ -238,6 +238,20 @@ public static class KnownModels
         SupportsToolCalling = true
     };
 
+    /// <summary>Qwen2.5-Coder-7B-Instruct — code-specialized Qwen model for local development.</summary>
+    public static readonly ModelDefinition Qwen25Coder_7BInstruct = new()
+    {
+        Id = "qwen2.5-coder-7b-instruct",
+        DisplayName = "Qwen2.5-Coder-7B-Instruct",
+        HuggingFaceRepoId = "elbruno/Qwen2.5-Coder-7B-Instruct-onnx",
+        RequiredFiles = ["*"],
+        ModelType = OnnxModelType.GenAI,
+        ChatTemplate = ChatTemplateFormat.Qwen,
+        Tier = ModelTier.Medium,
+        HasNativeOnnx = true,
+        SupportsToolCalling = true
+    };
+
     /// <summary>Llama 3.1 8B Instruct — Meta's mainstream instruct model.</summary>
     public static readonly ModelDefinition Llama31_8BInstruct = new()
     {
@@ -452,6 +466,7 @@ public static class KnownModels
         Gemma4E4BIT,
         // Medium
         Qwen25_7BInstruct,
+        Qwen25Coder_7BInstruct,
         Llama31_8BInstruct,
         Mistral7BInstructV03,
         Gemma2_9BIT,

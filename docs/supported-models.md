@@ -21,6 +21,7 @@ ElBruno.LocalLLMs supports **29 LLMs** across 5 tiers. This guide details each m
 | 🟢 Small | Gemma-2-2B-IT | 2.6B | elbruno/Gemma-2-2B-IT-onnx | ✅ Native | Gemma | — | 6 GB | ⚡⚡ |
 | 🟢 Small | Gemma-4-E4B-IT | 8B (4B active) | google/gemma-4-E4B-it | ⏳ Pending | Gemma | ✅ | 8–10 GB | ⚡⚡ |
 | 🟡 Medium | Qwen2.5-7B-Instruct | 7B | Qwen/Qwen2.5-7B-Instruct | ✅ Native | Qwen | ✅ | 8–12 GB | ⚡ |
+| 🟡 Medium | Qwen2.5-Coder-7B-Instruct | 7B | Qwen/Qwen2.5-Coder-7B-Instruct | 🔄 Convert | Qwen | ✅ | 8–12 GB | ⚡ |
 | 🟡 Medium | Llama-3.1-8B-Instruct | 8B | meta-llama/Llama-3.1-8B-Instruct | ✅ Native | Llama3 | — | 8–12 GB | ⚡ |
 | 🟡 Medium | Mistral-7B-Instruct-v0.3 | 7B | mistralai/Mistral-7B-Instruct-v0.3 | ✅ Native | Mistral | — | 8–12 GB | ⚡ |
 | 🟡 Medium | Gemma-2-9B-IT | 9B | elbruno/Gemma-2-9B-IT-onnx | ✅ Native | Gemma | — | 12 GB | ⚡ |
@@ -423,6 +424,12 @@ START: Choosing a model?
 │  └─ "Quality over speed"
 │     └─> Use Qwen2.5-7B or DeepSeek-R1-Distill (need conversion)
 │
+├─ "I need a code assistant / local Copilot replacement"
+│  ├─ "ONNX Runtime (this library)"
+│  │  └─> Use Qwen2.5-Coder-7B-Instruct (Medium, needs conversion)
+│  └─ "Any runtime (llama.cpp, vLLM)"
+│     └─> Use Devstral-Small-2 (24B, Apache 2.0, GGUF format)
+│
 ├─ "I have multi-GPU / high-end hardware"
 │  └─> Use Large models (70B+) for max quality
 │
@@ -441,7 +448,7 @@ START: Choosing a model?
 | Production API | Phi-4 | CUDA | 14 GB | Best reasoning, native ONNX, fast on GPU |
 | Real-time App | Qwen2.5-0.5B | CUDA | 2 GB | Tiny, ultra-fast, weak quality |
 | Content Gen | Qwen2.5-7B | CUDA | 12 GB | Excellent writing, powerful instruction-follow |
-| Code Assistant | Phi-4 | CUDA | 14 GB | Top reasoning, Microsoft-optimized |
+| Code Assistant | Qwen2.5-Coder-7B | CUDA | 10 GB | Code-specialized, Qwen architecture, needs conversion |
 | Edge (RPi, IoT) | Qwen2.5-0.5B | CPU | 2 GB | Minimal, but usable for simple tasks |
 | Advanced Reasoning | Llama-3.1-70B | CUDA | 45 GB | State-of-the-art, multi-GPU |
 
