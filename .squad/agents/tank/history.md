@@ -91,3 +91,15 @@
 - Key learning: mock embedding generator produces essentially random cosine similarities; tests that need guaranteed retrieval must use `minSimilarity: -1.0f` to bypass filtering
 - Test results: RAG project 39/39 passing (25 existing + 10 new unit + 4 integration), xUnit project 718/718 passing (705 existing + 13 new)
 - Phi35MiniInstruct `HasNativeOnnx = true` test already existed in KnownModelsTests.cs line 171 — verified, no changes needed
+
+### 2026-04-04: RAG Pipeline Test Suite — 27 New Tests
+
+- Wrote **10 pipeline unit tests** (MSTest, LocalRagPipelineTests.cs): Index → Retrieve → Clear orchestration, error conditions, progress events
+- Wrote **4 integration tests** (MSTest, gated by RUN_INTEGRATION_TESTS=true env var): Full 15+ document workflows, reindexing, scale validation
+- Wrote **13 record type tests** (xUnit, shared type validation): Score bounds, chunk validation, embedding vector invariants
+- **Key Pattern:** SynchronousProgress<T> for deterministic callback ordering (not Progress<T> async)
+- **Mock embedding strategy:** Set minSimilarity: -1.0f for guaranteed retrieval (hash-based random vectors have unpredictable cosine similarities)
+- **Integration gating:** Use [TestCategory("Integration")] + env var to skip real-model tests in CI
+- **Decision:** RAG Pipeline Test Strategy approved; documented in decisions.md
+- **Result:** 757 total passing (730 existing + 27 new), zero regressions
+- Reusable patterns: mock embedding generator, SynchronousProgress model, integration test gating

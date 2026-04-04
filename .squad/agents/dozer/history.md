@@ -429,3 +429,13 @@ Key findings from parallel architecture evaluation by Morpheus:
   - Recommends Phi-3.5-mini (CUDA) due to native ONNX support and excellent quality-to-size ratio
   - Notes: "Native ONNX, excellent quality-to-size ratio, proven for RAG"
 - Key insight: Phi-3.5-mini-instruct is ideal for RAG scenarios due to native ONNX weights + strong instruction-following + compact size (3.8B)
+
+### 2026-04-04: RAG Documentation + v0.10.0 Release
+
+- Updated docs/rag-guide.md with architecture, chunking best practices (256–1024 tokens), embedding selection criteria
+- Updated README.md with ZeroCloudRag sample badge and feature links
+- Updated docs/supported-models.md for v0.10.0 release alignment
+- Added content: cosine similarity threshold tuning (default 0.7), ElBruno.LocalEmbeddings 1.0.1 integration notes, sample-to-production workflow
+- **Impact:** First RAG release (v0.10.0); users have clear onboarding path (sample + guide)
+- Model tiers and recommendations verified against Dozer's conversion database
+- v0.10.0 documentation complete and ready for user adoption
