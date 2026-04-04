@@ -67,3 +67,16 @@ All conventions from `.github/copilot-instructions.md` now fully applied across 
 **Decisions Merged:** Decision 33 (Phase 4b RAG architecture) with 8 sub-decisions in `.squad/decisions.md`
 
 **Commit:** 8344eb6 pushed to origin/main
+
+## 2026-07-25: Publish Workflow Fix (PR #14)
+
+**Problem:** `publish.yml` restored/built the entire `.slnx` solution with `-p:TargetFrameworks=net8.0`, which broke on `ZeroCloudRag` sample (net10.0-only, depends on `ElBruno.LocalEmbeddings 1.0.1` which is net10.0-only). Also only installed .NET 8.0 SDK and forced single-TFM pack, so packages shipped without net10.0.
+
+**Fix applied to `.github/workflows/publish.yml`:**
+1. Setup .NET now installs both `8.0.x` and `10.0.x` SDKs
+2. Restore/Build target specific projects (libraries + tests) instead of the whole solution
+3. Tests now run both `ElBruno.LocalLLMs.Tests` and `ElBruno.LocalLLMs.Rag.Tests`
+4. Pack step removed `-p:TargetFrameworks=net8.0` so packages include both TFMs
+5. Both `ElBruno.LocalLLMs` and `ElBruno.LocalLLMs.Rag` are now packed and pushed
+
+**Branch:** `fix/publish-workflow-net10-compat` → PR #14 to main
