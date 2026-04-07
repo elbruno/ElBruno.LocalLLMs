@@ -141,3 +141,48 @@
 - In-Memory SQLite: Use Data Source=:memory: for fast, isolated persistence tests
 - Mock Reuse: Leveraged existing MockEmbeddingGenerator from LocalRagPipelineTests
 - MSTest Framework: Consistent with existing codebase convention
+
+## 2026-04-07: Gemma 4 Blocker Monitoring Workflow — Security Audit
+
+**Session:** Gemma4-Monitor-Impl (orchestration)
+
+Conducted comprehensive security audit of Switch's `.github/workflows/monitor-gemma4-blocker.yml` workflow.
+
+**Findings: 3 Security Bugs**
+
+1. **Expression Injection (CRITICAL)**
+   - Location: evaluate job, `actions/github-script@v7`
+   - Issue: Untrusted upstream issue comments interpolated via `${{ }}` literals
+   - Risk: Malicious comment could execute arbitrary code in workflow
+   - Fix: Moved all external data to step-level `env:` blocks, read via `process.env.*`
+
+2. **NuGet API Error Handling (MEDIUM)**
+   - Location: check-release job, curl/jq pipeline
+   - Issue: No error handling; null/empty response treated as new version
+   - Fix: Added `set -eo pipefail`, explicit validation (`-z`, `== "null"` checks), error annotations
+
+3. **Shell Injection via External Data (MEDIUM)**
+   - Location: release-notes, evaluate-release steps
+   - Issue: Direct interpolation of untrusted `${{ steps.nuget.outputs.latest_version }}`
+   - Fix: Env var indirection pattern in all shell steps
+
+**Operational Issue:**
+- KNOWN_BLOCKED_VERSION was 0.12.2, but NuGet has 0.13.0
+- First run would trigger false positive (score ≥ 20)
+- Fixed by bumping to 0.13.0
+
+**Verified Correct:**
+- ✅ NuGet flat container API URL and version extraction
+- ✅ Confidence scoring (max 90 = +20 new + 40 keyword + 30 closed)
+- ✅ Issue dedup (checks existing open issues with `gemma4` label)
+- ✅ Label auto-creation (idempotent try/catch)
+- ✅ Permission scope (contents: read, issues: write)
+- ✅ Job dependencies correctly declared
+- ✅ File lifecycle safety (`release_notes.txt` guarded)
+- ✅ GitHub API endpoints and Octokit patterns
+
+**Commits:**
+- Switch initial: 5adb604
+- Coordinator fixes: e85743f (security + version bump)
+
+**Recommendation:** All fixes merged. Workflow ready for production.

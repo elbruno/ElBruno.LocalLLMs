@@ -7969,3 +7969,85 @@ jobs:
 
 *This analysis is complete. No code has been written. All recommendations are for future implementation by the team.*
 
+
+---
+
+## Decision: Gemma 4 Blocker Monitoring Workflow
+
+**Date:** 2026-04-07  
+**Authors:** Switch (DevOps) + Tank (QA)  
+**Status:** Implemented with security fixes
+
+## Context
+
+The Gemma 4 model architecture requires three runtime-level blockers in onnxruntime-genai v0.12.2:
+1. **PLE (Position-based Layerwise Embeddings)** — Custom attention mechanism
+2. **Variable head dimensions** — Dynamic Q/K/V projection sizes
+3. **KV cache sharing** — Efficient multi-head state management
+
+These are unlikely to be exposed in public APIs; monitoring upstream development is the only way to detect when support is added.
+
+## Decision
+
+Created .github/workflows/monitor-gemma4-blocker.yml — automated daily monitoring (9 AM UTC + manual trigger) for signals that onnxruntime-genai may now support Gemma 4. The workflow:
+
+1. **Fetches NuGet latest version** — Compares against KNOWN_BLOCKED_VERSION (0.13.0)
+2. **Checks upstream issue** — Monitors microsoft/onnxruntime-genai#2062 for closure or relevant comments
+3. **Scores confidence** — Confidence scoring (max 90): +20 new version, +40 keyword match, +30 issue closed
+4. **Creates GitHub issue** — When score ≥ 50, auto-creates an issue with evidence + links
+5. **Deduplicates** — Checks for existing open gemma4 label before creating
+
+## Implementation Details
+
+### Architecture
+- **Shell scripts** — NuGet API via curl + jq
+- **actions/github-script@v7** — All GitHub API interactions
+- **Config via env vars** — Easy updates without code changes
+- **Minimal permissions** — contents: read, issues: write
+
+### Security Fixes (Tank QA)
+
+**Bug 1: Expression Injection (CRITICAL)**
+- Issue: Untrusted upstream comments interpolated via ${{ }}
+- Fix: Env var indirection, read via process.env.*
+
+**Bug 2: NuGet API Errors (MEDIUM)**
+- Issue: No error handling on failures
+- Fix: set -eo pipefail, explicit validation, error annotations
+
+**Bug 3: Shell Injection (MEDIUM)**
+- Issue: External data in shell literals
+- Fix: Env var indirection in all shell steps
+
+**Bug 4: Stale Version (OPERATIONAL)**
+- Issue: KNOWN_BLOCKED_VERSION was 0.12.2, NuGet has 0.13.0
+- Fix: Updated to 0.13.0
+
+## Rationale
+
+- Automates unreliable manual checking
+- Confidence scoring prevents false positives
+- Config via env vars = no code review needed
+- Transparent, auditable, minimal permissions
+
+## Verified (Tank QA)
+
+✅ NuGet API URL and extraction  
+✅ Confidence scoring (max 90)  
+✅ Issue dedup with gemma4 label  
+✅ Idempotent label creation  
+✅ Permission scope sufficient  
+✅ Job dependencies correct  
+✅ File lifecycle safety  
+✅ GitHub API patterns correct  
+
+## Files Produced
+
+- .github/workflows/monitor-gemma4-blocker.yml (created + security fixes)
+- .squad/decisions/inbox/switch-gemma4-monitor.md (rationale)
+- .squad/decisions/inbox/tank-gemma4-monitor-review.md (QA findings)
+
+## Commits
+
+- Switch: 5adb604 (initial implementation)
+- Coordinator: e85743f (security fixes + version bump)

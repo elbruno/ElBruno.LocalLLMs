@@ -1,0 +1,14 @@
+[Scribe] Merge Morpheus gemma4-monitoring analysis into decisions.md
+
+- Write orchestration log: 2026-04-07T13-16-morpheus.md
+- Write session log: 2026-04-07T13-16-gemma4-monitoring-proposal.md
+- Merge inbox proposal into decisions.md
+- Delete inbox file
+- Update Morpheus history.md with completion note
+
+Morpheus completed analysis of 5 automation approaches for detecting
+onnxruntime-genai Gemma 4 support. Proposal recommends tiered implementation:
+Tier 1 daily polling (\.10/mo), Tier 2 weekly conversion test (\-10/mo),
+Tier 3 optional dashboard (free). Ready for team decision.
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>

@@ -101,3 +101,24 @@ All conventions from `.github/copilot-instructions.md` now fully applied across 
 - Config via env vars (`KNOWN_BLOCKED_VERSION`, `UPSTREAM_REPO`, `UPSTREAM_ISSUE`) for easy updates
 - Auto-creates labels if they don't exist (idempotent)
 - Dedup: checks for existing open issue with `gemma4` label before creating; adds comment if found
+
+## 2026-04-07: Gemma 4 Blocker Monitoring Workflow
+
+**Session:** Gemma4-Monitor-Impl (orchestration)
+
+Created .github/workflows/monitor-gemma4-blocker.yml — daily NuGet/GitHub monitoring for Gemma 4 support signals in onnxruntime-genai.
+
+**Implementation:**
+- 3 parallel jobs: check-release, check-issue, evaluate
+- Confidence scoring (max 90): version +20, keyword +40, issue closed +30
+- Auto-create GitHub issue when score ≥ 50
+- Config via env vars (KNOWN_BLOCKED_VERSION, UPSTREAM_REPO, UPSTREAM_ISSUE)
+- Minimal permissions (contents: read, issues: write)
+
+**Commit:** 5adb604 (initial)
+
+**Cross-Agent Notes:**
+- Tank (QA) reviewed & found 3 security bugs (1 critical, 2 medium)
+- All bugs fixed via env var indirection + error handling
+- Coordinator bumped KNOWN_BLOCKED_VERSION from 0.12.2 to 0.13.0
+- Final commit: e85743f (security fixes + version bump)
