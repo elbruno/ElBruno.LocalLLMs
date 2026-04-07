@@ -36,18 +36,24 @@ jobs:
       - name: Fetch latest NuGet version
         id: nuget
         run: |
+          set -eo pipefail
           echo "Fetching version index from NuGet..."
           VERSIONS=$(curl -fsSL \
             "https://api.nuget.org/v3-flatcontainer/microsoft.ml.onnxruntimegenai/index.json" \
             | jq -r '.versions[-1]')
+          if [ -z "$VERSIONS" ] || [ "$VERSIONS" = "null" ]; then
+            echo "::error::Failed to fetch latest version from NuGet API"
+            exit 1
+          fi
           echo "latest_version=${VERSIONS}" >> "$GITHUB_OUTPUT"
           echo "Latest NuGet version: ${VERSIONS}"
 
       - name: Fetch upstream release notes
         id: release-notes
         if: steps.nuget.outputs.latest_version != env.KNOWN_BLOCKED_VERSION
+        env:
+          LATEST: ${{ steps.nuget.outputs.latest_version }}
         run: |
-          LATEST="${{ steps.nuget.outputs.latest_version }}"
           REPO="${{ env.UPSTREAM_REPO }}"
 
           # Try common tag patterns: v0.13.0, 0.13.0
@@ -77,10 +83,12 @@ jobs:
 
       - name: Search release notes for Gemma keywords
         id: evaluate-release
+        env:
+          LATEST: ${{ steps.nuget.outputs.latest_version }}
+          KNOWN: ${{ env.KNOWN_BLOCKED_VERSION }}
+          RELEASE_URL_INPUT: ${{ steps.release-notes.outputs.release_url }}
         run: |
-          LATEST="${{ steps.nuget.outputs.latest_version }}"
-          KNOWN="${{ env.KNOWN_BLOCKED_VERSION }}"
-          RELEASE_URL="${{ steps.release-notes.outputs.release_url }}"
+          RELEASE_URL="${RELEASE_URL_INPUT}"
           SCORE=0
           HITS=""
 
@@ -198,19 +206,35 @@ jobs:
     steps:
       - name: Calculate combined score and take action
         uses: actions/github-script@v7
+        env:
+          RELEASE_SCORE: ${{ needs.check-release.outputs.score }}
+          ISSUE_SCORE: ${{ needs.check-issue.outputs.score }}
+          LATEST_VERSION: ${{ needs.check-release.outputs.latest_version }}
+          IS_NEW: ${{ needs.check-release.outputs.is_new }}
+          KEYWORD_HITS: ${{ needs.check-release.outputs.keyword_hits }}
+          RELEASE_URL: ${{ needs.check-release.outputs.release_url }}
+          ISSUE_CLOSED: ${{ needs.check-issue.outputs.issue_closed }}
+          RECENT_ACTIVITY: ${{ needs.check-issue.outputs.recent_activity }}
+          LATEST_COMMENT: ${{ needs.check-issue.outputs.latest_comment }}
+          KNOWN_VER: ${{ env.KNOWN_BLOCKED_VERSION }}
+          UPSTREAM: ${{ env.UPSTREAM_REPO }}
+          UPSTREAM_ISSUE_NUM: ${{ env.UPSTREAM_ISSUE }}
         with:
           script: |
-            const releaseScore = parseInt('${{ needs.check-release.outputs.score }}') || 0;
-            const issueScore = parseInt('${{ needs.check-issue.outputs.score }}') || 0;
+            const releaseScore = parseInt(process.env.RELEASE_SCORE) || 0;
+            const issueScore = parseInt(process.env.ISSUE_SCORE) || 0;
             const totalScore = releaseScore + issueScore;
 
-            const latestVersion = '${{ needs.check-release.outputs.latest_version }}';
-            const isNew = '${{ needs.check-release.outputs.is_new }}' === 'true';
-            const keywordHits = '${{ needs.check-release.outputs.keyword_hits }}';
-            const releaseUrl = '${{ needs.check-release.outputs.release_url }}';
-            const issueClosed = '${{ needs.check-issue.outputs.issue_closed }}' === 'true';
-            const recentActivity = '${{ needs.check-issue.outputs.recent_activity }}' === 'true';
-            const latestComment = '${{ needs.check-issue.outputs.latest_comment }}';
+            const latestVersion = process.env.LATEST_VERSION || '';
+            const isNew = process.env.IS_NEW === 'true';
+            const keywordHits = process.env.KEYWORD_HITS || '';
+            const releaseUrl = process.env.RELEASE_URL || '';
+            const issueClosed = process.env.ISSUE_CLOSED === 'true';
+            const recentActivity = process.env.RECENT_ACTIVITY === 'true';
+            const latestComment = process.env.LATEST_COMMENT || '';
+            const knownVer = process.env.KNOWN_VER || '';
+            const upstream = process.env.UPSTREAM || '';
+            const upstreamIssue = process.env.UPSTREAM_ISSUE_NUM || '';
 
             console.log(`=== Gemma 4 Blocker Monitor ===`);
             console.log(`Release score: ${releaseScore} | Issue score: ${issueScore} | Total: ${totalScore}`);
@@ -229,9 +253,9 @@ jobs:
 
             // Build evidence summary (used in both issue body and workflow summary)
             const evidence = [];
-            if (isNew) evidence.push(`New NuGet version: \`${latestVersion}\` (blocked was \`${{ env.KNOWN_BLOCKED_VERSION }}\`)`);
+            if (isNew) evidence.push(`New NuGet version: \`${latestVersion}\` (blocked was \`${knownVer}\`)`);
             if (keywordHits) evidence.push(`Keyword matches in release notes: ${keywordHits}`);
-            if (issueClosed) evidence.push(`Upstream issue #${{ env.UPSTREAM_ISSUE }} is **closed**`);
+            if (issueClosed) evidence.push(`Upstream issue #${upstreamIssue} is **closed**`);
             if (recentActivity) evidence.push(`Recent maintainer comment: "${latestComment}"`);
 
             // Score < 50 — log to summary, no issue
@@ -283,8 +307,8 @@ jobs:
               per_page: 1
             });
 
-            const upstreamIssueUrl = `https://github.com/${{ env.UPSTREAM_REPO }}/issues/${{ env.UPSTREAM_ISSUE }}`;
-            const upstreamReleaseUrl = releaseUrl || `https://github.com/${{ env.UPSTREAM_REPO }}/releases`;
+            const upstreamIssueUrl = `https://github.com/${upstream}/issues/${upstreamIssue}`;
+            const upstreamReleaseUrl = releaseUrl || `https://github.com/${upstream}/releases`;
 
             const body = [
               `## Evidence (Score: ${totalScore}/100)`,
@@ -294,7 +318,7 @@ jobs:
               '## Links',
               '',
               `- 📦 [NuGet Package](https://www.nuget.org/packages/Microsoft.ML.OnnxRuntimeGenAI/${latestVersion})`,
-              `- 🐛 [Upstream Issue #${{ env.UPSTREAM_ISSUE }}](${upstreamIssueUrl})`,
+              `- 🐛 [Upstream Issue #${upstreamIssue}](${upstreamIssueUrl})`,
               `- 🚀 [Upstream Releases](${upstreamReleaseUrl})`,
               `- 📄 [Blocked Models Doc](docs/blocked-models.md#gemma-4-family-e2b-e4b-26b-31b)`,
               '',
@@ -306,7 +330,7 @@ jobs:
               '- [ ] Update `docs/blocked-models.md` status from ⏳ to ✅',
               '- [ ] Remove Gemma 4 from blocked list and add to supported models',
               '',
-              `_Generated by [monitor-gemma4-blocker](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) workflow._`
+              `_Generated by [monitor-gemma4-blocker](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) workflow._`
             ].join('\n');
 
             if (existing.length > 0) {

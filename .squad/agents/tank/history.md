@@ -73,6 +73,16 @@
 - **2026-03-29:** Gemma 4 model test coverage added: 10 new tests in `KnownModelsTests.cs` and `GemmaFormatterTests.cs` for the 4 new Gemma 4 models (gemma-4-e2b-it, gemma-4-e4b-it, gemma-4-26b-a4b-it, gemma-4-31b-it). All models use ChatTemplateFormat.Gemma, have HasNativeOnnx=false, and SupportsToolCalling=true. Tests verify model properties, FindById lookup, presence in KnownModels.All collection, and tool-calling formatter compatibility with system message injection.
 - **2026-03-29:** GemmaFormatter tool calling behavior: tools are injected into the system message content (similar to ChatMLFormatter). Tests for tool calling MUST include a System message for tools to be added to the prompt — without a system message, tools passed to FormatMessages are ignored. FunctionResultContent should be in ChatRole.User messages (not ChatRole.Tool) to be properly formatted via FormatUserMessage().
 
+### 2026-04-07: Gemma 4 Blocker Monitor Workflow QA Review
+
+- **Reviewed:** `.github/workflows/monitor-gemma4-blocker.yml`
+- **YAML syntax:** Valid (confirmed via PyYAML safe_load)
+- **Critical fix — Expression injection:** The `evaluate` job's github-script step was interpolating all job outputs directly via `${{ }}` into JavaScript string literals. The `latestComment` output (sourced from upstream issue comments — untrusted user content) was a real injection vector. Fixed by passing ALL outputs through step-level `env:` block and reading via `process.env.*`. Also replaced `${{ github.* }}` with `context.*` API in github-script for consistency.
+- **Medium fix — NuGet API error handling:** Added `set -eo pipefail` and null/empty validation to the NuGet fetch step. Without this, a NuGet API failure could produce an empty or `null` version string that would compare as "new version" and trigger false positives.
+- **Medium fix — Shell injection hardening:** Moved `${{ steps.nuget.outputs.latest_version }}` references in shell `run:` blocks to step-level `env:` variables, preventing shell metacharacter injection from external API data.
+- **Note — KNOWN_BLOCKED_VERSION stale:** Currently set to `0.12.2` but NuGet already has `0.13.0`. Workflow will trigger immediately on first run with score ≥ 20. Switch should verify this is intentional or update to `0.13.0`.
+- **Note — Generic keyword:** "architecture" in keyword list is broad and could cause false positives on unrelated release notes. Acceptable for monitoring but worth watching.
+- **Verified correct:** NuGet API URL, confidence scoring (+20/+40/+30 = 90 max), issue dedup logic, label creation, permission scope, workflow_dispatch trigger, `needs:` declarations, `release_notes.txt` lifecycle.
 
 ### 2026-04-04: Qwen2.5-Coder-7B-Instruct Test Coverage
 - Added 8 comprehensive tests to KnownModelsTests.cs for Qwen25Coder_7BInstruct
