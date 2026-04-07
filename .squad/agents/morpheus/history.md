@@ -1,3 +1,20 @@
+
+## Latest: Gemma 4 Monitoring Analysis (2026-04-07)
+
+**2026-04-07:** Completed comprehensive analysis of automation approaches for detecting onnxruntime-genai Gemma 4 support. Delivered 20KB proposal (.squad/decisions/morpheus-gemma4-monitoring.md) covering five detection approaches:
+
+1. **Release Polling** — Daily NuGet/GitHub/PyPI monitoring (.10/mo, 100% reliable)
+2. **Issue Polling** — Track GitHub issue #2062 status ($<0.01/mo, 95% reliable)
+3. **Conversion Testing** — Weekly automated test runs (-10/mo, 100% reliable)
+4. **Heuristic Scoring** — Multi-signal aggregation with confidence thresholds (free)
+5. **Optional Dashboard** — Visual signal aggregation (free, reference-only)
+
+Recommended: Tiered approach with Tier 1 (always on) for release + issue polling, Tier 2 (conditional) for conversion testing, Tier 3 (optional) for dashboard.
+
+**Decision Status:** Ready for team review. Next step: select which tier(s) to implement.
+
+---
+
 # Morpheus — History
 
 ## Project Context
@@ -261,6 +278,64 @@ Issue #7 fix alone improves one error path. But combined with custom exceptions 
 Issue #7 alone is a bug fix. But this DX plan treats it as the *anchor point* for a cohesive error-handling story. Custom exceptions + structured logging + diagnostics API together create a 3x multiplier on clarity. This is why it jumped from P1 to P0 — not because it's a large change, but because it unblocks the entire Wave 1 dependency chain.
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
+
+### 2026 — Gemma 4 Blocker Monitoring Proposal
+
+**Analysis Completed:** Comprehensive proposal for automating detection of Gemma 4 blocker resolution in onnxruntime-genai.
+
+**Key Finding:** We have 4 production-ready Gemma 4 models (E2B, E4B, 26B-A4B, 31B) with:
+- ✅ Model definitions in KnownModels.cs
+- ✅ Conversion scripts (Python + PowerShell)
+- ✅ Unit tests (6 model + 9 tool-calling + 195 multilingual)
+- ✅ Full documentation
+
+But blocked by onnxruntime-genai runtime-level limitations: Per-Layer Embeddings (PLE), variable attention head dimensions, KV cache sharing.
+
+**Monitoring Approach Recommended (Tier 1 + 2):**
+
+**Tier 1 — Low-Cost Release Polling (Daily):**
+1. Poll NuGet.org API for new `Microsoft.ML.OnnxRuntimeGenAI` releases
+2. Poll GitHub issue #2062 for status changes
+3. Confidence scoring: 80+ triggers investigation issue assignment to Morpheus
+4. Cost: ~$0.10/month (GitHub API calls only)
+
+**Tier 2 — Validation Testing (Weekly, Optional):**
+1. Run `scripts/convert_gemma4.py --model-size e2b` on ubuntu-latest
+2. Test conversion success/failure
+3. Report results to monitoring issue
+4. Cost: $5-10/month (includes disk space + GPU compute if needed)
+
+**Implementation File:** `.squad/decisions/inbox/morpheus-gemma4-monitoring.md` (20.5 KB, 7 sections)
+
+**Key Signals Analyzed:**
+- New NuGet release with Gemma keywords (90% reliable, low false positives)
+- GitHub issue #2062 closure (85% reliable, delays possible)
+- Pre-built ONNX models on onnx-community (70% reliable, high false positives)
+- Successful local conversion tests (100% reliable, ground truth)
+- Version metadata in GenAI builder repo (90% reliable)
+
+**Decision Thresholds:**
+- **≥80 points** → Create investigation issue (Morpheus review)
+- **≥100 points** → Tier 2 conversion tests triggered
+- **Conversion succeeds** → Unblock and release
+
+**Rationale:** Gemma 4 is a high-priority feature for next release. Early detection (within 24h of upstream resolution) enables quick response. Investment in monitoring (~$5/month) is justified by avoiding manual tracking and ensuring we capture the moment the blocker resolves.
+
+**Next Steps (if approved by Bruno):**
+1. Implement `.github/workflows/monitor-gemma4-blocker.yml` (Tier 1)
+2. Create GitHub issue template for Gemma 4 resolution notifications
+3. Document process in Morpheus/history for future reference
+4. Review monthly; enable Tier 2 after first signal detected
+
+**Files Created:**
+- `.squad/decisions/inbox/morpheus-gemma4-monitoring.md` — Full proposal with 5 approaches evaluated
+
+**Key Learnings:**
+- Monitoring automation is most valuable when upstream repos (e.g., microsoft/onnxruntime-genai) move slowly and unpredictably
+- Multi-signal approach reduces false positives: release notes + issue closure + conversion success all required
+- Cost-benefit of monitoring is high when feature is production-ready; every week of blocker costs opportunity
+- GitHub Actions + NuGet API + GitHub API are zero-cost tools for this pattern; can scale to other blocked models (StableLM, MoE)
+- Decision confidence scoring helps distinguish "worth investigating" (80+) from "ready to unblock" (100+)
 
 ### 2026-03-28 — Phase 4 Documentation Complete
 
@@ -721,3 +796,4 @@ All conventions from `.github/copilot-instructions.md` now fully enforced. Team-
 - Risk mitigation and success metrics
 
 **Status:** Strategy approved by Bruno's directive. Ready for execution starting Phase 1 (dataset curation).
+

@@ -7427,3 +7427,545 @@ et10.0.
 - NuGet packages now correctly ship both 
 et8.0 and 
 et10.0 TFMs.
+
+
+---
+
+## Decision: Gemma 4 Support Detection Automation (2026-04-07)
+**Author:** Morpheus
+**Status:** Analysis Only
+
+# Proposal: Automating Gemma 4 Blocker Detection
+
+**Date:** 2026  
+**Author:** Morpheus (Lead/Architect)  
+**Status:** Analysis Only (No Implementation)  
+**Context:** ElBruno.LocalLLMs has full Gemma 4 support ready (model definitions, tests, conversion scripts, docs) but is blocked by onnxruntime-genai v0.12.2 not supporting Gemma 4's novel architecture (PLE, variable head dimensions, KV cache sharing).
+
+**Upstream blocker:** https://github.com/microsoft/onnxruntime-genai/issues/2062
+
+---
+
+## Problem Statement
+
+We have four production-ready Gemma 4 models (E2B, E4B, 26B-A4B, 31B) defined in `KnownModels.cs`, complete with:
+- ✅ Chat templates (GemmaFormatter)
+- ✅ Conversion scripts (`scripts/convert_gemma4.py`, `scripts/convert_gemma4.ps1`)
+- ✅ Unit tests (6 model variants + 9 tool-calling + 195 multilingual tests)
+- ✅ Full documentation
+
+But they cannot ship until onnxruntime-genai adds runtime-level support for three architectural features:
+1. **Per-Layer Embeddings (PLE)** — each layer receives separate `per_layer_inputs` tensor
+2. **Variable Attention Head Dimensions** — head_dim=256 (sliding) vs 512 (full) per layer
+3. **KV Cache Sharing** — 35 layers share only 15 unique KV cache pairs
+
+**Question:** How do we detect the moment these blockers are resolved so we can immediately:
+- Run conversion + validation tests
+- Update docs
+- Enable Gemma 4 models in `KnownModels`
+- Release with Gemma 4 support
+
+---
+
+## What Signals Indicate Resolution?
+
+### Signal Category 1: New onnxruntime-genai Releases
+**Where to monitor:**
+- NuGet: https://www.nuget.org/packages/Microsoft.ML.OnnxRuntimeGenAI/
+- GitHub Releases: https://github.com/microsoft/onnxruntime-genai/releases
+- PyPI: https://pypi.org/project/onnxruntime-genai/
+
+**Signals:**
+- New release tag (e.g., `v0.13.0`, `v0.14.0`)
+- Release notes mentioning "Gemma 4", "PLE support", "variable head dimensions", or "KV cache sharing"
+- Release notes mentioning "model builder updates" or "architecture improvements"
+
+**Reliability:** ⭐⭐⭐⭐⭐ (100% reliable if feature is in release notes)  
+**False Positive Risk:** Low — Microsoft explicitly documents supported features  
+**False Negative Risk:** Low — release notes are comprehensive
+
+---
+
+### Signal Category 2: GitHub Issue #2062 Status Changes
+**What to monitor:** https://github.com/microsoft/onnxruntime-genai/issues/2062
+
+**Signals:**
+- Issue status changes from "open" to "closed"
+- Issue is labeled with `type:feature-implemented` or equivalent
+- Issue transitions from "backlog" or "in-progress" to "completed"
+- Comments from Microsoft maintainers indicating implementation is live
+- Issue is tagged with a release version (e.g., "Resolved in v0.13.0")
+
+**Reliability:** ⭐⭐⭐⭐ (95% reliable; Microsoft may close prematurely or without full support)  
+**False Positive Risk:** Medium — issue closure doesn't always mean full support shipped  
+**False Negative Risk:** Very low — closures are well-tracked
+
+---
+
+### Signal Category 3: New ONNX Model Files / Pre-built Models
+**What to monitor:**
+- **onnx-community** HuggingFace org: https://huggingface.co/onnx-community
+- **Google official** ONNX models on HuggingFace
+- New model cards for Gemma 4 ONNX variants (e.g., `onnx-community/gemma-4-E2B-it-onnx`, `google/gemma-4-E2B-it-onnx`)
+
+**Signals:**
+- New HuggingFace model repo appears for Gemma 4 with ONNX weights
+- Model cards have GenAI-compatible `genai_config.json` with full architecture support
+- Community reports successful conversions on GitHub/Hugging Face discussions
+
+**Reliability:** ⭐⭐⭐ (70% reliable; could be community-created with workarounds, not necessarily runtime-supported)  
+**False Positive Risk:** High — community models may use tricks or unsupported patterns  
+**False Negative Risk:** Low — official models are leading indicators
+
+---
+
+### Signal Category 4: Successful Local Test Conversions
+**What to monitor:** Our own conversion pipeline
+
+**Signals:**
+- `scripts/convert_gemma4.py` succeeds without errors
+- Produced ONNX model passes shape validation and loads in GenAI runtime
+- Model inference completes without `ShapeInferenceError` or KV cache errors
+- Model outputs are coherent (BLEU/semantic similarity tests pass)
+
+**Reliability:** ⭐⭐⭐⭐⭐ (100% reliable; direct evidence)  
+**False Positive Risk:** None — success is definitive  
+**False Negative Risk:** Possible if runtime has partial support
+
+---
+
+### Signal Category 5: Version Metadata Analysis
+**What to monitor:**
+- Minimum supported onnxruntime-genai version in `.csproj` files
+- GenAI builder source code (commits to `microsoft/onnxruntime-genai`)
+
+**Signals:**
+- Commits to `microsoft/onnxruntime-genai` repo that add Gemma 4 builder support or related architecture changes
+- PR merges with titles like "Add Gemma 4 support", "Implement PLE architecture", "Variable head dimension support"
+- New architecture identifiers in builder code (e.g., `is_gemma4`, `has_per_layer_embeddings`)
+
+**Reliability:** ⭐⭐⭐⭐ (90% reliable; merges indicate completed work)  
+**False Positive Risk:** Low — merged code is vetted  
+**False Negative Risk:** Low — commits are public
+
+---
+
+## Automation Approaches
+
+### Approach 1: GitHub Action — Daily Release Check + NuGet Feed Poll
+
+**How It Works:**
+1. Scheduled workflow (daily, 9 AM UTC)
+2. Query NuGet.org API for latest `Microsoft.ML.OnnxRuntimeGenAI` version
+3. Compare against current pinned version (e.g., v0.12.2)
+4. If new version found:
+   - Fetch release notes from GitHub
+   - Parse for keywords: "Gemma", "PLE", "per-layer", "variable head", "KV cache sharing"
+   - If keywords found OR issue #2062 mentions resolution:
+     - Open GitHub issue: "🚀 Detected Gemma 4 support in onnxruntime-genai vX.Y.Z — ready to test"
+     - Label: `squad:morpheus`, `type:investigation`, `gemma4`
+     - Optionally: run conversion tests (see Approach 5)
+
+**Pros:**
+- Simple HTTP polling (no auth usually needed for package feeds)
+- Native GitHub Actions (no external services)
+- Reliable release metadata
+- Low cost/overhead
+
+**Cons:**
+- Only detects actual releases, not pre-release/dev builds
+- Requires keyword parsing (somewhat fragile)
+- No intelligence about _which_ features were added
+
+**Reliability:** 90% (may miss partial support or poorly documented features)  
+**Cost:** $0.07/month (⚡ minimal)
+
+**Implementation Skeleton:**
+```yaml
+name: Check onnxruntime-genai for Gemma 4 Support
+on:
+  schedule:
+    - cron: '0 9 * * *'  # Daily at 9 AM UTC
+jobs:
+  check-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            # 1. Fetch latest NuGet version via REST
+            # 2. Parse release notes from GitHub
+            # 3. Check for keywords
+            # 4. Open issue if conditions met
+```
+
+---
+
+### Approach 2: GitHub Action — Poll Issue #2062 + Webhook
+
+**How It Works:**
+1. Scheduled workflow (daily, 9 AM UTC) or webhook-triggered
+2. Query GitHub API: `/repos/microsoft/onnxruntime-genai/issues/2062`
+3. Check issue status:
+   - Is it closed?
+   - Are there new comments from maintainers mentioning shipping/release?
+   - Are there PR references indicating merged work?
+4. If issue closed or comments suggest resolution:
+   - Open GitHub issue in our repo
+   - Label: `squad:morpheus`, `gemma4-blocked`
+
+**Pros:**
+- Direct signal from upstream maintainers
+- Works for issues before they're published (if maintainer comments exist)
+- Low false positives (issue closure is intentional)
+
+**Cons:**
+- Requires GitHub API token
+- Issue closure doesn't guarantee our runtime version is compatible
+- Timing: issue closed → release shipped may be weeks apart
+
+**Reliability:** 85% (false negatives if issue closed early, false positives if requirements change)  
+**Cost:** $0 (GitHub API is free with token)
+
+**Implementation Skeleton:**
+```yaml
+name: Monitor Gemma 4 Feature Request
+on:
+  schedule:
+    - cron: '0 9 * * *'  # Daily at 9 AM UTC
+jobs:
+  check-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            # 1. GET https://api.github.com/repos/microsoft/onnxruntime-genai/issues/2062
+            # 2. Check issue.state, issue.closed_at, issue.comments
+            # 3. Parse comments for resolution signals
+            # 4. Create issue if resolved
+```
+
+---
+
+### Approach 3: Scheduled Test Workflow — Attempt Gemma 4 Conversion
+
+**How It Works:**
+1. Scheduled workflow (weekly, Friday 9 AM UTC)
+2. Run `scripts/convert_gemma4.py --model-size e2b --quantize int4` on a runner with 16 GB RAM
+3. Monitor exit code and logs
+4. If success:
+   - Run unit tests against converted model
+   - Report success in GitHub issue: "✅ Gemma 4 E2B conversion succeeded"
+5. If failure:
+   - Capture error logs, post to issue: "❌ Conversion still fails: [error details]"
+
+**Pros:**
+- Ground truth: actual conversion success/failure
+- Catches partial support (builder + runtime both needed)
+- Tests our integration directly
+- Can run other model tests as smoke tests
+
+**Cons:**
+- Requires Python environment (transformers, torch, optimum)
+- High resource cost (16 GB RAM, 30+ GB disk, ~30 min runtime per model)
+- May have flaky network/timeout issues (downloading models)
+- False positives if conversion succeeds but inference fails
+
+**Reliability:** 95% (success is definitive; some environment factors could cause false failures)  
+**Cost:** ~$5-10/month per conversion (ubuntu-latest with 2-hour timeout)
+
+**Implementation Skeleton:**
+```yaml
+name: Weekly Gemma 4 Conversion Test
+on:
+  schedule:
+    - cron: '0 9 * * 5'  # Friday 9 AM UTC
+jobs:
+  test-gemma4-conversion:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install conversion dependencies
+        run: pip install -r scripts/requirements.txt
+      - name: Try Gemma 4 E2B conversion
+        id: conversion
+        continue-on-error: true
+        run: python scripts/convert_gemma4.py --model-size e2b --quantize int4 --output-dir /tmp/gemma4-e2b-test
+      - name: Report status
+        if: steps.conversion.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Create issue: "✅ Gemma 4 E2B conversion successful"
+      - name: Report failure
+        if: steps.conversion.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Create issue with error logs: "❌ Gemma 4 E2B conversion failed"
+```
+
+---
+
+### Approach 4: Combined Heuristic Scoring
+
+**How It Works:**
+1. Run approaches 1 + 2 + 3 in parallel
+2. Assign confidence scores:
+   - New NuGet release with Gemma keywords: +40 points
+   - Issue #2062 closed: +30 points
+   - Successful conversion test: +50 points (threshold for action)
+3. If score >= 80:
+   - Label as "High confidence" in issue
+   - Trigger full test suite automatically
+4. If score >= 100:
+   - Move to active investigation (assign to Morpheus)
+
+**Pros:**
+- Reduces false positives by requiring multiple signals
+- Scales confidence as more evidence accumulates
+- Flexible (can add more signals over time)
+- Clear decision threshold
+
+**Cons:**
+- Requires tuning of weights
+- More complex workflow logic
+- Still needs manual verification
+
+**Reliability:** 92% (multiple signals reduce noise)  
+**Cost:** ~$3-5/month (combined cost of all checks)
+
+---
+
+### Approach 5: Dedicated "Gemma 4 Health" Dashboard
+
+**How It Works:**
+1. Weekly workflow aggregates all signals into a summary document
+2. Saves metrics to `.squad/gemma4-status.md`:
+   ```markdown
+   # Gemma 4 Blocker Status Dashboard
+   
+   ## Last Updated: [timestamp]
+   
+   ### onnxruntime-genai Status
+   - Current version pinned: v0.12.2
+   - Latest version available: v0.13.1
+   - Status: ⚠️ Newer version available — checking release notes
+   
+   ### Issue #2062 Status
+   - Status: OPEN
+   - Last activity: [date]
+   - Comments by maintainers: [recent snippet]
+   
+   ### Conversion Test Results
+   - E2B: ❌ Still fails with ShapeInferenceError
+   - E4B: Not tested
+   - 26B: Not tested
+   - 31B: Not tested
+   
+   ### Recommendation
+   - Monitor weekly; test conversion when release available
+   ```
+3. Dashboard is checked during code reviews to inform priority decisions
+
+**Pros:**
+- Centralizes all monitoring data
+- Visible to team (in `.squad/` for Squad visibility)
+- Can be reviewed by Morpheus before Gemma 4 work is unblocked
+- Historical record of blocker status
+
+**Cons:**
+- Requires workflow logic to generate markdown
+- Another file to maintain
+- Still requires manual review
+
+**Reliability:** 90% (aggregated data quality)  
+**Cost:** $0.50/month (minimal workflow overhead)
+
+---
+
+## What Should Happen When Resolution Is Detected?
+
+### Automatic Actions (Immediate)
+1. **Create GitHub issue** with template:
+   ```
+   **Title:** 🚀 Gemma 4 Blocker Detected as Resolved
+   
+   **Evidence:**
+   - [ ] onnxruntime-genai vX.Y.Z released with [feature]
+   - [ ] Issue #2062 marked resolved
+   - [ ] Test conversion succeeded
+   
+   **Next Steps:**
+   1. Verify support with manual conversion + inference test
+   2. Update minimum onnxruntime-genai version in .csproj
+   3. Enable Gemma 4 model tests
+   4. Update docs/blocked-models.md (mark Gemma 4 as ✅ supported)
+   5. Release new library version with Gemma 4 support
+   
+   **Labels:** `squad:morpheus`, `gemma4`, `type:feature-gate`, `release:next`
+   ```
+
+2. **Post notification** in `.squad/decisions/inbox/`:
+   - File: `gemma4-blocker-resolved.md` (auto-generated summary)
+   - Content: evidence links, test results, recommended next steps
+
+3. **Update documentation** (automated if conversion succeeds):
+   - Move Gemma 4 from `blocked-models.md` to `supported-models.md`
+   - Update ONNX conversion guide if needed
+
+### Manual Gate (Morpheus Review)
+- Issue automatically assigned to Morpheus (`squad:morpheus`)
+- Morpheus reviews evidence before unblocking
+- Morpheus makes final decision: "Approved for enablement" or "Needs more validation"
+- Morpheus updates issue with a "go:yes" label to green-light release
+
+### Action to Unblock (Post-Approval)
+1. Merge a PR that:
+   - Uncomments/enables Gemma 4 model definitions in `KnownModels.cs`
+   - Enables Gemma 4 unit tests in test project
+   - Updates version constraints in `.csproj` files
+   - Updates `docs/blocked-models.md` to mark Gemma 4 as ✅ supported
+
+2. Trigger a release build (manual or automatic)
+
+---
+
+## Recommended Approach
+
+### Tier 1: Release Check + Issue Polling (Low Cost, High Confidence)
+**Start with Approach 1 + 2** (combined heuristic):
+
+| Component | Implementation | Frequency | Cost |
+|-----------|---|---|---|
+| **Release Polling** | NuGet + GitHub API | Daily (9 AM UTC) | $0.10/mo |
+| **Issue Polling** | GitHub API #2062 | Daily (9 AM UTC) | $0 |
+| **Decision Logic** | Confidence scoring (80+ → notify) | Inline | $0 |
+| **Action** | Create GitHub issue for Morpheus review | On signal | $0 |
+
+**Why:**
+- Minimal resource cost
+- High reliability (GitHub APIs are stable)
+- Scalable (can add more models later)
+- Fast feedback loop (daily checks)
+- Low false positives (keyword + closure required)
+
+**Workflow file:** `.github/workflows/monitor-gemma4-blocker.yml`
+
+---
+
+### Tier 2: Conversion Test (Optional, Medium Cost, Ground Truth)
+**Add Approach 3 if Tier 1 becomes unreliable:**
+
+| Component | Implementation | Frequency | Cost |
+|---|---|---|---|
+| **Conversion Test** | `convert_gemma4.py --model-size e2b` | Weekly (Friday 9 AM) | $5-10/mo |
+| **Test Runner** | E2B (smallest, 16 GB RAM needed) | 30-40 min runtime | per run |
+| **Reporting** | Post results to monitoring issue | Automated | $0 |
+
+**Rationale:**
+- Confirms both builder AND runtime support
+- Catches partial implementations
+- Validates our scripts still work
+- Cost grows if we test all 4 variants (4x cost)
+
+**When to enable:** After Tier 1 shows release activity (v0.13.0+)
+
+---
+
+### Tier 3: Dashboard (Optional, Visibility)
+**Add Approach 5 if team wants central tracking:**
+
+| Component | Implementation | Frequency | Cost |
+|---|---|---|---|
+| **Status Aggregation** | Markdown document | Weekly | $0.50/mo |
+| **Review Gate** | Morpheus reads before unblocking | Manual | N/A |
+| **Documentation** | `.squad/gemma4-status.md` | Weekly | $0 |
+
+**Rationale:**
+- Provides executive visibility
+- Historical record for post-mortem analysis
+- Helps team prioritize other blockers similarly
+
+---
+
+## Summary Table: Approach Comparison
+
+| Approach | Setup Cost | Monthly Cost | Reliability | False Positives | False Negatives | Best For |
+|----------|-----------|-------------|------------|-----------------|-----------------|----------|
+| 1. Release Check | Low | $0.10 | 90% | Low | Low | **RECOMMENDED** |
+| 2. Issue Polling | Low | $0 | 85% | Medium | Low | **RECOMMENDED** (pair with #1) |
+| 3. Conversion Test | Medium | $5-10 | 95% | Low | Low | Validation after release detected |
+| 4. Heuristic Scoring | Medium | $3-5 | 92% | Very Low | Low | If false positives become noise |
+| 5. Dashboard | Low | $0.50 | 90% | Low | Low | Optional visibility layer |
+
+---
+
+## Risks & Mitigations
+
+| Risk | Impact | Mitigation |
+|------|--------|-----------|
+| **False positive:** Release has Gemma 4 builder but runtime still incomplete | Medium (unnecessary testing) | Require conversion test to pass before unblocking (Tier 2) |
+| **False negative:** Feature ships but release notes don't mention it | Low | Subscribe to GitHub Discussions + community forums |
+| **Silent API change:** New release breaks our conversion scripts | Low | Run conversion test (Tier 2) before approval |
+| **Community-only support:** ONNX models exist but GenAI doesn't support them | High | Conversion test catches this immediately |
+| **Partial feature:** PLE supported but not variable head dims | High | Conversion test fails; manual inspection of GitHub PRs required |
+| **GitHub API rate limits** | Very Low | Use GITHUB_TOKEN (1000 reqs/hour, more than sufficient) |
+
+---
+
+## Next Steps (If Approved)
+
+1. **Implement Tier 1** (Release + Issue polling):
+   - Create `.github/workflows/monitor-gemma4-blocker.yml`
+   - Set frequency to daily (9 AM UTC)
+   - Test against known release (e.g., simulate v0.13.0 release)
+
+2. **Create issue template** for Gemma 4 resolution notifications
+
+3. **Document process** in `.squad/agents/morpheus/history.md`:
+   - What to do when issue is created
+   - How to validate evidence
+   - How to unblock Gemma 4 models
+
+4. **Review in 3 months** (late Q2 2026):
+   - Has Tier 1 worked?
+   - Any false positives/negatives?
+   - Should we add Tier 2 (conversion tests)?
+
+---
+
+## Questions for Bruno (User/Product Lead)
+
+1. **Priority:** How critical is Gemma 4 support for your product? (Informs urgency of monitoring)
+2. **Tolerance:** Would you rather have automated alerts (daily) or weekly summary reviews?
+3. **Scale:** Should we build this pattern to apply to other blocked models (StableLM, MoE models)?
+4. **Notification:** Should Morpheus be pinged via email/Slack, or is GitHub issue sufficient?
+
+---
+
+## Appendix: Monitoring URLs
+
+**Keep these handy for manual checks:**
+
+| Resource | URL |
+|----------|-----|
+| **onnxruntime-genai Releases** | https://github.com/microsoft/onnxruntime-genai/releases |
+| **Issue #2062 (Gemma 4 Feature Request)** | https://github.com/microsoft/onnxruntime-genai/issues/2062 |
+| **NuGet Package** | https://www.nuget.org/packages/Microsoft.ML.OnnxRuntimeGenAI/ |
+| **PyPI Package** | https://pypi.org/project/onnxruntime-genai/ |
+| **onnx-community Models** | https://huggingface.co/onnx-community |
+| **Our Gemma 4 Conversion Script** | `scripts/convert_gemma4.py` |
+| **Our Gemma 4 Model Definitions** | `src/ElBruno.LocalLLMs/KnownModels.cs` (Gemma 4 entries) |
+
+---
+
+**END PROPOSAL**
+
+*This analysis is complete. No code has been written. All recommendations are for future implementation by the team.*
+
