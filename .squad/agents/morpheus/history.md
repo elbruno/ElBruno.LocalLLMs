@@ -95,6 +95,11 @@ Recommended: Tiered approach with Tier 1 (always on) for release + issue polling
 
 **Status:** Plan approved. Ready for execution. Team references: See `docs/plan-rag-tool-routing.md` and `.squad/decisions.md` for full RAG plan decisions. All phases linked to corresponding agents' history.md.
 
+
+## Core Context
+
+Archive of previous work, learnings, and decisions (2026-03-17 through 2026-03-29). See entries below for full history, or check .squad/decisions.md for architectural decisions.
+
 ## Learnings
 
 ### 2026-03-29 — Wave 1.5-2.3 Documentation Cleanup & Troubleshooting Guide
@@ -796,4 +801,5 @@ All conventions from `.github/copilot-instructions.md` now fully enforced. Team-
 - Risk mitigation and success metrics
 
 **Status:** Strategy approved by Bruno's directive. Ready for execution starting Phase 1 (dataset curation).
+
 
