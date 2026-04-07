@@ -16,7 +16,7 @@ permissions:
   issues: write
 
 env:
-  KNOWN_BLOCKED_VERSION: '0.12.2'
+  KNOWN_BLOCKED_VERSION: '0.13.0'
   UPSTREAM_REPO: 'microsoft/onnxruntime-genai'
   UPSTREAM_ISSUE: '2062'
 
