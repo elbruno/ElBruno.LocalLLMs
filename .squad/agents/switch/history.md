@@ -84,3 +84,41 @@ All conventions from `.github/copilot-instructions.md` now fully applied across 
 **Cross-Agent Update (Coordinator):** Added missing `nuget_logo.png` asset reference to `ElBruno.LocalLLMs.Rag.csproj` for NuGet packaging requirement. Both packages now published successfully to NuGet.org with full multi-target support.
 
 **Outcome:** ✓ Both packages published to NuGet.org with net8.0 + net10.0 TFMs. Solution can now include net10.0-only samples without breaking CI/CD.
+
+## 2026-07-25: Gemma 4 Blocker Monitoring Workflow
+
+**File:** `.github/workflows/monitor-gemma4-blocker.yml`
+
+**What it does:** Daily automated check (9 AM UTC + manual trigger) for signals that `onnxruntime-genai` may now support Gemma 4 architecture. Three parallel-then-merge jobs:
+
+1. **check-release** — Fetches latest NuGet version, compares to known blocked `0.12.2`, searches release notes for Gemma/PLE/head_dim keywords
+2. **check-issue** — Checks `microsoft/onnxruntime-genai#2062` status and recent maintainer comments via `actions/github-script@v7`
+3. **evaluate** — Combines scores: +20 new version, +40 keyword hits, +30 issue closed. Score ≥50 creates/updates a GitHub issue with `gemma4` + `investigation` labels. Dedup prevents duplicate issues.
+
+**Key decisions:**
+- Shell scripts for NuGet API (simple curl/jq), `actions/github-script@v7` for all GitHub API interactions
+- Minimal permissions: `contents: read`, `issues: write`
+- Config via env vars (`KNOWN_BLOCKED_VERSION`, `UPSTREAM_REPO`, `UPSTREAM_ISSUE`) for easy updates
+- Auto-creates labels if they don't exist (idempotent)
+- Dedup: checks for existing open issue with `gemma4` label before creating; adds comment if found
+
+## 2026-04-07: Gemma 4 Blocker Monitoring Workflow
+
+**Session:** Gemma4-Monitor-Impl (orchestration)
+
+Created .github/workflows/monitor-gemma4-blocker.yml — daily NuGet/GitHub monitoring for Gemma 4 support signals in onnxruntime-genai.
+
+**Implementation:**
+- 3 parallel jobs: check-release, check-issue, evaluate
+- Confidence scoring (max 90): version +20, keyword +40, issue closed +30
+- Auto-create GitHub issue when score ≥ 50
+- Config via env vars (KNOWN_BLOCKED_VERSION, UPSTREAM_REPO, UPSTREAM_ISSUE)
+- Minimal permissions (contents: read, issues: write)
+
+**Commit:** 5adb604 (initial)
+
+**Cross-Agent Notes:**
+- Tank (QA) reviewed & found 3 security bugs (1 critical, 2 medium)
+- All bugs fixed via env var indirection + error handling
+- Coordinator bumped KNOWN_BLOCKED_VERSION from 0.12.2 to 0.13.0
+- Final commit: e85743f (security fixes + version bump)

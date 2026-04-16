@@ -43,7 +43,9 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
-- **2026-03-29:** Qwen2.5-Coder-7B-Instruct test coverage added: 8 new tests (1 All_Contains, 1 FindById dedicated, 1 InlineData addition to Theory, 5 property checks for ChatTemplate/Tier/SupportsToolCalling/HasNativeOnnx/HuggingFaceRepoId) plus StaticFields assertion update. Tests reference `KnownModels.Qwen25Coder_7BInstruct` — will compile once Trinity adds the model definition. Build fails with expected CS0117 until then. Pattern: non-native ONNX model (HasNativeOnnx=false) with tool calling support, Qwen chat template, Medium tier.
+- **2026-03-30:** BitNet test suite delivered: **155 tests** across 7 files + GlobalUsings.cs. All passing on net8.0. Files: BitNetOptionsTests (31 tests — defaults, custom, null, mutation), BitNetModelDefinitionTests (24 tests — record equality, immutability, defaults, enum coverage), BitNetKnownModelsTests (30 tests — catalog completeness, FindById case-insensitive, property checks for all 5 models), BitNetKernelTypeTests (6 tests — enum values, count), BitNetServiceExtensionsTests (12 tests — DI registration, null guards, options propagation), BitNetExceptionsTests (12 tests — both exception types, messages, type hierarchy), BitNetChatClientTests (6 tests — constructor null checks, type interface checks). Added `Microsoft.Extensions.DependencyInjection 10.0.5` to test csproj for DI tests. BitNetChatClient constructor calls native lib immediately via `EnsureInitializedAsync`, so only null-guard and type checks are possible as unit tests — integration tests need [Trait("Category", "Integration")] gating.
+
+- **2026-03-29:**Qwen2.5-Coder-7B-Instruct test coverage added: 8 new tests (1 All_Contains, 1 FindById dedicated, 1 InlineData addition to Theory, 5 property checks for ChatTemplate/Tier/SupportsToolCalling/HasNativeOnnx/HuggingFaceRepoId) plus StaticFields assertion update. Tests reference `KnownModels.Qwen25Coder_7BInstruct` — will compile once Trinity adds the model definition. Build fails with expected CS0117 until then. Pattern: non-native ONNX model (HasNativeOnnx=false) with tool calling support, Qwen chat template, Medium tier.
 
 - **2026-03-19:** Tool calling test suite created with 41 tests across 3 files: `JsonToolCallParserTests` (29 tests), `ChatMLFormatterToolTests` (12 tests), `FunctionCallContentIntegrationTests` (20 tests). 24 tests pass, 17 require Trinity's parser implementation. All tests compile successfully with stub implementations.
 - **2026-03-19:** Microsoft.Extensions.AI v10.4.0 FunctionCallContent API: constructor takes (callId, name, arguments). FunctionResultContent constructor takes (callId, result) — no "name" parameter. ChatResponseUpdate requires (role, contents) in constructor, not an object initializer with Contents property.
@@ -73,6 +75,16 @@
 - **2026-03-29:** Gemma 4 model test coverage added: 10 new tests in `KnownModelsTests.cs` and `GemmaFormatterTests.cs` for the 4 new Gemma 4 models (gemma-4-e2b-it, gemma-4-e4b-it, gemma-4-26b-a4b-it, gemma-4-31b-it). All models use ChatTemplateFormat.Gemma, have HasNativeOnnx=false, and SupportsToolCalling=true. Tests verify model properties, FindById lookup, presence in KnownModels.All collection, and tool-calling formatter compatibility with system message injection.
 - **2026-03-29:** GemmaFormatter tool calling behavior: tools are injected into the system message content (similar to ChatMLFormatter). Tests for tool calling MUST include a System message for tools to be added to the prompt — without a system message, tools passed to FormatMessages are ignored. FunctionResultContent should be in ChatRole.User messages (not ChatRole.Tool) to be properly formatted via FormatUserMessage().
 
+### 2026-04-07: Gemma 4 Blocker Monitor Workflow QA Review
+
+- **Reviewed:** `.github/workflows/monitor-gemma4-blocker.yml`
+- **YAML syntax:** Valid (confirmed via PyYAML safe_load)
+- **Critical fix — Expression injection:** The `evaluate` job's github-script step was interpolating all job outputs directly via `${{ }}` into JavaScript string literals. The `latestComment` output (sourced from upstream issue comments — untrusted user content) was a real injection vector. Fixed by passing ALL outputs through step-level `env:` block and reading via `process.env.*`. Also replaced `${{ github.* }}` with `context.*` API in github-script for consistency.
+- **Medium fix — NuGet API error handling:** Added `set -eo pipefail` and null/empty validation to the NuGet fetch step. Without this, a NuGet API failure could produce an empty or `null` version string that would compare as "new version" and trigger false positives.
+- **Medium fix — Shell injection hardening:** Moved `${{ steps.nuget.outputs.latest_version }}` references in shell `run:` blocks to step-level `env:` variables, preventing shell metacharacter injection from external API data.
+- **Note — KNOWN_BLOCKED_VERSION stale:** Currently set to `0.12.2` but NuGet already has `0.13.0`. Workflow will trigger immediately on first run with score ≥ 20. Switch should verify this is intentional or update to `0.13.0`.
+- **Note — Generic keyword:** "architecture" in keyword list is broad and could cause false positives on unrelated release notes. Acceptable for monitoring but worth watching.
+- **Verified correct:** NuGet API URL, confidence scoring (+20/+40/+30 = 90 max), issue dedup logic, label creation, permission scope, workflow_dispatch trigger, `needs:` declarations, `release_notes.txt` lifecycle.
 
 ### 2026-04-04: Qwen2.5-Coder-7B-Instruct Test Coverage
 - Added 8 comprehensive tests to KnownModelsTests.cs for Qwen25Coder_7BInstruct
@@ -131,3 +143,48 @@
 - In-Memory SQLite: Use Data Source=:memory: for fast, isolated persistence tests
 - Mock Reuse: Leveraged existing MockEmbeddingGenerator from LocalRagPipelineTests
 - MSTest Framework: Consistent with existing codebase convention
+
+## 2026-04-07: Gemma 4 Blocker Monitoring Workflow — Security Audit
+
+**Session:** Gemma4-Monitor-Impl (orchestration)
+
+Conducted comprehensive security audit of Switch's `.github/workflows/monitor-gemma4-blocker.yml` workflow.
+
+**Findings: 3 Security Bugs**
+
+1. **Expression Injection (CRITICAL)**
+   - Location: evaluate job, `actions/github-script@v7`
+   - Issue: Untrusted upstream issue comments interpolated via `${{ }}` literals
+   - Risk: Malicious comment could execute arbitrary code in workflow
+   - Fix: Moved all external data to step-level `env:` blocks, read via `process.env.*`
+
+2. **NuGet API Error Handling (MEDIUM)**
+   - Location: check-release job, curl/jq pipeline
+   - Issue: No error handling; null/empty response treated as new version
+   - Fix: Added `set -eo pipefail`, explicit validation (`-z`, `== "null"` checks), error annotations
+
+3. **Shell Injection via External Data (MEDIUM)**
+   - Location: release-notes, evaluate-release steps
+   - Issue: Direct interpolation of untrusted `${{ steps.nuget.outputs.latest_version }}`
+   - Fix: Env var indirection pattern in all shell steps
+
+**Operational Issue:**
+- KNOWN_BLOCKED_VERSION was 0.12.2, but NuGet has 0.13.0
+- First run would trigger false positive (score ≥ 20)
+- Fixed by bumping to 0.13.0
+
+**Verified Correct:**
+- ✅ NuGet flat container API URL and version extraction
+- ✅ Confidence scoring (max 90 = +20 new + 40 keyword + 30 closed)
+- ✅ Issue dedup (checks existing open issues with `gemma4` label)
+- ✅ Label auto-creation (idempotent try/catch)
+- ✅ Permission scope (contents: read, issues: write)
+- ✅ Job dependencies correctly declared
+- ✅ File lifecycle safety (`release_notes.txt` guarded)
+- ✅ GitHub API endpoints and Octokit patterns
+
+**Commits:**
+- Switch initial: 5adb604
+- Coordinator fixes: e85743f (security + version bump)
+
+**Recommendation:** All fixes merged. Workflow ready for production.

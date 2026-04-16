@@ -1,0 +1,364 @@
+# Gemma 4 Blocker Monitoring
+#
+# Watches for signals that onnxruntime-genai may now support Gemma 4 architecture.
+# Checks NuGet releases and upstream GitHub issue #2062 daily.
+# Creates/updates a GitHub issue in this repo when confidence score >= 50.
+
+name: Monitor Gemma 4 Blocker
+
+on:
+  schedule:
+    - cron: '0 9 * * *' # Daily at 9 AM UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  KNOWN_BLOCKED_VERSION: '0.13.0'
+  UPSTREAM_REPO: 'microsoft/onnxruntime-genai'
+  UPSTREAM_ISSUE: '2062'
+
+jobs:
+  # -----------------------------------------------------------
+  # Job 1: Check NuGet for a new onnxruntime-genai release
+  # -----------------------------------------------------------
+  check-release:
+    runs-on: ubuntu-latest
+    outputs:
+      score: ${{ steps.evaluate-release.outputs.score }}
+      latest_version: ${{ steps.evaluate-release.outputs.latest_version }}
+      is_new: ${{ steps.evaluate-release.outputs.is_new }}
+      keyword_hits: ${{ steps.evaluate-release.outputs.keyword_hits }}
+      release_url: ${{ steps.evaluate-release.outputs.release_url }}
+    steps:
+      - name: Fetch latest NuGet version
+        id: nuget
+        run: |
+          set -eo pipefail
+          echo "Fetching version index from NuGet..."
+          VERSIONS=$(curl -fsSL \
+            "https://api.nuget.org/v3-flatcontainer/microsoft.ml.onnxruntimegenai/index.json" \
+            | jq -r '.versions[-1]')
+          if [ -z "$VERSIONS" ] || [ "$VERSIONS" = "null" ]; then
+            echo "::error::Failed to fetch latest version from NuGet API"
+            exit 1
+          fi
+          echo "latest_version=${VERSIONS}" >> "$GITHUB_OUTPUT"
+          echo "Latest NuGet version: ${VERSIONS}"
+
+      - name: Fetch upstream release notes
+        id: release-notes
+        if: steps.nuget.outputs.latest_version != env.KNOWN_BLOCKED_VERSION
+        env:
+          LATEST: ${{ steps.nuget.outputs.latest_version }}
+        run: |
+          REPO="${{ env.UPSTREAM_REPO }}"
+
+          # Try common tag patterns: v0.13.0, 0.13.0
+          NOTES=""
+          RELEASE_URL=""
+          for TAG_PREFIX in "v" ""; do
+            TAG="${TAG_PREFIX}${LATEST}"
+            echo "Trying tag: ${TAG}"
+            RESPONSE=$(curl -fsSL -w "\n%{http_code}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${REPO}/releases/tags/${TAG}" 2>/dev/null || true)
+            HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+            BODY=$(echo "$RESPONSE" | sed '$d')
+
+            if [ "$HTTP_CODE" = "200" ]; then
+              NOTES=$(echo "$BODY" | jq -r '.body // ""')
+              RELEASE_URL=$(echo "$BODY" | jq -r '.html_url // ""')
+              echo "Found release notes for tag ${TAG}"
+              break
+            fi
+          done
+
+          # Persist notes to file for the keyword search step
+          echo "$NOTES" > /home/runner/release_notes.txt
+          echo "release_url=${RELEASE_URL}" >> "$GITHUB_OUTPUT"
+          echo "has_notes=$( [ -n "$NOTES" ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
+
+      - name: Search release notes for Gemma keywords
+        id: evaluate-release
+        env:
+          LATEST: ${{ steps.nuget.outputs.latest_version }}
+          KNOWN: ${{ env.KNOWN_BLOCKED_VERSION }}
+          RELEASE_URL_INPUT: ${{ steps.release-notes.outputs.release_url }}
+        run: |
+          RELEASE_URL="${RELEASE_URL_INPUT}"
+          SCORE=0
+          HITS=""
+
+          # Check if a new version exists
+          if [ "$LATEST" != "$KNOWN" ]; then
+            echo "New version detected: ${LATEST} (known blocked: ${KNOWN})"
+            SCORE=$((SCORE + 20))
+
+            # Search release notes for Gemma-related keywords
+            if [ -f /home/runner/release_notes.txt ]; then
+              KEYWORDS="gemma PLE per-layer per_layer variable.head head_dim kv.cache.sharing architecture"
+              for KW in $KEYWORDS; do
+                if grep -iqE "$KW" /home/runner/release_notes.txt; then
+                  echo "Keyword match: ${KW}"
+                  HITS="${HITS}${KW}, "
+                fi
+              done
+
+              if [ -n "$HITS" ]; then
+                SCORE=$((SCORE + 40))
+                HITS="${HITS%, }" # Trim trailing comma
+              fi
+            fi
+          else
+            echo "No new version. Current: ${LATEST}, Blocked: ${KNOWN}"
+          fi
+
+          IS_NEW=$( [ "$LATEST" != "$KNOWN" ] && echo true || echo false )
+
+          echo "score=${SCORE}" >> "$GITHUB_OUTPUT"
+          echo "latest_version=${LATEST}" >> "$GITHUB_OUTPUT"
+          echo "is_new=${IS_NEW}" >> "$GITHUB_OUTPUT"
+          echo "keyword_hits=${HITS}" >> "$GITHUB_OUTPUT"
+          echo "release_url=${RELEASE_URL}" >> "$GITHUB_OUTPUT"
+          echo "Release check score: ${SCORE}"
+
+  # -----------------------------------------------------------
+  # Job 2: Check upstream issue #2062 status (runs in parallel)
+  # -----------------------------------------------------------
+  check-issue:
+    runs-on: ubuntu-latest
+    outputs:
+      score: ${{ steps.check.outputs.score }}
+      issue_closed: ${{ steps.check.outputs.issue_closed }}
+      recent_activity: ${{ steps.check.outputs.recent_activity }}
+      latest_comment: ${{ steps.check.outputs.latest_comment }}
+    steps:
+      - name: Check upstream issue status
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = 'microsoft';
+            const repo = 'onnxruntime-genai';
+            const issueNumber = 2062;
+            let score = 0;
+            let issueClosed = false;
+            let recentActivity = false;
+            let latestComment = '';
+
+            // Fetch the issue
+            try {
+              const { data: issue } = await github.rest.issues.get({
+                owner, repo, issue_number: issueNumber
+              });
+
+              issueClosed = issue.state === 'closed';
+              if (issueClosed) {
+                console.log('Issue #2062 is CLOSED');
+                score += 30;
+              } else {
+                console.log('Issue #2062 is still open');
+              }
+
+              // Fetch recent comments (last 10)
+              const { data: comments } = await github.rest.issues.listComments({
+                owner, repo, issue_number: issueNumber,
+                per_page: 10,
+                sort: 'created',
+                direction: 'desc'
+              });
+
+              // Look for maintainer signals in recent comments
+              const signalKeywords = /\b(shipped|released|merged|supported|fixed|resolved|available)\b/i;
+              const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+              for (const comment of comments) {
+                const commentDate = new Date(comment.created_at);
+                if (commentDate > thirtyDaysAgo) {
+                  if (signalKeywords.test(comment.body)) {
+                    recentActivity = true;
+                    // Grab a short snippet (first 200 chars)
+                    latestComment = comment.body.substring(0, 200).replace(/[\r\n]+/g, ' ');
+                    console.log(`Signal found in comment from ${comment.user.login}: ${latestComment}`);
+                    break;
+                  }
+                }
+              }
+            } catch (err) {
+              console.log(`Could not fetch issue: ${err.message}`);
+            }
+
+            core.setOutput('score', score.toString());
+            core.setOutput('issue_closed', issueClosed.toString());
+            core.setOutput('recent_activity', recentActivity.toString());
+            core.setOutput('latest_comment', latestComment);
+            console.log(`Issue check score: ${score}`);
+
+  # -----------------------------------------------------------
+  # Job 3: Evaluate combined signals and act
+  # -----------------------------------------------------------
+  evaluate:
+    runs-on: ubuntu-latest
+    needs: [check-release, check-issue]
+    steps:
+      - name: Calculate combined score and take action
+        uses: actions/github-script@v7
+        env:
+          RELEASE_SCORE: ${{ needs.check-release.outputs.score }}
+          ISSUE_SCORE: ${{ needs.check-issue.outputs.score }}
+          LATEST_VERSION: ${{ needs.check-release.outputs.latest_version }}
+          IS_NEW: ${{ needs.check-release.outputs.is_new }}
+          KEYWORD_HITS: ${{ needs.check-release.outputs.keyword_hits }}
+          RELEASE_URL: ${{ needs.check-release.outputs.release_url }}
+          ISSUE_CLOSED: ${{ needs.check-issue.outputs.issue_closed }}
+          RECENT_ACTIVITY: ${{ needs.check-issue.outputs.recent_activity }}
+          LATEST_COMMENT: ${{ needs.check-issue.outputs.latest_comment }}
+          KNOWN_VER: ${{ env.KNOWN_BLOCKED_VERSION }}
+          UPSTREAM: ${{ env.UPSTREAM_REPO }}
+          UPSTREAM_ISSUE_NUM: ${{ env.UPSTREAM_ISSUE }}
+        with:
+          script: |
+            const releaseScore = parseInt(process.env.RELEASE_SCORE) || 0;
+            const issueScore = parseInt(process.env.ISSUE_SCORE) || 0;
+            const totalScore = releaseScore + issueScore;
+
+            const latestVersion = process.env.LATEST_VERSION || '';
+            const isNew = process.env.IS_NEW === 'true';
+            const keywordHits = process.env.KEYWORD_HITS || '';
+            const releaseUrl = process.env.RELEASE_URL || '';
+            const issueClosed = process.env.ISSUE_CLOSED === 'true';
+            const recentActivity = process.env.RECENT_ACTIVITY === 'true';
+            const latestComment = process.env.LATEST_COMMENT || '';
+            const knownVer = process.env.KNOWN_VER || '';
+            const upstream = process.env.UPSTREAM || '';
+            const upstreamIssue = process.env.UPSTREAM_ISSUE_NUM || '';
+
+            console.log(`=== Gemma 4 Blocker Monitor ===`);
+            console.log(`Release score: ${releaseScore} | Issue score: ${issueScore} | Total: ${totalScore}`);
+            console.log(`Latest version: ${latestVersion} | New: ${isNew} | Keywords: ${keywordHits || 'none'}`);
+            console.log(`Issue #2062 closed: ${issueClosed} | Recent activity: ${recentActivity}`);
+
+            // Score 0 — nothing new, silent success
+            if (totalScore === 0) {
+              console.log('No signals detected. All quiet.');
+              await core.summary
+                .addHeading('Gemma 4 Blocker Monitor')
+                .addRaw(`✅ No signals detected. Known blocked version: \`${latestVersion}\`. Issue #2062 still open.`)
+                .write();
+              return;
+            }
+
+            // Build evidence summary (used in both issue body and workflow summary)
+            const evidence = [];
+            if (isNew) evidence.push(`New NuGet version: \`${latestVersion}\` (blocked was \`${knownVer}\`)`);
+            if (keywordHits) evidence.push(`Keyword matches in release notes: ${keywordHits}`);
+            if (issueClosed) evidence.push(`Upstream issue #${upstreamIssue} is **closed**`);
+            if (recentActivity) evidence.push(`Recent maintainer comment: "${latestComment}"`);
+
+            // Score < 50 — log to summary, no issue
+            if (totalScore < 50) {
+              console.log('Score below threshold. Logging to summary only.');
+              await core.summary
+                .addHeading('Gemma 4 Blocker Monitor — Low-Confidence Signal')
+                .addRaw(`⚠️ Score: **${totalScore}/100** (threshold: 50)\n\n`)
+                .addList(evidence)
+                .addRaw('\n\nNo issue created — score below threshold.')
+                .write();
+              return;
+            }
+
+            // Score >= 50 — create or update a GitHub issue
+            console.log('High-confidence signal! Creating or updating issue...');
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const label = 'gemma4';
+
+            // Ensure the gemma4 label exists
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name: label });
+            } catch {
+              await github.rest.issues.createLabel({
+                owner, repo, name: label,
+                color: 'E99695',
+                description: 'Gemma 4 model support tracking'
+              });
+            }
+
+            // Ensure the investigation label exists
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name: 'investigation' });
+            } catch {
+              await github.rest.issues.createLabel({
+                owner, repo, name: 'investigation',
+                color: 'C5DEF5',
+                description: 'Requires investigation'
+              });
+            }
+
+            // Dedup: check for existing open issue with gemma4 label
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner, repo,
+              labels: label,
+              state: 'open',
+              per_page: 1
+            });
+
+            const upstreamIssueUrl = `https://github.com/${upstream}/issues/${upstreamIssue}`;
+            const upstreamReleaseUrl = releaseUrl || `https://github.com/${upstream}/releases`;
+
+            const body = [
+              `## Evidence (Score: ${totalScore}/100)`,
+              '',
+              ...evidence.map(e => `- ${e}`),
+              '',
+              '## Links',
+              '',
+              `- 📦 [NuGet Package](https://www.nuget.org/packages/Microsoft.ML.OnnxRuntimeGenAI/${latestVersion})`,
+              `- 🐛 [Upstream Issue #${upstreamIssue}](${upstreamIssueUrl})`,
+              `- 🚀 [Upstream Releases](${upstreamReleaseUrl})`,
+              `- 📄 [Blocked Models Doc](docs/blocked-models.md#gemma-4-family-e2b-e4b-26b-31b)`,
+              '',
+              '## Next Steps',
+              '',
+              '- [ ] Verify the new version actually resolves PLE / variable head dim / KV cache sharing',
+              '- [ ] Run `scripts/convert_gemma4.ps1` with the updated runtime',
+              '- [ ] Update `KNOWN_BLOCKED_VERSION` in this workflow if confirmed fixed',
+              '- [ ] Update `docs/blocked-models.md` status from ⏳ to ✅',
+              '- [ ] Remove Gemma 4 from blocked list and add to supported models',
+              '',
+              `_Generated by [monitor-gemma4-blocker](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) workflow._`
+            ].join('\n');
+
+            if (existing.length > 0) {
+              // Add a comment to the existing issue instead of creating a duplicate
+              const issueNumber = existing[0].number;
+              await github.rest.issues.createComment({
+                owner, repo,
+                issue_number: issueNumber,
+                body: `## 🔄 Updated Signal (Score: ${totalScore}/100)\n\n${body}`
+              });
+              console.log(`Updated existing issue #${issueNumber}`);
+
+              await core.summary
+                .addHeading('Gemma 4 Blocker Monitor — Issue Updated')
+                .addRaw(`🔄 Added comment to existing issue #${issueNumber}. Score: **${totalScore}/100**.`)
+                .write();
+            } else {
+              // Create a new issue
+              const { data: newIssue } = await github.rest.issues.create({
+                owner, repo,
+                title: '🚀 Gemma 4 Support Signal Detected in onnxruntime-genai',
+                body,
+                labels: [label, 'investigation']
+              });
+              console.log(`Created issue #${newIssue.number}`);
+
+              await core.summary
+                .addHeading('Gemma 4 Blocker Monitor — Issue Created')
+                .addRaw(`🚀 Created issue #${newIssue.number}. Score: **${totalScore}/100**.`)
+                .write();
+            }

@@ -1,3 +1,104 @@
+
+## Latest: BitNet Extension Package Architecture Design (2026-04-17)
+
+**2026-04-17:** Completed full architecture design for `ElBruno.LocalLLMs.BitNet` extension package per Bruno's directive. Delivered 32KB architecture document (`.squad/decisions/inbox/morpheus-bitnet-architecture.md`) covering 5 decision areas.
+
+**Key Decisions:**
+
+1. **Native Interop: Option C — P/Invoke to llama.h C API (bitnet.cpp-compiled binary).** LLamaSharp rejected (incompatible with ternary weights). bitnet.cpp is a llama.cpp fork that exposes the same C API entry points — we P/Invoke to standard `llama_load_model_from_file`, `llama_decode`, etc. but link against bitnet.cpp's native binary with custom ternary kernels.
+
+2. **API Surface:** `BitNetChatClient : IChatClient, IAsyncDisposable` with `BitNetOptions`, `BitNetModelDefinition`, `BitNetKnownModels`, and `BitNetServiceExtensions`. Parallel to core library pattern but with GGUF-specific types and CPU-focused configuration (ThreadCount instead of ExecutionProvider).
+
+3. **Chat Templates: ProjectReference to core library + InternalsVisibleTo.** Reuses all 7 template formatters from the core. ONNX Runtime managed assembly is transitively included (~2MB, no native binaries). Avoids duplicating template code and test suites.
+
+4. **Model Catalog: 5 models for MVP.** BitNet 0.7B (testing), Falcon3 1B (smallest instruction-tuned), BitNet 2B-4T (default — official Microsoft flagship), BitNet 3B, Falcon3 3B. Larger Falcon3/Llama3 models deferred to Phase 2.
+
+5. **Package Structure: Managed-only NuGet (Phase 1).** User provides bitnet.cpp native binary. Future Phase 3 adds `ElBruno.LocalLLMs.BitNet.Native.{rid}` packages following ONNX Runtime's distribution pattern.
+
+**Architecture Highlights:**
+- `LibraryImport` (source-generated P/Invoke) for AOT compat
+- `SafeHandle` wrappers for native resource management
+- `SemaphoreSlim` for thread-safe inference (llama.cpp not thread-safe per context)
+- `NativeLibrary.SetDllImportResolver` for custom library path resolution
+- 3-phase implementation plan: MVP (2-3 weeks), Polish (2 weeks), Native Distribution (4 weeks)
+
+**Status:** Architecture proposed. Ready for team review and Bruno's approval.
+
+## Learnings
+
+- **bitnet.cpp IS llama.cpp at the API level.** The fork doesn't change the C API — it changes the kernel implementations. This means we can P/Invoke to the same llama.h entry points. The key differentiator is the compiled binary, not the API surface.
+- **LLamaSharp is incompatible with bitnet.cpp.** LLamaSharp wraps mainline llama.cpp which does not support ternary 1.58-bit weights. The two ecosystems are separate as of 2025.
+- **Native library distribution for research-stage projects should be user-provided in MVP.** The build matrix (6 platforms × kernel types) is too large for a small team. Ship managed code first, add prebuilt binaries when demand justifies CI investment.
+- **ProjectReference + InternalsVisibleTo is the right pattern for sharing internal types between extension packages** when the transitive dependency cost is low (managed-only, no native leak).
+- **BitNet models are CPU-focused.** Unlike ONNX models with GPU execution providers, BitNet's value proposition is CPU-only inference with ternary kernels. Configuration should reflect this (ThreadCount, not ExecutionProvider).
+
+---
+
+## Previous: BitNet Architecture Compatibility Analysis (2026-04-07)
+
+**2026-04-07:** Completed comprehensive architecture compatibility analysis for Microsoft's BitNet b1.58 1-bit LLM framework. Delivered 13KB technical decision document (`.squad/decisions/inbox/morpheus-bitnet-analysis.md`) covering 9 sections.
+
+**Core Finding: BitNet is architecturally incompatible with ElBruno.LocalLLMs.**
+
+**Technical Analysis:**
+- **Inference Path:** BitNet uses `bitnet.cpp` (custom C++ runtime) + GGUF format (GGML ecosystem), NOT ONNX Runtime GenAI
+- **Quantization:** 1.58-bit ternary weights {-1, 0, +1} using BitLinear layers, NOT standard ONNX operators (MatMul/Gemm)
+- **Custom Kernels:** T-MAC lookup-table methodology for ternary matrix multiplication, requires platform-specific native builds
+- **Architecture Differences:** SubLN normalization (not LayerNorm), ReLU² activation, absmean quantization during forward pass
+- **Performance Claims:** 2.37x-6.17x speedup vs standard LLMs, 55-82% energy reduction, 0.4GB memory for 2B model
+
+**Compatibility Assessment (4 key questions answered):**
+1. **Standard transformer attention?** YES for attention mechanism, NO for BitLinear layers
+2. **Custom operators required?** YES — BitLinear, SubLN, ternary weight unpacking — all incompatible with ONNX RT GenAI
+3. **Fit into ModelDefinition?** NO — requires GGUF format, BitNet kernel types (I2_S/TL1/TL2), different metadata
+4. **Different runtime needed?** YES — `bitnet.cpp` with native C++ interop, not ONNX Runtime GenAI
+
+**Comparison to Gemma 4 Block:**
+- **Gemma 4:** Uses ONNX format, blocked by runtime-level features (PLE, variable head dims) — will work once ONNX RT GenAI adds support
+- **BitNet:** Uses GGUF format, requires completely different inference stack — would need separate library
+
+**Risks of Integration:**
+- Type incompatibility (ModelDefinition assumes ONNX)
+- Runtime incompatibility (LocalChatClient wraps ORT GenAI, not bitnet.cpp)
+- Native build maintenance (6+ platforms: Win/Linux/macOS × x64/ARM64)
+- API surface pollution (BitNet-specific config leaks into IChatClient abstraction)
+- Distribution complexity (NuGet packages need runtime-specific native assets)
+
+**Recommendation: Do NOT integrate BitNet into ElBruno.LocalLLMs core library.**
+
+**Alternative Approaches:**
+1. **Option 1 (Recommended):** Create separate `ElBruno.BitNet` library with native C++ interop
+2. **Option 2:** Create `ElBruno.LocalLLMs.BitNet` extension package
+3. **Option 3 (Also Recommended):** Ignore BitNet, continue with existing tiny ONNX models (Qwen2.5-0.5B, TinyLlama-1.1B)
+
+**Rationale for Option 3:**
+- BitNet is research-stage (first release Oct 2024)
+- Limited official models (only 2B available)
+- High maintenance burden (native builds, C++ interop, GGUF handling)
+- Alternative exists: Qwen2.5-0.5B (330MB ONNX, native support, ~2-3x slower but zero friction)
+
+**Decision Required from Bruno:** Pursue separate BitNet library (4-6 week effort), or document as incompatible and continue focusing on ONNX-compatible models (30+ already supported)?
+
+**Status:** Analysis complete. Awaiting architectural decision from project owner.
+
+---
+
+## Previous: Gemma 4 Monitoring Analysis (2026-04-07)
+
+**2026-04-07:** Completed comprehensive analysis of automation approaches for detecting onnxruntime-genai Gemma 4 support. Delivered 20KB proposal (.squad/decisions/morpheus-gemma4-monitoring.md) covering five detection approaches:
+
+1. **Release Polling** — Daily NuGet/GitHub/PyPI monitoring (.10/mo, 100% reliable)
+2. **Issue Polling** — Track GitHub issue #2062 status ($<0.01/mo, 95% reliable)
+3. **Conversion Testing** — Weekly automated test runs (-10/mo, 100% reliable)
+4. **Heuristic Scoring** — Multi-signal aggregation with confidence thresholds (free)
+5. **Optional Dashboard** — Visual signal aggregation (free, reference-only)
+
+Recommended: Tiered approach with Tier 1 (always on) for release + issue polling, Tier 2 (conditional) for conversion testing, Tier 3 (optional) for dashboard.
+
+**Decision Status:** Ready for team review. Next step: select which tier(s) to implement.
+
+---
+
 # Morpheus — History
 
 ## Project Context
@@ -77,6 +178,11 @@
 **Key Decisions Locked:** Benchmark-first approach, ToolSelectionService in `samples/` (not a library), JSON parsing fallback chain for tiny models, cross-encoder re-ranking as hedge, graceful degradation mandatory.
 
 **Status:** Plan approved. Ready for execution. Team references: See `docs/plan-rag-tool-routing.md` and `.squad/decisions.md` for full RAG plan decisions. All phases linked to corresponding agents' history.md.
+
+
+## Core Context
+
+Archive of previous work, learnings, and decisions (2026-03-17 through 2026-03-29). See entries below for full history, or check .squad/decisions.md for architectural decisions.
 
 ## Learnings
 
@@ -261,6 +367,64 @@ Issue #7 fix alone improves one error path. But combined with custom exceptions 
 Issue #7 alone is a bug fix. But this DX plan treats it as the *anchor point* for a cohesive error-handling story. Custom exceptions + structured logging + diagnostics API together create a 3x multiplier on clarity. This is why it jumped from P1 to P0 — not because it's a large change, but because it unblocks the entire Wave 1 dependency chain.
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
+
+### 2026 — Gemma 4 Blocker Monitoring Proposal
+
+**Analysis Completed:** Comprehensive proposal for automating detection of Gemma 4 blocker resolution in onnxruntime-genai.
+
+**Key Finding:** We have 4 production-ready Gemma 4 models (E2B, E4B, 26B-A4B, 31B) with:
+- ✅ Model definitions in KnownModels.cs
+- ✅ Conversion scripts (Python + PowerShell)
+- ✅ Unit tests (6 model + 9 tool-calling + 195 multilingual)
+- ✅ Full documentation
+
+But blocked by onnxruntime-genai runtime-level limitations: Per-Layer Embeddings (PLE), variable attention head dimensions, KV cache sharing.
+
+**Monitoring Approach Recommended (Tier 1 + 2):**
+
+**Tier 1 — Low-Cost Release Polling (Daily):**
+1. Poll NuGet.org API for new `Microsoft.ML.OnnxRuntimeGenAI` releases
+2. Poll GitHub issue #2062 for status changes
+3. Confidence scoring: 80+ triggers investigation issue assignment to Morpheus
+4. Cost: ~$0.10/month (GitHub API calls only)
+
+**Tier 2 — Validation Testing (Weekly, Optional):**
+1. Run `scripts/convert_gemma4.py --model-size e2b` on ubuntu-latest
+2. Test conversion success/failure
+3. Report results to monitoring issue
+4. Cost: $5-10/month (includes disk space + GPU compute if needed)
+
+**Implementation File:** `.squad/decisions/inbox/morpheus-gemma4-monitoring.md` (20.5 KB, 7 sections)
+
+**Key Signals Analyzed:**
+- New NuGet release with Gemma keywords (90% reliable, low false positives)
+- GitHub issue #2062 closure (85% reliable, delays possible)
+- Pre-built ONNX models on onnx-community (70% reliable, high false positives)
+- Successful local conversion tests (100% reliable, ground truth)
+- Version metadata in GenAI builder repo (90% reliable)
+
+**Decision Thresholds:**
+- **≥80 points** → Create investigation issue (Morpheus review)
+- **≥100 points** → Tier 2 conversion tests triggered
+- **Conversion succeeds** → Unblock and release
+
+**Rationale:** Gemma 4 is a high-priority feature for next release. Early detection (within 24h of upstream resolution) enables quick response. Investment in monitoring (~$5/month) is justified by avoiding manual tracking and ensuring we capture the moment the blocker resolves.
+
+**Next Steps (if approved by Bruno):**
+1. Implement `.github/workflows/monitor-gemma4-blocker.yml` (Tier 1)
+2. Create GitHub issue template for Gemma 4 resolution notifications
+3. Document process in Morpheus/history for future reference
+4. Review monthly; enable Tier 2 after first signal detected
+
+**Files Created:**
+- `.squad/decisions/inbox/morpheus-gemma4-monitoring.md` — Full proposal with 5 approaches evaluated
+
+**Key Learnings:**
+- Monitoring automation is most valuable when upstream repos (e.g., microsoft/onnxruntime-genai) move slowly and unpredictably
+- Multi-signal approach reduces false positives: release notes + issue closure + conversion success all required
+- Cost-benefit of monitoring is high when feature is production-ready; every week of blocker costs opportunity
+- GitHub Actions + NuGet API + GitHub API are zero-cost tools for this pattern; can scale to other blocked models (StableLM, MoE)
+- Decision confidence scoring helps distinguish "worth investigating" (80+) from "ready to unblock" (100+)
 
 ### 2026-03-28 — Phase 4 Documentation Complete
 
@@ -721,3 +885,5 @@ All conventions from `.github/copilot-instructions.md` now fully enforced. Team-
 - Risk mitigation and success metrics
 
 **Status:** Strategy approved by Bruno's directive. Ready for execution starting Phase 1 (dataset curation).
+
+

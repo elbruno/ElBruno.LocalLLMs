@@ -8,6 +8,51 @@
 - **Target models:** Phi-3.5-mini, Qwen2.5-3B, Llama-3.2-3B (small); Qwen2.5-7B, Phi-4 (medium)
 - **Created:** 2026-03-17
 
+## Latest: BitNet Integration Scenarios Analysis (2026-04-16)
+
+**2026-04-16:** Completed comprehensive integration scenarios analysis for Microsoft BitNet b1.58 (1.58-bit ternary quantization).
+
+**Scenarios Evaluated (3 architecturally distinct approaches):**
+
+| Scenario | Feasibility | Core Changes | Effort | Verdict |
+|----------|-------------|--------------|--------|---------|
+| **A: Convert to ONNX GenAI** | ❌ No | 0 | N/A | Not viable |
+| **B: Custom ONNX Operators** | ⚠️ Possible | 8-10 files | 2-3 weeks | Unacceptable complexity |
+| **C1: Separate Package** | ✅ Viable | **0 files** | 1-2 weeks | **RECOMMENDED** |
+| **C2: Conditional Core Build** | ⚠️ Possible | 10-12 files | 2-3 weeks | Violates architecture |
+
+**Recommended Approach: Scenario C1 (Separate NuGet Package)**
+```
+ElBruno.LocalLLMs.BitNet/
+├── Native/ (platform-specific binaries)
+├── Interop/BitNetInterop.cs (P/Invoke to bitnet.cpp)
+├── BitNetChatClient.cs (implements IChatClient)
+└── BitNetOptions.cs
+```
+
+**Why C1:**
+- Zero core library changes (preserves "Single Package" Decision 1)
+- Users opt-in explicitly
+- Clean separation (BitNet is fundamentally different paradigm)
+- Maintainable path forward
+
+**If BitNet skipped (Also Recommended):**
+- No impact to core development roadmap
+- Continue focusing on ONNX-compatible models (30+ already supported)
+- Use Qwen2.5-0.5B (330MB ONNX) for edge efficiency needs
+
+**Open Questions for Implementation:**
+1. Native binary distribution (prebuilt vs. require user build)?
+2. GGUF BitNet model availability on HuggingFace?
+3. Tokenizer compatibility with existing chat template formatters?
+4. Performance claims verification at <3B model scale?
+
+**Status:** Analysis complete. Recommendation submitted to team. Awaiting owner decision (pursue C1 or skip BitNet entirely).
+
+**Merged to:** `.squad/decisions.md` (Decision 4, section 3)
+
+---
+
 ## Architecture Status & RAG Plan
 
 **2026-03-17:** Morpheus completed full solution architecture. Blueprint in `docs/architecture.md`. 9 decisions merged to `.squad/decisions.md`. Trinity should implement core library using architecture.md as canonical reference.
@@ -17,6 +62,11 @@
 ## Learnings
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
+
+### 2026-04-16: BitNet Sample Apps + Benchmark Harness
+- Added `src/samples/BitNetChat/` and `src/samples/BitNetPerformance/` (net10.0) to cover BitNet chat and BitNet-vs-ONNX benchmarking.
+- BitNet samples require `BITNET_NATIVE_PATH` (native library folder) and `BITNET_MODEL_PATH` (GGUF file) for local execution.
+- Benchmark harness outputs `benchmark-results.json` with load time, TTFT, total time, TPS, and RAM snapshots.
 
 ### 2026-03-27: McpToolRouting Sample — Prompt Distillation + Tool Filtering Pipeline
 - Created `samples/McpToolRouting/` demonstrating full pipeline: user prompt → LLM distillation → MCPToolRouter semantic search → filtered tools
@@ -98,6 +148,21 @@
 
 ### 2026-03-17: Samples implemented and README fixed for MEAI 10.4.0
 - MEAI 10.4.0 uses `GetResponseAsync`/`GetStreamingResponseAsync` (NOT `CompleteAsync`/`CompleteStreamingAsync`)
+
+### 2026-03-17: BitNet Integration Analysis
+- **BitNet uses ternary quantization** (1.58-bit, weights ∈ {-1, 0, 1}) — no ONNX GenAI equivalent exists
+- **Cannot integrate via standard ONNX path** — requires specialized `bitnet.cpp` runtime with custom GEMM kernels
+- **Three scenarios analyzed:**
+  - **A (standard ONNX):** Not feasible — ternary quantization unsupported by ONNX Runtime GenAI
+  - **B (custom ONNX ops):** Impractical — would need to bypass GenAI API, implement manual tokenization + KV cache
+  - **C (separate runtime):** Current reality — BitNet uses `bitnet.cpp` (modified llama.cpp) with GGUF format
+- **Recommended path:** Separate NuGet package (`ElBruno.LocalLLMs.BitNet`) implementing `IChatClient` via P/Invoke to `bitnet.cpp`
+- **Zero core library changes** — aligns with Decision 1 (extension packages by concern are allowed)
+- **Chat templates reusable** — BitNet models use standard formats (ChatML, Llama3, etc.)
+- **Native binaries needed** — would bundle prebuilt `bitnet.cpp` libs for win-x64, linux-x64, osx-arm64
+- **Model format:** GGUF with custom `I2_S` quantization type (downloaded from HuggingFace like ONNX models)
+- **Effort estimate:** 1-2 weeks for MVP (separate package with P/Invoke + IChatClient implementation)
+- **Decision document:** Created `.squad/decisions/inbox/trinity-bitnet-integration.md` with full technical analysis
 - Returns `ChatResponse` with `.Text` property (NOT `ChatCompletion` with `.Message.Text`)
 - Streaming returns `ChatResponseUpdate` with `.Text`
 - DI sample csproj already had `Microsoft.NET.Sdk.Web` — no change needed
@@ -194,6 +259,10 @@
 - Created `global.json` pinning SDK 8.0.0 with `rollForward: latestMajor`
 - Solution file (`slnx`) folder names updated (`/tests/` → `/src/tests/`, `/samples/` → `/src/samples/`)
 - Build: 11 projects, 0 warnings, 0 errors; 359/359 tests pass on net8.0
+
+### 2026-04-17: BitNet package scaffolding and inference loop
+- Added ElBruno.LocalLLMs.BitNet library with P/Invoke llama.h interop, native resolver, and sampler-based token generation.
+- BitNetChatClient reuses core chat templates via InternalsVisibleTo and exposes IChatClient streaming/non-streaming responses.
 
 ## 2026-03-27: Convention Enforcement Session
 
