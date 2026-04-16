@@ -11,7 +11,7 @@
 
 ## Run local LLMs in .NET through IChatClient 🧠
 
-Run local LLMs in .NET through `IChatClient` — the same interface you'd use for Azure OpenAI, Ollama, or any other provider. Powered by ONNX Runtime GenAI.
+Run local LLMs in .NET through `IChatClient` — the same interface you'd use for Azure OpenAI, Ollama, or any other provider. Powered by ONNX Runtime GenAI and BitNet.
 
 ## Features
 
@@ -19,10 +19,19 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 - 📦 **Automatic model download** — models are fetched from HuggingFace on first use
 - 🚀 **Zero friction** — works out of the box with sensible defaults (Phi-3.5 mini)
 - 🖥️ **Multi-hardware** — CPU, CUDA, and DirectML execution providers
-- 💉 **DI-friendly** — register with `AddLocalLLMs()` in ASP.NET Core
+- 💉 **DI-friendly** — register with `AddLocalLLMs()` or `AddBitNetChatClient()` in ASP.NET Core
 - 🔄 **Streaming** — token-by-token streaming via `GetStreamingResponseAsync`
 - 📊 **Multi-model** — switch between Phi-3.5, Phi-4, Qwen2.5, Llama 3.2, and more
 - 🎯 **Fine-tuned models** — pre-trained Qwen2.5 variants for tool calling and RAG ([guide](docs/fine-tuning-guide.md))
+- ⚡ **BitNet support** — run 1.58-bit ternary models via [bitnet.cpp](https://github.com/microsoft/BitNet) with extreme efficiency ([guide](docs/bitnet-guide.md))
+
+## Packages
+
+| Package | NuGet | Downloads | Description |
+|---------|-------|-----------|-------------|
+| `ElBruno.LocalLLMs` | [![NuGet](https://img.shields.io/nuget/v/ElBruno.LocalLLMs.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs) | [![Downloads](https://img.shields.io/nuget/dt/ElBruno.LocalLLMs.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs) | Core library — ONNX Runtime GenAI models via IChatClient |
+| `ElBruno.LocalLLMs.Rag` | [![NuGet](https://img.shields.io/nuget/v/ElBruno.LocalLLMs.Rag.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs.Rag) | [![Downloads](https://img.shields.io/nuget/dt/ElBruno.LocalLLMs.Rag.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs.Rag) | RAG pipeline — document chunking, indexing, retrieval |
+| `ElBruno.LocalLLMs.BitNet` | [![NuGet](https://img.shields.io/nuget/v/ElBruno.LocalLLMs.BitNet.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs.BitNet) | [![Downloads](https://img.shields.io/nuget/dt/ElBruno.LocalLLMs.BitNet.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs.BitNet) | BitNet 1.58-bit models via bitnet.cpp + IChatClient |
 
 ## Installation
 
@@ -277,6 +286,8 @@ See the [Supported Models Guide](docs/supported-models.md) for detailed model ca
 | [FineTunedToolCalling](src/samples/FineTunedToolCalling) | Fine-tuned model for improved tool calling |
 | [RagChatbot](src/samples/RagChatbot) | RAG pipeline with document retrieval |
 | [ZeroCloudRag](src/samples/ZeroCloudRag) | Zero-cloud RAG pipeline with real local embeddings and LLM inference |
+| [BitNetChat](src/samples/BitNetChat) | BitNet 1.58-bit model chat completion |
+| [BitNetPerformance](src/samples/BitNetPerformance) | Performance benchmark: BitNet vs ONNX models |
 | [ConsoleAppDemo](src/samples/ConsoleAppDemo) | Interactive console application |
 
 ## Requirements
@@ -299,6 +310,7 @@ dotnet test ElBruno.LocalLLMs.slnx --framework net8.0
 
 - [Getting Started](docs/getting-started.md) — installation, first steps, configuration
 - [Supported Models](docs/supported-models.md) — full model reference with tiers, specs, decision tree
+- [BitNet Guide](docs/bitnet-guide.md) — setup and usage of 1.58-bit BitNet models
 - [Architecture](docs/architecture.md) — design decisions and internal structure
 - [Samples Guide](docs/samples.md) — walkthrough of each sample application
 - [Benchmarks](docs/benchmarks.md) — how to run and interpret performance benchmarks
@@ -335,5 +347,6 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 ## 🙏 Acknowledgments
 
 - [ONNX Runtime GenAI](https://github.com/microsoft/onnxruntime-genai) — inference engine
+- [BitNet / bitnet.cpp](https://github.com/microsoft/BitNet) — 1.58-bit ternary model inference
 - [Microsoft.Extensions.AI](https://learn.microsoft.com/dotnet/ai/microsoft-extensions-ai) — IChatClient interface
 - [Hugging Face](https://huggingface.co/) — model hosting and community

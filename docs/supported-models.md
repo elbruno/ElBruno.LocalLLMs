@@ -43,6 +43,22 @@ ElBruno.LocalLLMs supports **29 LLMs** across 5 tiers. This guide details each m
 | 🟣 Next-Gen | Gemma-3-12B-IT | 12B | google/gemma-3-12b-it | 🔄 Convert | ChatML | — | 12–16 GB | ⚡ |
 | 🟣 Next-Gen | DeepSeek-V3 | 671B (MoE) | deepseek-ai/DeepSeek-V3 | 🔄 Convert | ChatML | — | 128+ GB | 🐢 |
 
+### ⚡ BitNet Models (1.58-bit Ternary)
+
+BitNet models use 1.58-bit ternary weights {-1, 0, 1} and run via [bitnet.cpp](https://github.com/microsoft/BitNet) (a llama.cpp fork with custom kernels). These models require the `ElBruno.LocalLLMs.BitNet` NuGet package and a pre-built bitnet.cpp native library.
+
+| Model | Params | HuggingFace ID | Format | Kernel | Chat Template | Approx. Size | RAM | Speed |
+|-------|--------|----------------|--------|--------|---|---|---|---|
+| BitNet b1.58 0.7B | 0.7B | 1bitLLM/bitnet_b1_58-large | GGUF | I2_S | ChatML | ~150 MB | 1–2 GB | ⚡⚡⚡ |
+| Falcon3-1B-1.58bit | 1B | tiiuae/Falcon3-1B-Instruct-1.58bit | GGUF | TL2 | Falcon | ~200 MB | 2–3 GB | ⚡⚡⚡ |
+| BitNet b1.58 2B-4T ⭐ | 2.4B | microsoft/BitNet-b1.58-2B-4T-gguf | GGUF | TL2 | Llama3 | ~400 MB | 3–4 GB | ⚡⚡ |
+| BitNet b1.58 3B | 3B | 1bitLLM/bitnet_b1_58-3B | GGUF | I2_S | ChatML | ~650 MB | 4–6 GB | ⚡⚡ |
+| Falcon3-3B-1.58bit | 3B | tiiuae/Falcon3-3B-Instruct-1.58bit | GGUF | TL2 | Falcon | ~600 MB | 4–6 GB | ⚡⚡ |
+
+> **⭐ Default model.** BitNet b1.58 2B-4T is the recommended starting point — MIT licensed, good quality, and tiny footprint.
+>
+> **Setup:** BitNet models require a pre-built `bitnet.cpp` native library. See the [BitNet Guide](bitnet-guide.md) for build instructions and configuration.
+
 ### 🎯 Fine-Tuned Models
 
 Fine-tuned variants of Qwen2.5-0.5B, optimized for specific tasks with ElBruno.LocalLLMs' chat template format. These models are ready-to-use ONNX INT4 and download automatically from HuggingFace.

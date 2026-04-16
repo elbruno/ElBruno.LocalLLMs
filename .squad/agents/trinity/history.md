@@ -63,6 +63,11 @@ ElBruno.LocalLLMs.BitNet/
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-04-16: BitNet Sample Apps + Benchmark Harness
+- Added `src/samples/BitNetChat/` and `src/samples/BitNetPerformance/` (net10.0) to cover BitNet chat and BitNet-vs-ONNX benchmarking.
+- BitNet samples require `BITNET_NATIVE_PATH` (native library folder) and `BITNET_MODEL_PATH` (GGUF file) for local execution.
+- Benchmark harness outputs `benchmark-results.json` with load time, TTFT, total time, TPS, and RAM snapshots.
+
 ### 2026-03-27: McpToolRouting Sample — Prompt Distillation + Tool Filtering Pipeline
 - Created `samples/McpToolRouting/` demonstrating full pipeline: user prompt → LLM distillation → MCPToolRouter semantic search → filtered tools
 - MCPToolRouter API: `ToolIndex.CreateAsync(IEnumerable<Tool>, ToolIndexOptions?)` builds the index; `SearchAsync(prompt, topK, minScore)` returns `IReadOnlyList<ToolSearchResult>` with `.Tool` and `.Score`
@@ -254,6 +259,10 @@ ElBruno.LocalLLMs.BitNet/
 - Created `global.json` pinning SDK 8.0.0 with `rollForward: latestMajor`
 - Solution file (`slnx`) folder names updated (`/tests/` → `/src/tests/`, `/samples/` → `/src/samples/`)
 - Build: 11 projects, 0 warnings, 0 errors; 359/359 tests pass on net8.0
+
+### 2026-04-17: BitNet package scaffolding and inference loop
+- Added ElBruno.LocalLLMs.BitNet library with P/Invoke llama.h interop, native resolver, and sampler-based token generation.
+- BitNetChatClient reuses core chat templates via InternalsVisibleTo and exposes IChatClient streaming/non-streaming responses.
 
 ## 2026-03-27: Convention Enforcement Session
 

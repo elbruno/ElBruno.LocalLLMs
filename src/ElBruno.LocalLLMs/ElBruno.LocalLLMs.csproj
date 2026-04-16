@@ -8,7 +8,7 @@
     <PackageIcon>nuget_logo.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>llm;onnx;ai;local;chat;microsoft-extensions-ai;ichatclient;phi;qwen;llama;gemma;gemma4;genai;code;copilot</PackageTags>
-    <Version>0.11.0</Version>
+    <Version>0.15.0</Version>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
@@ -37,6 +37,7 @@
     <InternalsVisibleTo Include="ElBruno.LocalLLMs.Tests" />
     <InternalsVisibleTo Include="ElBruno.LocalLLMs.FineTuneEval" />
     <InternalsVisibleTo Include="ElBruno.LocalLLMs.Benchmarks" />
+    <InternalsVisibleTo Include="ElBruno.LocalLLMs.BitNet" />
   </ItemGroup>
 
   <ItemGroup>

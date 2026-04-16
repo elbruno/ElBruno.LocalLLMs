@@ -26,20 +26,25 @@ jobs:
         run: |
           dotnet restore src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj
           dotnet restore src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj
+          dotnet restore src/tests/ElBruno.LocalLLMs.BitNet.Tests/ElBruno.LocalLLMs.BitNet.Tests.csproj
           dotnet restore src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj
           dotnet restore src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj
+          dotnet restore src/ElBruno.LocalLLMs.BitNet/ElBruno.LocalLLMs.BitNet.csproj
 
       - name: Build
         run: |
           dotnet build src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj --no-restore
           dotnet build src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj --no-restore
+          dotnet build src/tests/ElBruno.LocalLLMs.BitNet.Tests/ElBruno.LocalLLMs.BitNet.Tests.csproj --no-restore
           dotnet build src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj --no-restore
           dotnet build src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj --no-restore
+          dotnet build src/ElBruno.LocalLLMs.BitNet/ElBruno.LocalLLMs.BitNet.csproj --no-restore
 
       - name: Test
         run: |
           dotnet test src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj --no-build --framework net8.0 --verbosity normal --logger "trx;LogFileName=test-results.trx"
           dotnet test src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj --no-build --framework net8.0 --verbosity normal --logger "trx;LogFileName=test-results.trx"
+          dotnet test src/tests/ElBruno.LocalLLMs.BitNet.Tests/ElBruno.LocalLLMs.BitNet.Tests.csproj --no-build --framework net8.0 --verbosity normal --logger "trx;LogFileName=test-results.trx"
 
       - name: Upload test results
         uses: actions/upload-artifact@v4

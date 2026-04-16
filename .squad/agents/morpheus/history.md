@@ -1,5 +1,41 @@
 
 ## Latest: BitNet Architecture Compatibility Analysis (2026-04-07)
+## Latest: BitNet Extension Package Architecture Design (2026-04-17)
+
+**2026-04-17:** Completed full architecture design for `ElBruno.LocalLLMs.BitNet` extension package per Bruno's directive. Delivered 32KB architecture document (`.squad/decisions/inbox/morpheus-bitnet-architecture.md`) covering 5 decision areas.
+
+**Key Decisions:**
+
+1. **Native Interop: Option C — P/Invoke to llama.h C API (bitnet.cpp-compiled binary).** LLamaSharp rejected (incompatible with ternary weights). bitnet.cpp is a llama.cpp fork that exposes the same C API entry points — we P/Invoke to standard `llama_load_model_from_file`, `llama_decode`, etc. but link against bitnet.cpp's native binary with custom ternary kernels.
+
+2. **API Surface:** `BitNetChatClient : IChatClient, IAsyncDisposable` with `BitNetOptions`, `BitNetModelDefinition`, `BitNetKnownModels`, and `BitNetServiceExtensions`. Parallel to core library pattern but with GGUF-specific types and CPU-focused configuration (ThreadCount instead of ExecutionProvider).
+
+3. **Chat Templates: ProjectReference to core library + InternalsVisibleTo.** Reuses all 7 template formatters from the core. ONNX Runtime managed assembly is transitively included (~2MB, no native binaries). Avoids duplicating template code and test suites.
+
+4. **Model Catalog: 5 models for MVP.** BitNet 0.7B (testing), Falcon3 1B (smallest instruction-tuned), BitNet 2B-4T (default — official Microsoft flagship), BitNet 3B, Falcon3 3B. Larger Falcon3/Llama3 models deferred to Phase 2.
+
+5. **Package Structure: Managed-only NuGet (Phase 1).** User provides bitnet.cpp native binary. Future Phase 3 adds `ElBruno.LocalLLMs.BitNet.Native.{rid}` packages following ONNX Runtime's distribution pattern.
+
+**Architecture Highlights:**
+- `LibraryImport` (source-generated P/Invoke) for AOT compat
+- `SafeHandle` wrappers for native resource management
+- `SemaphoreSlim` for thread-safe inference (llama.cpp not thread-safe per context)
+- `NativeLibrary.SetDllImportResolver` for custom library path resolution
+- 3-phase implementation plan: MVP (2-3 weeks), Polish (2 weeks), Native Distribution (4 weeks)
+
+**Status:** Architecture proposed. Ready for team review and Bruno's approval.
+
+## Learnings
+
+- **bitnet.cpp IS llama.cpp at the API level.** The fork doesn't change the C API — it changes the kernel implementations. This means we can P/Invoke to the same llama.h entry points. The key differentiator is the compiled binary, not the API surface.
+- **LLamaSharp is incompatible with bitnet.cpp.** LLamaSharp wraps mainline llama.cpp which does not support ternary 1.58-bit weights. The two ecosystems are separate as of 2025.
+- **Native library distribution for research-stage projects should be user-provided in MVP.** The build matrix (6 platforms × kernel types) is too large for a small team. Ship managed code first, add prebuilt binaries when demand justifies CI investment.
+- **ProjectReference + InternalsVisibleTo is the right pattern for sharing internal types between extension packages** when the transitive dependency cost is low (managed-only, no native leak).
+- **BitNet models are CPU-focused.** Unlike ONNX models with GPU execution providers, BitNet's value proposition is CPU-only inference with ternary kernels. Configuration should reflect this (ThreadCount, not ExecutionProvider).
+
+---
+
+## Previous: BitNet Architecture Compatibility Analysis (2026-04-07)
 
 **2026-04-07:** Completed comprehensive architecture compatibility analysis for Microsoft's BitNet b1.58 1-bit LLM framework. Delivered 13KB technical decision document (`.squad/decisions/inbox/morpheus-bitnet-analysis.md`) covering 9 sections.
 
