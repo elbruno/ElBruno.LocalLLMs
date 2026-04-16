@@ -49,25 +49,31 @@ jobs:
         run: |
           dotnet restore src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj
           dotnet restore src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj
+          dotnet restore src/tests/ElBruno.LocalLLMs.BitNet.Tests/ElBruno.LocalLLMs.BitNet.Tests.csproj
           dotnet restore src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj
           dotnet restore src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj
+          dotnet restore src/ElBruno.LocalLLMs.BitNet/ElBruno.LocalLLMs.BitNet.csproj
 
       - name: Build
         run: |
           dotnet build src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
           dotnet build src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
+          dotnet build src/tests/ElBruno.LocalLLMs.BitNet.Tests/ElBruno.LocalLLMs.BitNet.Tests.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
           dotnet build src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
           dotnet build src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
+          dotnet build src/ElBruno.LocalLLMs.BitNet/ElBruno.LocalLLMs.BitNet.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
 
       - name: Unit Tests
         run: |
           dotnet test src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj -c Release --no-build --framework net8.0 --verbosity normal
           dotnet test src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj -c Release --no-build --framework net8.0 --verbosity normal
+          dotnet test src/tests/ElBruno.LocalLLMs.BitNet.Tests/ElBruno.LocalLLMs.BitNet.Tests.csproj -c Release --no-build --framework net8.0 --verbosity normal
 
       - name: Pack
         run: |
           dotnet pack src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
           dotnet pack src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
+          dotnet pack src/ElBruno.LocalLLMs.BitNet/ElBruno.LocalLLMs.BitNet.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
 
       - name: NuGet login (OIDC → temp API key)
         uses: NuGet/login@v1

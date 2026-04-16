@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.15.0] - 2026-04-16
+
+### Added
+
+**New Package: ElBruno.LocalLLMs.BitNet**
+- New NuGet package `ElBruno.LocalLLMs.BitNet` for running 1.58-bit ternary models via [bitnet.cpp](https://github.com/microsoft/BitNet)
+- `BitNetChatClient` — full `IChatClient` implementation wrapping bitnet.cpp via P/Invoke
+- `BitNetOptions` — configuration for model path, native library path, temperature, top-p, top-k, max tokens, thread count
+- `BitNetKnownModels` — catalog of 5 BitNet/GGUF models:
+  - BitNet b1.58 2B-4T (default, 2.4B params, ~400 MB)
+  - BitNet 0.7B (~150 MB)
+  - BitNet 3B (~650 MB)
+  - Falcon3-1B-1.58bit (~200 MB)
+  - Falcon3-3B-1.58bit (~600 MB)
+- `BitNetServiceExtensions.AddBitNetChatClient()` — dependency injection registration
+- `BitNetKernelType` enum — I2_S, TL1, TL2 kernel types
+- Platform-specific native library loading (Windows/Linux/macOS)
+- Streaming support via `IAsyncEnumerable<ChatResponseUpdate>`
+- Chat template reuse from core library (ChatML, Llama3, Mistral, etc.)
+
+**Samples**
+- `BitNetChat` — basic BitNet chat completion console app
+- `BitNetPerformance` — performance benchmark comparing BitNet vs ONNX models (memory, speed, tokens/second)
+
+**Tests**
+- 155 new unit tests for BitNet package (options, model definitions, known models catalog, DI extensions, exceptions, chat client)
+
+**CI/CD**
+- Updated `ci.yml` and `publish.yml` to build, test, and publish the BitNet package
+
+---
+
 ## [0.11.0] - 2026-04-04
 
 ### Fixed
