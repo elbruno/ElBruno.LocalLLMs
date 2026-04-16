@@ -1,5 +1,33 @@
 # Dozer — History
 
+## Latest: BitNet ONNX Conversion Analysis (2026-04-16)
+
+**2026-04-16:** Completed ONNX conversion feasibility analysis for Microsoft BitNet b1.58 (1.58-bit ternary quantization LLM framework).
+
+**Verdict: ⛔ Fundamentally Incompatible — Ternary weights have no ONNX equivalent.**
+
+**Key Findings:**
+- BitNet uses ternary weights {-1, 0, +1}, ONNX RT GenAI only supports FP32, FP16, INT4, INT8
+- Standard onnxruntime-genai builder v0.8.3 cannot process BitNet models (no HuggingFace transformers support for BitNet architecture)
+- BitNet distributed in GGUF format (bitnet.cpp ecosystem), not ONNX safetensors
+- BitLinear layers, SubLN normalization, ReLU² activation all require custom ONNX operators not exposed in GenAI bindings
+- Community WebGPU export (sushraja) exists but is NOT GenAI-compatible
+
+**Comparison to Known Blockers:**
+- Gemma 4: Same ONNX paradigm, awaiting runtime features → ⏳ Pending (will work when runtime updated)
+- BitNet: Different paradigm entirely (GGUF + bitnet.cpp kernels) → ⛔ Incompatible (would need separate library)
+
+**Recommendation:** Do NOT pursue BitNet integration into core library. Document as architecturally out-of-scope. Redirect users to microsoft/BitNet repo for 1.58-bit models.
+
+**Alternatives for edge efficiency within ONNX ecosystem:**
+- Qwen2.5-0.5B-Instruct: 825 MB INT4, already converted
+- TinyLlama-1.1B: 867 MB INT4, already converted
+- Phi-3.5-mini: 3.8B, native ONNX, 2.7 GB INT4
+
+**Status:** Analysis complete. Merged to `.squad/decisions.md` (Decision 4).
+
+---
+
 ## Project Context
 
 - **Project:** ElBruno.LocalLLMs — C# library for local LLM chat completions
@@ -97,6 +125,39 @@
 - Conversion times on this machine: 3B models ~2 min, 7B models ~3-5 min, 14B ~8 min, 24B ~15-20 min.
 - Upload speeds to HuggingFace: ~300-400 MB/s for large files.
 - Disk cleanup after each upload is essential — the 24B model alone was 16 GB on disk plus cache.
+
+### 2026-04-04 — BitNet ONNX Conversion Feasibility Analysis
+
+**Analyzed BitNet (microsoft/bitnet-b1.58-2B-4T) for ONNX Runtime GenAI conversion — determined it is fundamentally incompatible.**
+
+- **Verdict:** ⛔ **Fundamentally Incompatible** (Different Inference Paradigm) — NOT 🔴 Blocked (which implies same paradigm, just waiting for support)
+- **Key Finding:** BitNet uses bitnet.cpp (custom C++ kernels) + GGUF format, NOT ONNX Runtime GenAI + ONNX format. These are completely different ecosystems.
+- **Inference mechanism:** BitNet requires custom C++ kernels (I2_S, TL1, TL2) for ternary weight operations {-1, 0, +1}. These are NOT standard ONNX operators and do NOT exist in onnxruntime-genai.
+- **Model distribution:** All BitNet models (microsoft/BitNet-b1.58-2B-4T, community variants) are distributed in GGUF format for bitnet.cpp. None are in ONNX format compatible with onnxruntime-genai.
+- **Ternary weights:** BitNet uses true 1.58-bit quantization (ternary values), fundamentally different from our INT4 (4-bit, 16 levels). ONNX Runtime does not support ternary weight operations natively.
+- **Training requirement:** BitNet models must be trained from scratch with quantization-aware training (QAT). Cannot convert existing FP16/INT4 models to BitNet ternary format.
+- **Custom operators:** Community ONNX exports exist (sushraja/bitnet-b1.58-2B-4T-fp16-onnx) but use custom BitLinear operators for WebGPU, NOT compatible with onnxruntime-genai's KV cache management and GenAI format.
+- **onnxruntime-genai builder support:** ❌ NO — Builder v0.8.3 does not recognize BitNet architecture, BitLinear layers, or ternary quantization scheme. No roadmap for support visible.
+- **Comparison with blockers:**
+  - Gemma 4 (🔴 Blocked): Same inference paradigm (ONNX Runtime GenAI), just needs runtime updates for PLE/variable heads
+  - BitNet (⛔ Incompatible): Different inference paradigm entirely (bitnet.cpp, custom kernels, GGUF format)
+  - Mixtral (🔴 Blocked): MoE not supported by builder, but still standard transformers + ONNX Runtime
+  - StableLM-2 (⛔ Blocked): Custom architecture builder doesn't recognize
+  - **BitNet is MORE blocked than Gemma 4** — it's not just "wait for runtime update", it's "completely different technology stack"
+- **Why incompatible:**
+  1. Inference runtime mismatch: bitnet.cpp vs. ONNX Runtime GenAI
+  2. Model format incompatibility: GGUF vs. ONNX + genai_config.json
+  3. Custom operator dependency: Ternary ops don't exist in onnxruntime-genai
+  4. Training paradigm: Requires QAT from scratch, can't convert existing models
+  5. Maintenance burden: Would require forking onnxruntime-genai, implementing custom ops, ongoing maintenance
+- **Recommendation:** Do NOT pursue BitNet integration. Document in blocked-models.md under new category "Incompatible Inference Paradigm". Guide users to microsoft/BitNet repo (bitnet.cpp) if they want 1.58-bit models.
+- **Alternatives for extreme efficiency (within our ecosystem):**
+  - Phi-3.5-mini-instruct (3.8B, 2.7 GB INT4) — Native ONNX
+  - Qwen2.5-0.5B-Instruct (0.5B, 825 MB INT4) — Already converted
+  - TinyLlama-1.1B (1.1B, 867 MB INT4) — Already converted
+  - SmolLM2-360M-Instruct (0.36B, ~500 MB INT4) — Can convert if needed
+- **Technical details documented:** Full analysis in `.squad/decisions/inbox/dozer-bitnet-onnx.md` covering inference mechanism, ONNX conversion path, ternary weight format, available models, blocker comparison, and feasibility verdict.
+- **Pattern learned:** Not all "quantized LLMs" are compatible with ONNX Runtime GenAI. BitNet is a parallel technology (like llama.cpp/GGUF ecosystem) rather than an evolution of the ONNX ecosystem. Check inference runtime and model format before assuming convertibility.
 
 ### 2025-03-18 — Intent Extraction Model Evaluation
 

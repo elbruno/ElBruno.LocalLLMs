@@ -1,0 +1,23 @@
+docs: BitNet compatibility analysis — fundamentally incompatible with ONNX GenAI pipeline
+
+Completed comprehensive 3-agent analysis (Morpheus, Dozer, Trinity) of Microsoft BitNet b1.58
+architecture compatibility with ElBruno.LocalLLMs ONNX Runtime GenAI pipeline.
+
+Key Findings:
+- BitNet uses GGUF format + bitnet.cpp (custom C++ kernels), NOT ONNX Runtime GenAI
+- Ternary weights {-1, 0, +1} have no ONNX equivalent (ternary quantization unsupported)
+- Custom operators required (BitLinear, SubLN, ReLU²) not available in onnxruntime-genai
+- Different inference paradigm entirely vs. Gemma 4 (which uses ONNX but awaits runtime support)
+
+Recommendation:
+- Do NOT integrate BitNet into core library
+- If pursued: Use Scenario C1 (separate NuGet package wrapping bitnet.cpp via P/Invoke)
+- Else: Continue ONNX focus, use Qwen2.5-0.5B for edge efficiency needs
+
+Artifacts:
+- Orchestration logs: .squad/orchestration-log/2026-04-16T2145Z-{morpheus,dozer,trinity}.md
+- Session log: .squad/log/2026-04-16T2145Z-bitnet-analysis.md
+- Decision 4: .squad/decisions.md (merged, inbox files deleted)
+- Updated agent history: Morpheus, Dozer, Trinity
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>

@@ -1,14 +1,17 @@
-[Scribe] Merge Morpheus gemma4-monitoring analysis into decisions.md
+Scribe: Session log + decision merge
 
-- Write orchestration log: 2026-04-07T13-16-morpheus.md
-- Write session log: 2026-04-07T13-16-gemma4-monitoring-proposal.md
-- Merge inbox proposal into decisions.md
-- Delete inbox file
-- Update Morpheus history.md with completion note
+- Created orchestration logs for Switch and Tank agents (2026-04-07T13-22-*)
+- Created session log for Gemma 4 monitoring implementation
+- Merged decisions from .squad/decisions/inbox/ → .squad/decisions.md
+- Updated Switch and Tank history.md with cross-agent notes
+- Deleted merged inbox files
 
-Morpheus completed analysis of 5 automation approaches for detecting
-onnxruntime-genai Gemma 4 support. Proposal recommends tiered implementation:
-Tier 1 daily polling (\.10/mo), Tier 2 weekly conversion test (\-10/mo),
-Tier 3 optional dashboard (free). Ready for team decision.
+Gemma 4 monitoring workflow summary:
+- Switch implemented 3-job workflow (NuGet check, GitHub issue check, scoring)
+- Tank found & fixed 3 security bugs (1 critical, 2 medium)
+- Coordinator updated KNOWN_BLOCKED_VERSION to 0.13.0
+- Commits: 5adb604 (Switch), e85743f (fixes+version)
+
+All work complete. Workflow ready for production.
 
 Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>

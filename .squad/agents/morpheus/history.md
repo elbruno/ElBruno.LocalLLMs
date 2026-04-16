@@ -1,5 +1,54 @@
 
-## Latest: Gemma 4 Monitoring Analysis (2026-04-07)
+## Latest: BitNet Architecture Compatibility Analysis (2026-04-07)
+
+**2026-04-07:** Completed comprehensive architecture compatibility analysis for Microsoft's BitNet b1.58 1-bit LLM framework. Delivered 13KB technical decision document (`.squad/decisions/inbox/morpheus-bitnet-analysis.md`) covering 9 sections.
+
+**Core Finding: BitNet is architecturally incompatible with ElBruno.LocalLLMs.**
+
+**Technical Analysis:**
+- **Inference Path:** BitNet uses `bitnet.cpp` (custom C++ runtime) + GGUF format (GGML ecosystem), NOT ONNX Runtime GenAI
+- **Quantization:** 1.58-bit ternary weights {-1, 0, +1} using BitLinear layers, NOT standard ONNX operators (MatMul/Gemm)
+- **Custom Kernels:** T-MAC lookup-table methodology for ternary matrix multiplication, requires platform-specific native builds
+- **Architecture Differences:** SubLN normalization (not LayerNorm), ReLU² activation, absmean quantization during forward pass
+- **Performance Claims:** 2.37x-6.17x speedup vs standard LLMs, 55-82% energy reduction, 0.4GB memory for 2B model
+
+**Compatibility Assessment (4 key questions answered):**
+1. **Standard transformer attention?** YES for attention mechanism, NO for BitLinear layers
+2. **Custom operators required?** YES — BitLinear, SubLN, ternary weight unpacking — all incompatible with ONNX RT GenAI
+3. **Fit into ModelDefinition?** NO — requires GGUF format, BitNet kernel types (I2_S/TL1/TL2), different metadata
+4. **Different runtime needed?** YES — `bitnet.cpp` with native C++ interop, not ONNX Runtime GenAI
+
+**Comparison to Gemma 4 Block:**
+- **Gemma 4:** Uses ONNX format, blocked by runtime-level features (PLE, variable head dims) — will work once ONNX RT GenAI adds support
+- **BitNet:** Uses GGUF format, requires completely different inference stack — would need separate library
+
+**Risks of Integration:**
+- Type incompatibility (ModelDefinition assumes ONNX)
+- Runtime incompatibility (LocalChatClient wraps ORT GenAI, not bitnet.cpp)
+- Native build maintenance (6+ platforms: Win/Linux/macOS × x64/ARM64)
+- API surface pollution (BitNet-specific config leaks into IChatClient abstraction)
+- Distribution complexity (NuGet packages need runtime-specific native assets)
+
+**Recommendation: Do NOT integrate BitNet into ElBruno.LocalLLMs core library.**
+
+**Alternative Approaches:**
+1. **Option 1 (Recommended):** Create separate `ElBruno.BitNet` library with native C++ interop
+2. **Option 2:** Create `ElBruno.LocalLLMs.BitNet` extension package
+3. **Option 3 (Also Recommended):** Ignore BitNet, continue with existing tiny ONNX models (Qwen2.5-0.5B, TinyLlama-1.1B)
+
+**Rationale for Option 3:**
+- BitNet is research-stage (first release Oct 2024)
+- Limited official models (only 2B available)
+- High maintenance burden (native builds, C++ interop, GGUF handling)
+- Alternative exists: Qwen2.5-0.5B (330MB ONNX, native support, ~2-3x slower but zero friction)
+
+**Decision Required from Bruno:** Pursue separate BitNet library (4-6 week effort), or document as incompatible and continue focusing on ONNX-compatible models (30+ already supported)?
+
+**Status:** Analysis complete. Awaiting architectural decision from project owner.
+
+---
+
+## Previous: Gemma 4 Monitoring Analysis (2026-04-07)
 
 **2026-04-07:** Completed comprehensive analysis of automation approaches for detecting onnxruntime-genai Gemma 4 support. Delivered 20KB proposal (.squad/decisions/morpheus-gemma4-monitoring.md) covering five detection approaches:
 

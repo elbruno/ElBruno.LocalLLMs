@@ -5863,6 +5863,240 @@ foreach (var result in relevantTools)
 //   • find_document (score: 0.784)
 //   • list_directory (score: 0.621)
 
+---
+
+## Decision 4: BitNet Architecture Incompatibility
+
+**Date:** 2026-04-16  
+**Authors:** Morpheus (Architect), Dozer (ML Engineer), Trinity (Core Developer)  
+**Status:** Analysis Complete — Architectural Decision Required
+
+**Context:** Microsoft released BitNet b1.58, a 1.58-bit ternary quantization LLM framework claiming 2.37x-6.17x speedup and 55-82% energy reduction. Request to evaluate BitNet compatibility with `ElBruno.LocalLLMs` pipeline.
+
+---
+
+### 1. Architecture Analysis (Morpheus)
+
+**Finding: BitNet is architecturally incompatible with ONNX Runtime GenAI.**
+
+**BitNet Inference Path:**
+```
+PyTorch Model (.safetensors)
+    ↓
+GGUF Format (.gguf) [via bitnet.cpp conversion]
+    ↓
+bitnet.cpp (C++ runtime)
+    ↓
+Custom Ternary Kernels (I2_S, TL1, TL2)
+    ↓
+CPU/GPU Inference
+```
+
+**Our Library Inference Path:**
+```
+HuggingFace Model
+    ↓
+ONNX Conversion (onnxruntime-genai builder)
+    ↓
+ONNX Format (.onnx + genai_config.json)
+    ↓
+ONNX Runtime GenAI (C# bindings)
+    ↓
+Standard ONNX Operators (MatMul, Conv, etc.)
+    ↓
+CPU/GPU Inference
+```
+
+**Key Differences:**
+- **Quantization:** BitNet uses ternary {-1, 0, +1}. ONNX Runtime GenAI supports FP32, FP16, INT4, INT8 only
+- **Custom Layers:** BitNet uses BitLinear (custom ternary matmul), SubLN normalization, ReLU² activation — all incompatible with ONNX standard operators
+- **Model Format:** BitNet distributed in GGUF (llama.cpp ecosystem), not ONNX
+- **Kernel Strategy:** BitNet uses lookup-table (T-MAC) methodology for ternary operations, fundamentally different from standard quantized MatMul
+
+**Comparison to Gemma 4 Block:**
+- **Gemma 4:** Uses ONNX format but has runtime-level features (PLE, variable head dims) that ONNX RT GenAI doesn't support yet → ⏳ Awaiting runtime update, same paradigm
+- **BitNet:** Uses GGUF format and requires bitnet.cpp runtime → ⛔ Different paradigm entirely
+
+**Risk Assessment If Integrated:**
+1. Type incompatibility (ModelDefinition assumes ONNX)
+2. Runtime incompatibility (LocalChatClient wraps ORT GenAI, BitNet needs bitnet.cpp)
+3. Maintenance burden (native builds for 6+ platforms: Win/Linux/macOS × x64/ARM64)
+4. Testing complexity (integration tests need native binary builds in CI)
+5. Distribution complexity (NuGet packages need runtime-specific native assets)
+6. User confusion (why do some models need ONNX and others GGUF?)
+7. API surface pollution (BitNet-specific config would leak into IChatClient)
+
+**Conclusion:** Do NOT integrate BitNet into ElBruno.LocalLLMs core library.
+
+---
+
+### 2. ONNX Conversion Feasibility (Dozer)
+
+**Verdict: ⛔ Fundamentally Incompatible — Ternary weights have no ONNX equivalent.**
+
+**Standard Conversion Path Analysis:**
+```bash
+# This WILL NOT WORK:
+python -m onnxruntime_genai.models.builder \
+    -m microsoft/bitnet-b1.58-2B-4T \
+    -o ./models/bitnet-2b -p int4 -e cpu
+```
+
+**Why It Fails:**
+1. **No HuggingFace transformers support** — BitNet requires custom BitNet transformers fork
+2. **BitLinear layers unsupported** — Builder doesn't recognize ternary weight layers
+3. **Custom operators required** — Ternary weight operations need ONNX custom ops
+4. **GGUF format incompatible** — Builder expects safetensors/PyTorch format
+
+**BitNet vs. Our INT4 Quantization:**
+
+| Feature | BitNet 1.58-bit | Our INT4 | Comparison |
+|---------|-----------------|----------|------------|
+| **Weight values** | {-1, 0, +1} | 16 levels (-8 to 7) | BitNet: 3 states vs INT4: 16 states |
+| **Bits per weight** | 1.58 bits | 4 bits | BitNet: 2.5x smaller |
+| **Quantization scheme** | Ternary (absmean) | Block-wise INT4 | Fundamentally different |
+| **Training** | QAT from scratch | Post-training quantization | BitNet requires specialized training |
+| **ONNX support** | Custom operators | Native MatMulNBits | INT4 is standard, ternary is custom |
+| **Runtime support** | bitnet.cpp only | onnxruntime-genai | Completely different ecosystems |
+
+**Community Exports:**
+- **sushraja/bitnet-b1.58-2B-4T-fp16-onnx** exists but is **WebGPU-only**, not GenAI-compatible
+
+**ONNX Runtime Ternary Support:**
+- ❌ Native support: NO — ONNX Runtime does not have built-in ternary weight operations
+- ❌ Custom operators in GenAI: NOT EXPOSED in Microsoft.ML.OnnxRuntimeGenAI bindings
+- ❌ Builder v0.8.3: Does not support BitNet architecture
+
+**Architectural Blocker Level: ⛔ Fundamentally Incompatible (more severe than Gemma 4's 🔴 Blocked)**
+
+**Recommendation:** Do NOT pursue BitNet integration. Would require:
+- Custom ONNX operator development
+- Forking and maintaining onnxruntime-genai
+- Custom conversion pipeline
+- Ongoing maintenance
+
+Document BitNet as out-of-scope. Redirect users to microsoft/BitNet repo for 1.58-bit models.
+
+**Alternative Recommendations for Edge Users:**
+- **Phi-3.5-mini-instruct:** 3.8B, native ONNX, 2.7 GB INT4
+- **Qwen2.5-0.5B-Instruct:** 0.5B, already converted, 825 MB INT4
+- **TinyLlama-1.1B:** 1.1B, already converted, 867 MB INT4
+
+---
+
+### 3. Integration Scenarios (Trinity)
+
+**Scenarios Evaluated:** 3 architecturally distinct approaches
+
+#### Scenario A: BitNet Converts to Standard ONNX GenAI Format
+**Likelihood:** ❌ **Not feasible**
+- BitNet's ternary quantization has no ONNX GenAI equivalent
+- Converting to INT8 would lose 3x+ efficiency gains that define BitNet
+- Code Impact: 0 files
+
+#### Scenario B: BitNet Needs Custom ONNX Operators
+**Likelihood:** ⚠️ **Theoretically possible but impractical**
+- Would require custom operator registration (NOT exposed in GenAI bindings)
+- Would lose GenAI features: tokenizer integration, KV cache, streaming API
+- Falls back to raw `InferenceSession` + manual KV cache management
+- Files Changed: ~8-10 (core library pollution)
+- Effort: High (2-3 weeks)
+- **Verdict:** Unacceptable complexity for edge case
+
+#### Scenario C: BitNet Requires Its Own Inference Runtime (bitnet.cpp) ✅ **Current Reality**
+- BitNet uses bitnet.cpp (modified llama.cpp) with specialized ternary matmul kernels
+- Requires P/Invoke wrapper or separate NuGet package
+- Two options within Scenario C:
+
+##### Option C1: Separate NuGet Package — **RECOMMENDED**
+```
+ElBruno.LocalLLMs.BitNet/
+├── Native/ (platform-specific binaries)
+├── Interop/BitNetInterop.cs (P/Invoke to bitnet.cpp)
+├── BitNetChatClient.cs (implements IChatClient)
+└── BitNetOptions.cs
+```
+
+**Code Impact:**
+- **Core library changes:** 0 files
+- **New package:** 6-8 new files
+- **API surface:** No changes to core
+
+**Pros:**
+- Preserves "Single Core Package" Decision 1
+- Zero bloat in main library
+- Clean separation (BitNet is fundamentally different)
+- Users opt-in explicitly
+
+**Cons:**
+- Separate package to maintain
+- Native binary bundling complexity
+- P/Invoke interop complexity
+
+**Effort:** Medium-High (1-2 weeks)
+
+##### Option C2: Embedded in Core with Conditional Compilation
+- **Code Impact:** 10-12 files modified (core library pollution)
+- **Effort:** High (2-3 weeks)
+- **Verdict:** Violates "single package" principle, adds build complexity → NOT RECOMMENDED
+
+**API Surface Impact by Scenario:**
+
+| Scenario | `IChatClient` | `LocalLLMsOptions` | `KnownModels` | New Types |
+|----------|---------------|---------------------|---------------|-----------|
+| **A** | No change | No change | Add entries | None |
+| **B** | No change | No change | Add entries | `OnnxModelType.BitNetCustomOps` |
+| **C1** | ✅ **No change** | ✅ **No change** | ✅ **No change** | New package only |
+| **C2** | No change | Possibly add | Add entries | `OnnxModelType.BitNetCpp` |
+
+**Effort Estimates:**
+
+| Scenario | Files Changed | New Files | Infrastructure | Effort |
+|----------|---------------|-----------|----------------|--------|
+| **A** | ~2 | 0 | None | ❌ Not feasible |
+| **B** | ~8-10 | 3-4 | Custom ops, tokenization, KV cache | High (2-3w) |
+| **C1** | **0 (core)** | 6-8 (new pkg) | Native builds, P/Invoke | **Medium-High (1-2w)** |
+| **C2** | ~10-12 | 4-5 | Conditional compile, metapackage | High (2-3w) |
+
+**Recommendation: Scenario C1**
+- Aligns with Decision 1 (Single Core Package)
+- No breaking changes to core API
+- Modular architecture (BitNet users opt-in)
+- Maintainable path forward
+
+**Open Questions:**
+1. Native binary distribution strategy (prebuilt vs. require user build)?
+2. GGUF BitNet model availability on HuggingFace?
+3. Tokenizer compatibility (can reuse existing chat template formatters)?
+4. Performance claims verification at <3B model scale?
+
+---
+
+### Decision Summary
+
+**Recommendation: Do NOT integrate BitNet into ElBruno.LocalLLMs core library.**
+
+**If BitNet is pursued:**
+- Use **Scenario C1** (separate NuGet package wrapping bitnet.cpp via P/Invoke)
+- Effort: 1-2 weeks for initial implementation
+- Zero changes to core library
+
+**If BitNet is skipped (Also Recommended):**
+- Document as architecturally incompatible
+- Continue focusing on ONNX-compatible models (30+ already supported)
+- Use Qwen2.5-0.5B (330MB ONNX) for edge efficiency needs
+- Unblock remaining model conversions, complete core library feature set
+
+**Rationale for Skipping:**
+- BitNet is research-stage (first release Oct 2024)
+- Limited official models (only 2B available)
+- High maintenance burden (native builds, C++ interop, GGUF handling)
+- Excellent alternatives exist within ONNX ecosystem (Qwen2.5-0.5B, TinyLlama-1.1B, Phi-3.5-mini)
+
+**Action Required:** Bruno Capuano to choose between pursuing separate BitNet library (Scenario C1) or documenting as incompatible and continuing ONNX focus.
+
+**Status:** Analysis complete. Awaiting owner decision.
+
 // Step 6: Forward only filtered tools to final LLM
 // (Azure OpenAI, Ollama, or another LocalChatClient)
 var finalResponse = await FinalLlmCallWithFilteredTools(
