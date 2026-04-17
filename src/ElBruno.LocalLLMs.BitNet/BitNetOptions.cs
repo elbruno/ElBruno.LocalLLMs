@@ -15,7 +15,8 @@ public sealed class BitNetOptions
 
     /// <summary>
     /// Path to the GGUF model file.
-    /// When set, skips any automatic resolution.
+    /// When set, skips automatic download. When null, the model is
+    /// automatically downloaded from HuggingFace (if <see cref="EnsureModelDownloaded"/> is true).
     /// </summary>
     public string? ModelPath { get; set; }
 
@@ -25,6 +26,18 @@ public sealed class BitNetOptions
     /// If null, searches PATH / LD_LIBRARY_PATH / default locations.
     /// </summary>
     public string? NativeLibraryPath { get; set; }
+
+    /// <summary>
+    /// Custom directory for model cache.
+    /// Default: %LOCALAPPDATA%/ElBruno/LocalLLMs/models (same as ONNX models).
+    /// </summary>
+    public string? CacheDirectory { get; set; }
+
+    /// <summary>
+    /// Whether to auto-download the GGUF model from HuggingFace if not cached. Default: true.
+    /// Only used when <see cref="ModelPath"/> is null.
+    /// </summary>
+    public bool EnsureModelDownloaded { get; set; } = true;
 
     /// <summary>
     /// Maximum tokens to generate. Default: 2048.

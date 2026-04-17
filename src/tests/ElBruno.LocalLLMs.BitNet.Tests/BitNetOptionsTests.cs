@@ -108,6 +108,22 @@ public class BitNetOptionsTests
         Assert.Null(options.ChatTemplateOverride);
     }
 
+    [Fact]
+    public void Defaults_CacheDirectory_IsNull()
+    {
+        var options = new BitNetOptions();
+
+        Assert.Null(options.CacheDirectory);
+    }
+
+    [Fact]
+    public void Defaults_EnsureModelDownloaded_IsTrue()
+    {
+        var options = new BitNetOptions();
+
+        Assert.True(options.EnsureModelDownloaded);
+    }
+
     // ──────────────────────────────────────────────
     // Custom values
     // ──────────────────────────────────────────────
@@ -246,6 +262,27 @@ public class BitNetOptionsTests
         Assert.Equal(format, options.ChatTemplateOverride);
     }
 
+    [Fact]
+    public void Custom_CacheDirectory_CanBeSet()
+    {
+        var options = new BitNetOptions
+        {
+            CacheDirectory = @"C:\custom\cache"
+        };
+
+        Assert.Equal(@"C:\custom\cache", options.CacheDirectory);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Custom_EnsureModelDownloaded_CanBeSet(bool value)
+    {
+        var options = new BitNetOptions { EnsureModelDownloaded = value };
+
+        Assert.Equal(value, options.EnsureModelDownloaded);
+    }
+
     // ──────────────────────────────────────────────
     // Null handling
     // ──────────────────────────────────────────────
@@ -286,6 +323,15 @@ public class BitNetOptionsTests
         Assert.Null(options.ChatTemplateOverride);
     }
 
+    [Fact]
+    public void CacheDirectory_CanBeSetToNull()
+    {
+        var options = new BitNetOptions { CacheDirectory = "some/path" };
+        options.CacheDirectory = null;
+
+        Assert.Null(options.CacheDirectory);
+    }
+
     // ──────────────────────────────────────────────
     // Mutation: options are mutable, verify round-trip
     // ──────────────────────────────────────────────
@@ -298,6 +344,8 @@ public class BitNetOptionsTests
         options.Model = BitNetKnownModels.Falcon3_3B;
         options.ModelPath = @"C:\test\model.gguf";
         options.NativeLibraryPath = @"C:\libs";
+        options.CacheDirectory = @"C:\custom\cache";
+        options.EnsureModelDownloaded = false;
         options.MaxTokens = 512;
         options.Temperature = 0.3f;
         options.TopP = 0.5f;
@@ -311,6 +359,8 @@ public class BitNetOptionsTests
         Assert.Equal(BitNetKnownModels.Falcon3_3B, options.Model);
         Assert.Equal(@"C:\test\model.gguf", options.ModelPath);
         Assert.Equal(@"C:\libs", options.NativeLibraryPath);
+        Assert.Equal(@"C:\custom\cache", options.CacheDirectory);
+        Assert.False(options.EnsureModelDownloaded);
         Assert.Equal(512, options.MaxTokens);
         Assert.Equal(0.3f, options.Temperature);
         Assert.Equal(0.5f, options.TopP);
