@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.16.0] - 2026-04-17
+
+### Added
+
+**BitNet Auto-Download from HuggingFace**
+- `BitNetModelDownloader` — automatic GGUF model download with cache-first logic via `ElBruno.HuggingFace.Downloader`
+- `BitNetOptions.EnsureModelDownloaded` (default: `true`) — zero-config model acquisition
+- `BitNetOptions.CacheDirectory` — configurable local cache path
+- `BitNetChatClient.CreateAsync()` — simplified factory with optional `IProgress<string>` for download progress
+
+**Platform-Specific Native NuGet Packages (CI/CD only — binaries ship on first build run)**
+- `ElBruno.LocalLLMs.BitNet.Native.win-x64` — Windows x64 native library
+- `ElBruno.LocalLLMs.BitNet.Native.linux-x64` — Linux x64 native library
+- `ElBruno.LocalLLMs.BitNet.Native.osx-arm64` — macOS ARM64 native library
+- `NativeLibraryLoader` now probes `runtimes/{rid}/native/` paths (NuGet runtime convention)
+- Improved error messages with platform-specific NuGet package suggestions
+
+**CI/CD Workflows**
+- `build-bitnet-native.yml` — cross-platform bitnet.cpp build (3 runners, reusable workflow)
+- `publish-bitnet-native.yml` — pack and push native NuGet packages via OIDC trusted publishing
+
+### Tests
+- 58 new BitNet tests (NativeLibraryLoaderTests + NativePackageValidationTests)
+- Total: 229 BitNet tests passing
+
+---
+
 ## [0.15.0] - 2026-04-16
 
 ### Added

@@ -9,7 +9,7 @@
     <PackageProjectUrl>https://github.com/elbruno/ElBruno.LocalLLMs</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>bitnet;native;osx-arm64;llm;ai;ternary;1-bit</PackageTags>
-    <Version>0.15.0</Version>
+    <Version>0.16.0</Version>
     <IncludeSymbols>false</IncludeSymbols>
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
     <!-- Suppress NU5128: no lib/ assemblies is expected for native-only packages -->
