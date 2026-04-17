@@ -1,0 +1,119 @@
+name: Build BitNet Native
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+# TODO: Pin to a specific commit SHA after initial testing
+env:
+  BITNET_CPP_COMMIT: main
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            binary: llama.dll
+          - os: ubuntu-latest
+            rid: linux-x64
+            binary: libllama.so
+          - os: macos-latest
+            rid: osx-arm64
+            binary: libllama.dylib
+
+    runs-on: ${{ matrix.os }}
+    name: Build ${{ matrix.rid }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Clone bitnet.cpp
+        run: |
+          git clone --recursive https://github.com/microsoft/BitNet.git bitnet-src
+          cd bitnet-src
+          git checkout ${{ env.BITNET_CPP_COMMIT }}
+
+      # ── Windows prerequisites ──
+      - name: Install prerequisites (Windows)
+        if: matrix.rid == 'win-x64'
+        shell: pwsh
+        run: |
+          choco install llvm --version=18.1.8 -y --no-progress
+          echo "CC=clang" >> $env:GITHUB_ENV
+          echo "CXX=clang++" >> $env:GITHUB_ENV
+
+      # ── Linux prerequisites ──
+      - name: Install prerequisites (Linux)
+        if: matrix.rid == 'linux-x64'
+        run: |
+          wget https://apt.llvm.org/llvm.sh -O llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 18
+          sudo apt-get install -y cmake
+          echo "CC=clang-18" >> "$GITHUB_ENV"
+          echo "CXX=clang++-18" >> "$GITHUB_ENV"
+
+      # ── macOS prerequisites ──
+      - name: Install prerequisites (macOS)
+        if: matrix.rid == 'osx-arm64'
+        run: |
+          brew install cmake
+
+      # ── Python setup (all platforms) ──
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        working-directory: bitnet-src
+        run: pip install -r requirements.txt
+
+      # ── Build bitnet.cpp ──
+      - name: Build bitnet.cpp
+        working-directory: bitnet-src
+        run: python setup_env.py --hf-repo microsoft/BitNet-b1.58-2B-4T-gguf -q i2_s
+
+      # ── Locate and upload the native binary ──
+      - name: Find native binary (Windows)
+        if: matrix.rid == 'win-x64'
+        shell: pwsh
+        run: |
+          $dll = Get-ChildItem -Path bitnet-src/build -Recurse -Filter "llama.dll" | Select-Object -First 1
+          if (-not $dll) { Write-Error "llama.dll not found"; exit 1 }
+          Write-Host "Found: $($dll.FullName)"
+          New-Item -ItemType Directory -Path staging -Force | Out-Null
+          Copy-Item $dll.FullName -Destination staging/llama.dll
+          echo "BINARY_PATH=staging/llama.dll" >> $env:GITHUB_ENV
+
+      - name: Find native binary (Linux)
+        if: matrix.rid == 'linux-x64'
+        run: |
+          SO=$(find bitnet-src/build -name "libllama.so" -type f | head -1)
+          if [ -z "$SO" ]; then echo "libllama.so not found"; exit 1; fi
+          echo "Found: $SO"
+          mkdir -p staging
+          cp "$SO" staging/libllama.so
+          echo "BINARY_PATH=staging/libllama.so" >> "$GITHUB_ENV"
+
+      - name: Find native binary (macOS)
+        if: matrix.rid == 'osx-arm64'
+        run: |
+          DYLIB=$(find bitnet-src/build -name "libllama.dylib" -type f | head -1)
+          if [ -z "$DYLIB" ]; then echo "libllama.dylib not found"; exit 1; fi
+          echo "Found: $DYLIB"
+          mkdir -p staging
+          cp "$DYLIB" staging/libllama.dylib
+          echo "BINARY_PATH=staging/libllama.dylib" >> "$GITHUB_ENV"
+
+      - name: Upload native binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: bitnet-native-${{ matrix.rid }}
+          path: staging/${{ matrix.binary }}
+          retention-days: 7
+          if-no-files-found: error
