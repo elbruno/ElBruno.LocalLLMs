@@ -122,3 +122,27 @@ Created .github/workflows/monitor-gemma4-blocker.yml — daily NuGet/GitHub moni
 - All bugs fixed via env var indirection + error handling
 - Coordinator bumped KNOWN_BLOCKED_VERSION from 0.12.2 to 0.13.0
 - Final commit: e85743f (security fixes + version bump)
+
+## BitNet Native NuGet Packages
+
+**Date:** 2026-07-25
+
+Created platform-specific native NuGet packages for shipping pre-built bitnet.cpp binaries:
+
+**Files created:**
+- `src/ElBruno.LocalLLMs.BitNet.Native.win-x64/` — content-only .csproj, ships `llama.dll`
+- `src/ElBruno.LocalLLMs.BitNet.Native.linux-x64/` — content-only .csproj, ships `libllama.so`
+- `src/ElBruno.LocalLLMs.BitNet.Native.osx-arm64/` — content-only .csproj, ships `libllama.dylib`
+- `.github/workflows/build-bitnet-native.yml` — reusable workflow, 3-platform matrix build of bitnet.cpp
+- `.github/workflows/publish-bitnet-native.yml` — calls build workflow, packs, publishes via OIDC trusted publishing
+
+**Key decisions:**
+- `netstandard2.0` target with `NoBuild=true` — these are content-only packages, no compilation
+- `NU5128` warning suppressed — expected for native-only packages with no lib/ assemblies
+- Build workflow uses `workflow_call` (reusable) + `workflow_dispatch` (manual testing)
+- Publish workflow triggers on `release: published` (tag `native-v*`) + `workflow_dispatch`
+- Version extraction strips both `native-v` and `v` prefixes from release tags
+- Binary search uses recursive find in `bitnet-src/build` because exact path varies by platform/build config
+- `BITNET_CPP_COMMIT` env var set to `main` — should be pinned to SHA after first successful build
+- Solution file updated with `/src/native/` folder grouping
+- Follows existing per-csproj CI pattern (not solution-wide), matching `ci.yml` and `publish.yml`

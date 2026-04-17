@@ -63,6 +63,13 @@ ElBruno.LocalLLMs.BitNet/
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-04-17: NativeLibraryLoader — NuGet runtimes/ path probing + improved error messages
+- Added `GetNuGetRuntimePaths()` to probe `runtimes/{rid}/native/` relative to both `AppContext.BaseDirectory` and assembly location
+- Search order: user path → env paths → default paths (BaseDirectory, CWD) → NuGet runtimes paths → OS fallback
+- Error message now detects RID and suggests the correct `ElBruno.LocalLLMs.BitNet.Native.{rid}` package
+- Added `GetCandidateLibraryPathsForTesting()` internal accessor for test project verification
+- Key file: `src/ElBruno.LocalLLMs.BitNet/Native/NativeLibraryLoader.cs`
+
 ### 2026-04-16: BitNet Sample Apps + Benchmark Harness
 - Added `src/samples/BitNetChat/` and `src/samples/BitNetPerformance/` (net10.0) to cover BitNet chat and BitNet-vs-ONNX benchmarking.
 - BitNet samples require `BITNET_NATIVE_PATH` (native library folder) and `BITNET_MODEL_PATH` (GGUF file) for local execution.

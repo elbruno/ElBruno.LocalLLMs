@@ -1,0 +1,103 @@
+name: Publish BitNet Native NuGet
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Package version (leave empty to use csproj version)"
+        required: false
+        type: string
+
+jobs:
+  # ── Step 1: Build native binaries on all platforms ──
+  build:
+    uses: ./.github/workflows/build-bitnet-native.yml
+
+  # ── Step 2: Pack and publish NuGet packages ──
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            VERSION="${{ github.event.release.tag_name }}"
+            VERSION="${VERSION#native-v}"
+            VERSION="${VERSION#v}"
+          elif [[ -n "${{ inputs.version }}" ]]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION=$(grep -oP '<Version>\K[^<]+' src/ElBruno.LocalLLMs.BitNet.Native.win-x64/ElBruno.LocalLLMs.BitNet.Native.win-x64.csproj)
+          fi
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "❌ Invalid version: '$VERSION'"; exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "📦 Publishing version: $VERSION"
+
+      # ── Download all native binaries ──
+      - name: Download Windows x64 binary
+        uses: actions/download-artifact@v4
+        with:
+          name: bitnet-native-win-x64
+          path: src/ElBruno.LocalLLMs.BitNet.Native.win-x64/runtimes/win-x64/native/
+
+      - name: Download Linux x64 binary
+        uses: actions/download-artifact@v4
+        with:
+          name: bitnet-native-linux-x64
+          path: src/ElBruno.LocalLLMs.BitNet.Native.linux-x64/runtimes/linux-x64/native/
+
+      - name: Download macOS ARM64 binary
+        uses: actions/download-artifact@v4
+        with:
+          name: bitnet-native-osx-arm64
+          path: src/ElBruno.LocalLLMs.BitNet.Native.osx-arm64/runtimes/osx-arm64/native/
+
+      # ── Verify binaries landed ──
+      - name: Verify binaries
+        run: |
+          ls -la src/ElBruno.LocalLLMs.BitNet.Native.win-x64/runtimes/win-x64/native/
+          ls -la src/ElBruno.LocalLLMs.BitNet.Native.linux-x64/runtimes/linux-x64/native/
+          ls -la src/ElBruno.LocalLLMs.BitNet.Native.osx-arm64/runtimes/osx-arm64/native/
+
+      # ── Pack each native project ──
+      - name: Pack
+        run: |
+          dotnet pack src/ElBruno.LocalLLMs.BitNet.Native.win-x64/ElBruno.LocalLLMs.BitNet.Native.win-x64.csproj -c Release -p:Version=${{ steps.version.outputs.version }} -o artifacts
+          dotnet pack src/ElBruno.LocalLLMs.BitNet.Native.linux-x64/ElBruno.LocalLLMs.BitNet.Native.linux-x64.csproj -c Release -p:Version=${{ steps.version.outputs.version }} -o artifacts
+          dotnet pack src/ElBruno.LocalLLMs.BitNet.Native.osx-arm64/ElBruno.LocalLLMs.BitNet.Native.osx-arm64.csproj -c Release -p:Version=${{ steps.version.outputs.version }} -o artifacts
+
+      - name: List packages
+        run: ls -la artifacts/
+
+      # ── NuGet OIDC login + push ──
+      - name: NuGet login (OIDC → temp API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Push to NuGet.org
+        run: dotnet nuget push "artifacts/*.nupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Upload NuGet package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bitnet-native-nupkgs
+          path: artifacts/*.nupkg

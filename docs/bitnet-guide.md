@@ -19,67 +19,108 @@ The `ElBruno.LocalLLMs.BitNet` package wraps [bitnet.cpp](https://github.com/mic
 
 ## Installation
 
+### Option A: Zero-setup with native NuGet package (Recommended)
+
+```bash
+dotnet add package ElBruno.LocalLLMs.BitNet
+dotnet add package ElBruno.LocalLLMs.BitNet.Native.win-x64     # Windows
+# OR
+dotnet add package ElBruno.LocalLLMs.BitNet.Native.linux-x64    # Linux
+# OR
+dotnet add package ElBruno.LocalLLMs.BitNet.Native.osx-arm64    # macOS Apple Silicon
+```
+
+The native package ships a pre-built bitnet.cpp binary. Models auto-download from HuggingFace on first run.
+
+### Option B: Managed package only (bring your own native library)
+
 ```bash
 dotnet add package ElBruno.LocalLLMs.BitNet
 ```
 
-> **Note:** Unlike the core `ElBruno.LocalLLMs` package, BitNet does **not** use ONNX Runtime. It requires a pre-built `bitnet.cpp` native library.
+> **Note:** Unlike the core `ElBruno.LocalLLMs` package, BitNet does **not** use ONNX Runtime. It requires a pre-built `bitnet.cpp` native library, either from a native NuGet package or built from source.
+
+---
+
+## Platform Support
+
+| Platform | NuGet Package | Status |
+|----------|--------------|--------|
+| Windows x64 | `ElBruno.LocalLLMs.BitNet.Native.win-x64` | ✅ Supported |
+| Linux x64 | `ElBruno.LocalLLMs.BitNet.Native.linux-x64` | ✅ Supported |
+| macOS ARM64 | `ElBruno.LocalLLMs.BitNet.Native.osx-arm64` | ✅ Supported |
+| Windows ARM64 | — | 🔄 Planned |
+| Linux ARM64 | — | 🔄 Planned |
 
 ---
 
 ## Prerequisites
 
-### 1. Build bitnet.cpp
+If using **Option A** (native NuGet package), no additional prerequisites are needed. Models auto-download.
 
-Clone and build the bitnet.cpp native library:
+If using **Option B** (bring your own), build bitnet.cpp:
+
+### Build bitnet.cpp from source
 
 ```bash
 # Clone bitnet.cpp
-git clone https://github.com/microsoft/BitNet.git
+git clone --recursive https://github.com/microsoft/BitNet.git
 cd BitNet
-
-# Build (Linux/macOS)
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --config Release
-
-# Build (Windows)
-cmake -B build -G "Visual Studio 17 2022" -A x64
-cmake --build build --config Release
+pip install -r requirements.txt
+python setup_env.py --hf-repo microsoft/BitNet-b1.58-2B-4T-gguf -q i2_s
 ```
 
 The native library will be at:
-- **Windows:** `build/Release/llama.dll`
-- **Linux:** `build/libllama.so`
-- **macOS:** `build/libllama.dylib`
+- **Windows:** `build/bin/Release/llama.dll`
+- **Linux:** `build/bin/libllama.so`
+- **macOS:** `build/bin/libllama.dylib`
 
-### 2. Download a GGUF Model
-
-Download a BitNet GGUF model from HuggingFace:
-
-```bash
-# Recommended: BitNet b1.58 2B-4T (MIT license, ~400 MB)
-huggingface-cli download microsoft/BitNet-b1.58-2B-4T-gguf --local-dir ./models/bitnet-2b
-```
-
-Or use the Python setup script from the BitNet repo:
-
-```bash
-python setup_env.py --hf-repo microsoft/BitNet-b1.58-2B-4T-gguf -q i2_s
-```
+> **Note:** GGUF model files are now auto-downloaded from HuggingFace on first run. You no longer need to download models manually unless you prefer to set `ModelPath` explicitly.
 
 ---
 
 ## Quick Start
 
+### Zero-setup (with native NuGet package)
+
 ```csharp
 using ElBruno.LocalLLMs.BitNet;
 using Microsoft.Extensions.AI;
 
+// Everything auto-resolves: native lib from NuGet, model from HuggingFace
+await using var client = await BitNetChatClient.CreateAsync(new BitNetOptions(), progress: null);
+
+var response = await client.GetResponseAsync([
+    new(ChatRole.User, "What is quantum computing?")
+]);
+
+Console.WriteLine(response.Text);
+```
+
+### With download progress
+
+```csharp
+var options = new BitNetOptions
+{
+    NativeLibraryPath = "/path/to/bitnet.cpp/build",
+    Model = BitNetKnownModels.Falcon3_1B // Choose a smaller model
+};
+
+var progress = new Progress<ModelDownloadProgress>(p =>
+    Console.WriteLine($"Downloading {p.FileName}: {p.PercentComplete:P0}"));
+
+await using var client = await BitNetChatClient.CreateAsync(options, progress);
+```
+
+### With explicit model path (no auto-download)
+
+```csharp
 var options = new BitNetOptions
 {
     Model = BitNetKnownModels.BitNet2B4T,
     ModelPath = "/path/to/bitnet-2b/model.gguf",
-    NativeLibraryPath = "/path/to/bitnet.cpp/build"
+    NativeLibraryPath = "/path/to/bitnet.cpp/build",
+    EnsureModelDownloaded = false
 };
 
 using var client = new BitNetChatClient(options);
@@ -127,6 +168,13 @@ await foreach (var update in client.GetStreamingResponseAsync([
 ## Dependency Injection
 
 ```csharp
+// Auto-download enabled by default — just configure the native library path
+builder.Services.AddBitNetChatClient(options =>
+{
+    options.NativeLibraryPath = "/path/to/native/lib";
+});
+
+// Or with explicit model path (skips auto-download)
 builder.Services.AddBitNetChatClient(options =>
 {
     options.Model = BitNetKnownModels.BitNet2B4T;
@@ -165,16 +213,19 @@ public class MyService(IChatClient chatClient) { ... }
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `Model` | `BitNetModelDefinition` | `BitNet2B4T` | Model definition from catalog |
-| `ModelPath` | `string` | `null` | Path to GGUF model file |
+| `ModelPath` | `string?` | `null` | Path to GGUF model file. When null, auto-downloads from HuggingFace |
 | `NativeLibraryPath` | `string?` | `null` | Path to bitnet.cpp native library directory |
+| `CacheDirectory` | `string?` | `%LOCALAPPDATA%/ElBruno/LocalLLMs/models` | Custom directory for cached model files |
+| `EnsureModelDownloaded` | `bool` | `true` | Auto-download model from HuggingFace when `ModelPath` is null |
 | `MaxTokens` | `int` | `2048` | Maximum tokens to generate |
 | `Temperature` | `float` | `0.7` | Sampling temperature (0.0 = deterministic) |
 | `TopP` | `float` | `0.9` | Nucleus sampling probability |
 | `TopK` | `int` | `40` | Top-K sampling |
-| `RepeatPenalty` | `float` | `1.1` | Repetition penalty |
-| `ContextSize` | `int` | `2048` | Context window size in tokens |
+| `RepetitionPenalty` | `float` | `1.1` | Repetition penalty |
+| `ContextSize` | `int` | `4096` | Context window size in tokens |
 | `ThreadCount` | `int` | CPU count | Number of inference threads |
-| `Seed` | `int?` | `null` | Random seed for reproducibility |
+| `SystemPrompt` | `string?` | `null` | Optional system prompt prepended to conversations |
+| `ChatTemplateOverride` | `ChatTemplateFormat?` | `null` | Override default chat template format |
 
 ---
 
@@ -188,7 +239,7 @@ public class MyService(IChatClient chatClient) { ... }
 | **Model size** | Extremely small (150 MB–650 MB) | Larger (825 MB–40+ GB) |
 | **Memory usage** | Very low (1–6 GB) | Higher (2–40+ GB) |
 | **Model quality** | Good for size, but limited model selection | Wide selection, state-of-the-art models |
-| **Auto-download** | Manual (user provides model) | Automatic from HuggingFace |
+| **Auto-download** | Automatic from HuggingFace | Automatic from HuggingFace |
 | **Setup** | Requires building bitnet.cpp | Just add NuGet packages |
 
 **Use BitNet when:**

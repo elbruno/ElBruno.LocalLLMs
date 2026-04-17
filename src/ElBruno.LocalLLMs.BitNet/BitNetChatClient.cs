@@ -68,6 +68,32 @@ public sealed class BitNetChatClient : IChatClient, IAsyncDisposable
     }
 
     /// <summary>
+    /// Async factory that auto-downloads the GGUF model from HuggingFace before creating the client.
+    /// Uses the default model (<see cref="BitNetKnownModels.BitNet2B4T"/>) unless overridden in options.
+    /// </summary>
+    public static async Task<BitNetChatClient> CreateAsync(
+        BitNetOptions options,
+        IProgress<ModelDownloadProgress>? progress,
+        ILoggerFactory? loggerFactory = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        if (string.IsNullOrWhiteSpace(options.ModelPath) && options.EnsureModelDownloaded)
+        {
+            var downloader = new BitNetModelDownloader();
+            options.ModelPath = await downloader.EnsureModelAsync(
+                options.Model,
+                options.CacheDirectory,
+                progress,
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        return await Task.Run(() => new BitNetChatClient(options, loggerFactory), cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// Metadata describing this chat client provider and model.
     /// </summary>
     public ChatClientMetadata Metadata { get; }
@@ -197,10 +223,30 @@ public sealed class BitNetChatClient : IChatClient, IAsyncDisposable
             LlamaNative.llama_backend_init();
 
             var modelPath = _options.ModelPath;
+
+            // Auto-download if ModelPath is not set and EnsureModelDownloaded is enabled
+            if (string.IsNullOrWhiteSpace(modelPath) && _options.EnsureModelDownloaded)
+            {
+                _logger.LogInformation(
+                    "ModelPath not set — downloading '{ModelId}' from HuggingFace...",
+                    _options.Model.Id);
+
+                var downloader = new BitNetModelDownloader();
+                modelPath = await downloader.EnsureModelAsync(
+                    _options.Model,
+                    _options.CacheDirectory,
+                    progress: null,
+                    cancellationToken).ConfigureAwait(false);
+
+                _options.ModelPath = modelPath;
+
+                _logger.LogInformation("Model downloaded to '{ModelPath}'.", modelPath);
+            }
+
             if (string.IsNullOrWhiteSpace(modelPath))
             {
                 throw new BitNetInferenceException(
-                    "BitNetOptions.ModelPath must be set to a GGUF model file.");
+                    "BitNetOptions.ModelPath must be set to a GGUF model file, or set EnsureModelDownloaded = true to download automatically.");
             }
 
             var modelParams = LlamaNative.llama_model_default_params();

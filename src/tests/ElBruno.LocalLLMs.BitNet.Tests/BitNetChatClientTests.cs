@@ -37,6 +37,13 @@ public class BitNetChatClientTests
             BitNetChatClient.CreateAsync(null!));
     }
 
+    [Fact]
+    public async Task CreateAsync_WithProgress_NullOptions_ThrowsArgumentNullException()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            BitNetChatClient.CreateAsync(null!, progress: null));
+    }
+
     // ──────────────────────────────────────────────
     // Type checks
     // ──────────────────────────────────────────────

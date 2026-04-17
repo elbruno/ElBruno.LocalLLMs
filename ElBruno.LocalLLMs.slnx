@@ -4,6 +4,11 @@
     <Project Path="src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj" />
     <Project Path="src/ElBruno.LocalLLMs.BitNet/ElBruno.LocalLLMs.BitNet.csproj" />
   </Folder>
+  <Folder Name="/src/native/">
+    <Project Path="src/ElBruno.LocalLLMs.BitNet.Native.win-x64/ElBruno.LocalLLMs.BitNet.Native.win-x64.csproj" />
+    <Project Path="src/ElBruno.LocalLLMs.BitNet.Native.linux-x64/ElBruno.LocalLLMs.BitNet.Native.linux-x64.csproj" />
+    <Project Path="src/ElBruno.LocalLLMs.BitNet.Native.osx-arm64/ElBruno.LocalLLMs.BitNet.Native.osx-arm64.csproj" />
+  </Folder>
   <Folder Name="/src/tests/">
     <Project Path="src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj" />
     <Project Path="src/tests/ElBruno.LocalLLMs.IntegrationTests/ElBruno.LocalLLMs.IntegrationTests.csproj" />

@@ -31,10 +31,22 @@ internal static class NativeLibraryLoader
 
             if (!TryLoadLibrary(out var handle))
             {
+                var rid = RuntimeInformation.RuntimeIdentifier;
+                var packageSuggestion = rid switch
+                {
+                    string r when r.StartsWith("win") && r.Contains("x64") => "ElBruno.LocalLLMs.BitNet.Native.win-x64",
+                    string r when r.StartsWith("linux") && r.Contains("x64") => "ElBruno.LocalLLMs.BitNet.Native.linux-x64",
+                    string r when r.StartsWith("osx") && r.Contains("arm64") => "ElBruno.LocalLLMs.BitNet.Native.osx-arm64",
+                    _ => "ElBruno.LocalLLMs.BitNet.Native.{your-rid}"
+                };
+
                 throw new BitNetNativeLibraryException(
-                    "Unable to locate the BitNet native library (llama). " +
-                    "Set BitNetOptions.NativeLibraryPath to the directory containing llama.dll/libllama.so/libllama.dylib, " +
-                    "or add it to your PATH/LD_LIBRARY_PATH/DYLD_LIBRARY_PATH.");
+                    $"Unable to locate the BitNet native library (llama). " +
+                    $"Install the platform-specific NuGet package:\n" +
+                    $"  dotnet add package {packageSuggestion}\n" +
+                    $"Or set BitNetOptions.NativeLibraryPath to the directory containing " +
+                    $"llama.dll/libllama.so/libllama.dylib, " +
+                    $"or add it to your PATH/LD_LIBRARY_PATH/DYLD_LIBRARY_PATH.");
             }
 
             NativeLibrary.Free(handle);
@@ -99,6 +111,41 @@ internal static class NativeLibraryLoader
             foreach (var name in libraryNames)
             {
                 yield return Path.Combine(path, name);
+            }
+        }
+
+        // 4. NuGet runtimes path (from platform-specific native packages)
+        foreach (var path in GetNuGetRuntimePaths())
+        {
+            foreach (var name in libraryNames)
+            {
+                yield return Path.Combine(path, name);
+            }
+        }
+    }
+
+    internal static IEnumerable<string> GetCandidateLibraryPathsForTesting()
+        => GetCandidateLibraryPaths();
+
+    private static IEnumerable<string> GetNuGetRuntimePaths()
+    {
+        var rid = RuntimeInformation.RuntimeIdentifier;
+
+        // Check runtimes/{rid}/native/ relative to AppContext.BaseDirectory
+        var basePath = Path.Combine(AppContext.BaseDirectory, "runtimes", rid, "native");
+        if (Directory.Exists(basePath))
+        {
+            yield return basePath;
+        }
+
+        // Also check runtimes/{rid}/native/ relative to the assembly location
+        var assemblyDir = Path.GetDirectoryName(typeof(NativeLibraryLoader).Assembly.Location);
+        if (!string.IsNullOrEmpty(assemblyDir))
+        {
+            var assemblyPath = Path.Combine(assemblyDir, "runtimes", rid, "native");
+            if (Directory.Exists(assemblyPath) && assemblyPath != basePath)
+            {
+                yield return assemblyPath;
             }
         }
     }
