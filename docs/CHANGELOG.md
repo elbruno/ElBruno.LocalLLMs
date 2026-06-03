@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.17.0] - 2026-06-03
+
+### Added
+
+**Gemma 4 Support Activation**
+- Gemma 4 family (`E2B`, `E4B`, `26B-A4B`, `31B`) promoted from pending status to supported conversion path.
+- Added Gemma 4 conversion-readiness regression test coverage in `KnownModelsTests`.
+- Added a **What's New** section in `README.md` highlighting Gemma 4 and runtime updates.
+
+### Changed
+- Upgraded `Microsoft.ML.OnnxRuntimeGenAI` references to `0.14.0` across library, tests, samples, and benchmarks.
+- Updated Gemma 4 blocker monitor workflow baseline version to `0.14.0`.
+- Updated Gemma 4 status in `README.md`, `docs/supported-models.md`, `docs/blocked-models.md`, and `docs/onnx-conversion.md`.
+
+---
+
 ## [0.16.0] - 2026-04-17
 
 ### Added

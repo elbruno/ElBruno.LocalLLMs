@@ -7,6 +7,6 @@
     <ProjectReference Include="..\..\ElBruno.LocalLLMs\ElBruno.LocalLLMs.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI" Version="0.12.2" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI" Version="0.14.0" />
   </ItemGroup>
 </Project>

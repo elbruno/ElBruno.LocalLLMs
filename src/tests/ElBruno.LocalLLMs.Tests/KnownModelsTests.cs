@@ -325,6 +325,22 @@ public class KnownModelsTests
         Assert.Equal(modelId, model!.Id);
     }
 
+    [Theory]
+    [InlineData("gemma-4-e2b-it")]
+    [InlineData("gemma-4-e4b-it")]
+    [InlineData("gemma-4-26b-a4b-it")]
+    [InlineData("gemma-4-31b-it")]
+    public void Gemma4Models_AreConversionRequired_WithToolCallingSupport(string modelId)
+    {
+        var model = KnownModels.FindById(modelId);
+
+        Assert.NotNull(model);
+        Assert.Equal(OnnxModelType.GenAI, model!.ModelType);
+        Assert.Equal(ChatTemplateFormat.Gemma, model.ChatTemplate);
+        Assert.False(model.HasNativeOnnx);
+        Assert.True(model.SupportsToolCalling);
+    }
+
     [Fact]
     public void All_ContainsAllGemma4Models()
     {

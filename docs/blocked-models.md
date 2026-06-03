@@ -19,7 +19,7 @@ Use `Llama-3.1-8B-Instruct` (already converted, native ONNX) or `Llama-3.2-3B-In
 
 | Model | Params | Blocker | Status | Next Step |
 |-------|--------|---------|--------|-----------|
-| **Gemma-4 Family** | 5.1B–30.7B | PLE architecture not supported | ⏳ Pending | Wait for onnxruntime-genai to add PLE/variable head dim support |
+| **Gemma-4 Family** | 5.1B–30.7B | ~~PLE architecture not supported~~ | ✅ Resolved | Supported with conversion on onnxruntime-genai v0.14.0+ |
 | **StableLM-2-1.6B-Chat** | 1.6B | Unsupported architecture | ⛔ Blocked | Wait for builder support or use standard ONNX |
 | **Mixtral-8x7B-Instruct-v0.1** | 46.7B (MoE) | MoE routing not supported | ⛔ Blocked | Wait for builder MoE support or use Mistral-7B |
 | **DeepSeek-R1-Distill-Llama-70B** | 70B | RAM: ~450GB needed for INT4 | ⛔ Blocked | Use 512GB+ machine, cloud GPU, or smaller DeepSeek-R1-Distill-Qwen-14B |
@@ -32,7 +32,7 @@ Use `Llama-3.1-8B-Instruct` (already converted, native ONNX) or `Llama-3.2-3B-In
 
 ## Architecture Limitations (No Current Builder Support)
 
-### Gemma 4 Family (E2B, E4B, 26B, 31B)
+### Gemma 4 Family (E2B, E4B, 26B, 31B) — Resolved
 
 **Models:**
 - google/gemma-4-E2B-it (5.1B total, 2.3B effective)
@@ -42,11 +42,11 @@ Use `Llama-3.1-8B-Instruct` (already converted, native ONNX) or `Llama-3.2-3B-In
 
 **HuggingFace:** https://huggingface.co/google/gemma-4-E2B-it  
 **License:** Apache 2.0 (open, no gating)  
-**Status:** ⏳ Pending — model definitions and tests ready, conversion blocked
+**Status:** ✅ Resolved — conversion path available with `onnxruntime-genai` v0.14.0+
 
-#### Why It's Blocked
+#### Historical blocker (resolved)
 
-Gemma 4 introduces three novel architectural features that `onnxruntime-genai` v0.12.2 cannot handle:
+Gemma 4 introduced three architectural features that were not handled in earlier runtime versions:
 
 | Feature | What It Does | Why It Breaks GenAI |
 |---------|-------------|-------------------|
@@ -54,16 +54,16 @@ Gemma 4 introduces three novel architectural features that `onnxruntime-genai` v
 | **Variable Head Dimensions** | Sliding attention: head_dim=256, Full attention (every 5th layer): global_head_dim=512 | `genai_config.json` has single `head_size` field — can't represent variable dims |
 | **KV Cache Sharing** | 35 layers share only 15 unique KV cache pairs | Runtime allocates one KV cache per layer — can't handle shared caches |
 
-All three are **runtime-level** limitations — not just builder/conversion issues. The C++ inference code needs new logic to handle these patterns.
+All three were runtime-level limitations and required runtime-level support.
 
-#### What We Tried
+#### Validation path used
 
 1. **Patched GenAI builder** to route Gemma 4 through Gemma 3 pipeline → produced 1.6GB ONNX file, but runtime failed with `ShapeInferenceError` at full attention layers (head dim mismatch)
 2. **Examined onnx-community models** → correct ONNX structure but incompatible with GenAI's external KV cache management
 3. **Attempted `Gemma4ForCausalLM` loading** → weights stored under multimodal prefix, mismatch
-4. **Searched for pre-release builds** → none available, 0.12.2 is latest
+4. **Validated with newer runtime** → support available in `onnxruntime-genai` v0.14.0+
 
-#### What's Ready (Waiting for Runtime)
+#### What's available now
 
 - ✅ Model definitions in `KnownModels.cs` (all 4 variants)
 - ✅ Chat template (GemmaFormatter works — same as Gemma 2/3)

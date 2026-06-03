@@ -137,9 +137,9 @@ The output directory will contain `.onnx` files plus any associated data files, 
 
 ## Gemma 4 Conversion
 
-> ⚠️ **Status: Pending Runtime Support** — Gemma 4's novel architecture (Per-Layer Embeddings, variable attention head dimensions, KV cache sharing) is not yet supported by the onnxruntime-genai runtime (v0.12.2). Model definitions and conversion scripts are ready for when support is added. See [microsoft/onnxruntime-genai](https://github.com/microsoft/onnxruntime-genai) for updates.
+> ✅ **Status: Supported with conversion** — Gemma 4 conversion is supported with `onnxruntime-genai` v0.14.0+. Use the dedicated conversion scripts in this repo.
 
-Google Gemma 4 is a new model family with four sizes featuring advanced architectures like Per-Layer Embeddings (PLE) and Mixture of Experts (MoE). A dedicated conversion script is provided for future use when GenAI runtime adds support.
+Google Gemma 4 is a model family with four sizes featuring Per-Layer Embeddings (PLE) and Mixture of Experts (MoE). Use the dedicated conversion script for all four variants.
 
 ### Gemma 4 Model Variants
 

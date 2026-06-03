@@ -13,6 +13,12 @@
 
 Run local LLMs in .NET through `IChatClient` — the same interface you'd use for Azure OpenAI, Ollama, or any other provider. Powered by ONNX Runtime GenAI and BitNet.
 
+## What's New
+
+- ✅ **Gemma 4 support path is now active** (`E2B`, `E4B`, `26B-A4B`, `31B`) via conversion workflows.
+- 🔄 **Gemma 4 status moved from pending to convert** across the model tables and guides.
+- ⬆️ **ONNX Runtime GenAI upgraded to `0.14.0`** across library, tests, samples, and benchmarks.
+
 ## Features
 
 - 🔌 **`IChatClient` implementation** — seamless integration with [Microsoft.Extensions.AI](https://learn.microsoft.com/dotnet/ai/microsoft-extensions-ai)
@@ -237,13 +243,13 @@ For detailed troubleshooting, see [docs/troubleshooting-guide.md](docs/troublesh
 | ⚪ Tiny | Qwen2.5-0.5B-Instruct | 0.5B | ✅ Native | `qwen2.5-0.5b-instruct` |
 | ⚪ Tiny | Qwen2.5-1.5B-Instruct | 1.5B | ✅ Native | `qwen2.5-1.5b-instruct` |
 | ⚪ Tiny | Gemma-2B-IT | 2B | ✅ Native | `gemma-2b-it` |
-| ⚪ Tiny | Gemma-4-E2B-IT | 5.1B (2B active) | ⏳ Pending | `gemma-4-e2b-it` |
+| ⚪ Tiny | Gemma-4-E2B-IT | 5.1B (2B active) | 🔄 Convert | `gemma-4-e2b-it` |
 | ⚪ Tiny | StableLM-2-1.6B-Chat | 1.6B | 🔄 Convert | `stablelm-2-1.6b-chat` |
 | 🟢 Small | Phi-3.5 mini instruct | 3.8B | ✅ Native | `phi-3.5-mini-instruct` |
 | 🟢 Small | Qwen2.5-3B-Instruct | 3B | ✅ Native | `qwen2.5-3b-instruct` |
 | 🟢 Small | Llama-3.2-3B-Instruct | 3B | ✅ Native | `llama-3.2-3b-instruct` |
 | 🟢 Small | Gemma-2-2B-IT | 2B | ✅ Native | `gemma-2-2b-it` |
-| 🟢 Small | Gemma-4-E4B-IT | 8B (4B active) | ⏳ Pending | `gemma-4-e4b-it` |
+| 🟢 Small | Gemma-4-E4B-IT | 8B (4B active) | 🔄 Convert | `gemma-4-e4b-it` |
 | 🟡 Medium | Qwen2.5-7B-Instruct | 7B | ✅ Native | `qwen2.5-7b-instruct` |
 | 🟡 Medium | Llama-3.1-8B-Instruct | 8B | ✅ Native | `llama-3.1-8b-instruct` |
 | 🟡 Medium | Mistral-7B-Instruct-v0.3 | 7B | ✅ Native | `mistral-7b-instruct-v0.3` |
@@ -257,10 +263,10 @@ For detailed troubleshooting, see [docs/troubleshooting-guide.md](docs/troublesh
 | 🔴 Large | Mixtral-8x7B-Instruct-v0.1 | 8x7B | 🔄 Convert | `mixtral-8x7b-instruct-v0.1` |
 | 🔴 Large | DeepSeek-R1-Distill-Llama-70B | 70B | 🔄 Convert | `deepseek-r1-distill-llama-70b` |
 | 🔴 Large | Command-R (35B) | 35B | 🔄 Convert | `command-r-35b` |
-| 🔴 Large | Gemma-4-26B-A4B-IT | 25.2B (3.8B active) | ⏳ Pending | `gemma-4-26b-a4b-it` |
-| 🔴 Large | Gemma-4-31B-IT | 30.7B | ⏳ Pending | `gemma-4-31b-it` |
+| 🔴 Large | Gemma-4-26B-A4B-IT | 25.2B (3.8B active) | 🔄 Convert | `gemma-4-26b-a4b-it` |
+| 🔴 Large | Gemma-4-31B-IT | 30.7B | 🔄 Convert | `gemma-4-31b-it` |
 
-> **⏳ Pending** = Model definitions are ready but ONNX conversion requires runtime support from [onnxruntime-genai](https://github.com/microsoft/onnxruntime-genai). Gemma 4's novel PLE architecture is not yet supported.
+> **🔄 Convert** = Use the conversion scripts in `scripts/` to export ONNX locally before running the model.
 
 ### Fine-Tuned Models
 
