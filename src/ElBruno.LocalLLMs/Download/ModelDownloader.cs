@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Collections.Concurrent;
 using ElBruno.HuggingFace;
 
 namespace ElBruno.LocalLLMs;
@@ -13,6 +14,7 @@ internal sealed class ModelDownloader : IModelDownloader
     private readonly HuggingFaceDownloader _downloader;
     private readonly string _defaultCacheDirectory;
     private static readonly Lazy<HttpClient> s_apiClient = new(CreateApiClient);
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> s_modelDownloadLocks = new(StringComparer.OrdinalIgnoreCase);
 
     public ModelDownloader()
         : this(new HuggingFaceDownloader())
@@ -45,44 +47,53 @@ internal sealed class ModelDownloader : IModelDownloader
             ? Path.Combine(modelDir, model.ModelSubPath.Replace('/', Path.DirectorySeparatorChar))
             : modelDir;
 
-        // Check if already cached
-        if (IsModelCached(model, modelDir, modelPath))
+        var downloadLock = s_modelDownloadLocks.GetOrAdd(modelDir, _ => new SemaphoreSlim(1, 1));
+        await downloadLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
+            // Check if already cached
+            if (IsModelCached(model, modelDir, modelPath))
+            {
+                return modelPath;
+            }
+
+            Directory.CreateDirectory(modelDir);
+
+            // Resolve glob patterns (e.g., "*" or "prefix/*") to actual file paths
+            var resolvedRequired = await ResolveGlobPatternsAsync(
+                model.HuggingFaceRepoId, model.RequiredFiles, cancellationToken).ConfigureAwait(false);
+
+            // Map our progress type to the HuggingFace progress type
+            IProgress<DownloadProgress>? hfProgress = null;
+            if (progress is not null)
+            {
+                hfProgress = new Progress<DownloadProgress>(p =>
+                {
+                    progress.Report(new ModelDownloadProgress(
+                        FileName: p.CurrentFile ?? string.Empty,
+                        BytesDownloaded: p.BytesDownloaded,
+                        TotalBytes: p.TotalBytes,
+                        PercentComplete: p.PercentComplete));
+                });
+            }
+
+            var request = new DownloadRequest
+            {
+                RepoId = model.HuggingFaceRepoId,
+                LocalDirectory = modelDir,
+                RequiredFiles = resolvedRequired,
+                OptionalFiles = model.OptionalFiles.Length > 0 ? model.OptionalFiles : null,
+                Progress = hfProgress
+            };
+
+            await _downloader.DownloadFilesAsync(request, cancellationToken).ConfigureAwait(false);
+
             return modelPath;
         }
-
-        Directory.CreateDirectory(modelDir);
-
-        // Resolve glob patterns (e.g., "*" or "prefix/*") to actual file paths
-        var resolvedRequired = await ResolveGlobPatternsAsync(
-            model.HuggingFaceRepoId, model.RequiredFiles, cancellationToken).ConfigureAwait(false);
-
-        // Map our progress type to the HuggingFace progress type
-        IProgress<DownloadProgress>? hfProgress = null;
-        if (progress is not null)
+        finally
         {
-            hfProgress = new Progress<DownloadProgress>(p =>
-            {
-                progress.Report(new ModelDownloadProgress(
-                    FileName: p.CurrentFile ?? string.Empty,
-                    BytesDownloaded: p.BytesDownloaded,
-                    TotalBytes: p.TotalBytes,
-                    PercentComplete: p.PercentComplete));
-            });
+            downloadLock.Release();
         }
-
-        var request = new DownloadRequest
-        {
-            RepoId = model.HuggingFaceRepoId,
-            LocalDirectory = modelDir,
-            RequiredFiles = resolvedRequired,
-            OptionalFiles = model.OptionalFiles.Length > 0 ? model.OptionalFiles : null,
-            Progress = hfProgress
-        };
-
-        await _downloader.DownloadFilesAsync(request, cancellationToken).ConfigureAwait(false);
-
-        return modelPath;
     }
 
     /// <summary>
@@ -98,8 +109,23 @@ internal sealed class ModelDownloader : IModelDownloader
         bool hasGlobs = Array.Exists(model.RequiredFiles, f => f.Contains('*'));
         if (hasGlobs)
         {
-            // For glob patterns, check if the target model directory has genai_config.json
-            return File.Exists(Path.Combine(modelPath, "genai_config.json"));
+            // For glob patterns, validate core runtime artifacts rather than only genai_config.json.
+            // Partial/corrupted downloads can leave config files without full model weights.
+            if (!File.Exists(Path.Combine(modelPath, "genai_config.json")))
+                return false;
+
+            var onnxFiles = Directory.EnumerateFiles(modelPath, "*.onnx", SearchOption.AllDirectories).ToArray();
+            if (onnxFiles.Length == 0)
+                return false;
+
+            var dataFiles = Directory.EnumerateFiles(modelPath, "*.onnx.data", SearchOption.AllDirectories).ToArray();
+            if (dataFiles.Length > 0)
+                return true;
+
+            // If no external data files exist, accept only when ONNX payloads are non-trivial.
+            // Tiny ONNX files without companion .data are usually metadata stubs from incomplete downloads.
+            const long minimumStandaloneOnnxBytes = 100L * 1024L * 1024L;
+            return onnxFiles.All(path => new FileInfo(path).Length >= minimumStandaloneOnnxBytes);
         }
 
         // For exact paths, check each required file
@@ -163,28 +189,39 @@ internal sealed class ModelDownloader : IModelDownloader
         string repoId, CancellationToken cancellationToken)
     {
         var url = $"https://huggingface.co/api/models/{repoId}";
-        using var response = await s_apiClient.Value.GetAsync(url, cancellationToken).ConfigureAwait(false);
-
-        if (response.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.NotFound)
+        const int maxAttempts = 3;
+        for (var attempt = 1; ; attempt++)
         {
-            throw new InvalidOperationException(
-                $"Model '{repoId}' was not found on HuggingFace (HTTP {(int)response.StatusCode}). " +
-                "The model may not be published yet, the repository may be private, or the repo ID may be incorrect. " +
-                "If the repo is private, set the HF_TOKEN environment variable.");
+            try
+            {
+                using var response = await s_apiClient.Value.GetAsync(url, cancellationToken).ConfigureAwait(false);
+
+                if (response.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.NotFound)
+                {
+                    throw new InvalidOperationException(
+                        $"Model '{repoId}' was not found on HuggingFace (HTTP {(int)response.StatusCode}). " +
+                        "The model may not be published yet, the repository may be private, or the repo ID may be incorrect. " +
+                        "If the repo is private, set the HF_TOKEN environment variable.");
+                }
+
+                response.EnsureSuccessStatusCode();
+
+                using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+                if (!doc.RootElement.TryGetProperty("siblings", out var siblings))
+                    return [];
+
+                return siblings.EnumerateArray()
+                    .Select(s => s.GetProperty("rfilename").GetString()!)
+                    .Where(f => !string.IsNullOrEmpty(f))
+                    .ToArray();
+            }
+            catch (Exception ex) when (attempt < maxAttempts && IsTransientNetworkFailure(ex))
+            {
+                await Task.Delay(TimeSpan.FromSeconds(attempt), cancellationToken).ConfigureAwait(false);
+            }
         }
-
-        response.EnsureSuccessStatusCode();
-
-        using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-        using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken).ConfigureAwait(false);
-
-        if (!doc.RootElement.TryGetProperty("siblings", out var siblings))
-            return [];
-
-        return siblings.EnumerateArray()
-            .Select(s => s.GetProperty("rfilename").GetString()!)
-            .Where(f => !string.IsNullOrEmpty(f))
-            .ToArray();
     }
 
     private static HttpClient CreateApiClient()
@@ -201,4 +238,14 @@ internal sealed class ModelDownloader : IModelDownloader
 
     private static string SanitizeModelId(string modelId) =>
         modelId.Replace('/', '-').Replace('\\', '-');
+
+    private static bool IsTransientNetworkFailure(Exception ex)
+    {
+        if (ex is HttpRequestException or IOException)
+        {
+            return true;
+        }
+
+        return ex.InnerException is not null && IsTransientNetworkFailure(ex.InnerException);
+    }
 }

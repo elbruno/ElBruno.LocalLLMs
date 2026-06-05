@@ -287,6 +287,19 @@ public class KnownModelsTests
     }
 
     [Fact]
+    public void Gemma4_12BIT_HasCorrectProperties()
+    {
+        var model = KnownModels.Gemma4_12BIT;
+
+        Assert.Equal("gemma-4-12b-it", model.Id);
+        Assert.Equal("Gemma-4-12B-IT", model.DisplayName);
+        Assert.Equal(ChatTemplateFormat.Gemma, model.ChatTemplate);
+        Assert.False(model.HasNativeOnnx);
+        Assert.True(model.SupportsToolCalling);
+        Assert.False(string.IsNullOrWhiteSpace(model.HuggingFaceRepoId));
+    }
+
+    [Fact]
     public void Gemma4_26BA4BIT_HasCorrectProperties()
     {
         var model = KnownModels.Gemma4_26BA4BIT;
@@ -315,6 +328,7 @@ public class KnownModelsTests
     [Theory]
     [InlineData("gemma-4-e2b-it")]
     [InlineData("gemma-4-e4b-it")]
+    [InlineData("gemma-4-12b-it")]
     [InlineData("gemma-4-26b-a4b-it")]
     [InlineData("gemma-4-31b-it")]
     public void FindById_Gemma4Models_ReturnsCorrectModel(string modelId)
@@ -328,6 +342,7 @@ public class KnownModelsTests
     [Theory]
     [InlineData("gemma-4-e2b-it")]
     [InlineData("gemma-4-e4b-it")]
+    [InlineData("gemma-4-12b-it")]
     [InlineData("gemma-4-26b-a4b-it")]
     [InlineData("gemma-4-31b-it")]
     public void Gemma4Models_AreConversionRequired_WithToolCallingSupport(string modelId)
@@ -346,6 +361,7 @@ public class KnownModelsTests
     {
         Assert.Contains(KnownModels.All, m => m.Id == "gemma-4-e2b-it");
         Assert.Contains(KnownModels.All, m => m.Id == "gemma-4-e4b-it");
+        Assert.Contains(KnownModels.All, m => m.Id == "gemma-4-12b-it");
         Assert.Contains(KnownModels.All, m => m.Id == "gemma-4-26b-a4b-it");
         Assert.Contains(KnownModels.All, m => m.Id == "gemma-4-31b-it");
     }

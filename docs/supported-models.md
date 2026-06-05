@@ -1,6 +1,6 @@
 # Supported Models Reference
 
-ElBruno.LocalLLMs supports **29 LLMs** across 5 tiers. This guide details each model, its capabilities, and how to use it.
+ElBruno.LocalLLMs supports **30 LLMs** across 5 tiers. This guide details each model, its capabilities, and how to use it.
 
 ---
 
@@ -25,6 +25,7 @@ ElBruno.LocalLLMs supports **29 LLMs** across 5 tiers. This guide details each m
 | 🟡 Medium | Llama-3.1-8B-Instruct | 8B | meta-llama/Llama-3.1-8B-Instruct | ✅ Native | Llama3 | — | 8–12 GB | ⚡ |
 | 🟡 Medium | Mistral-7B-Instruct-v0.3 | 7B | mistralai/Mistral-7B-Instruct-v0.3 | ✅ Native | Mistral | — | 8–12 GB | ⚡ |
 | 🟡 Medium | Gemma-2-9B-IT | 9B | elbruno/Gemma-2-9B-IT-onnx | ✅ Native | Gemma | — | 12 GB | ⚡ |
+| 🟡 Medium | Gemma-4-12B-IT | 12B | google/gemma-4-12B-it | 🔄 Convert | Gemma | ✅ | 12–16 GB | ⚡ |
 | 🟡 Medium | Phi-4 | 14B | microsoft/phi-4 | ✅ Native | Phi3 | ✅ | 12–16 GB | ⚡ |
 | 🟡 Medium | DeepSeek-R1-Distill-Qwen-14B | 14B | deepseek-ai/DeepSeek-R1-Distill-Qwen-14B | ✅ Native | ChatML | — | 12–16 GB | ⚡ |
 | 🟡 Medium | Mistral-Small-24B-Instruct | 24B | mistralai/Mistral-Small-24B-Instruct-2501 | ✅ Native | Mistral | — | 16–20 GB | ⚡ |

@@ -15,9 +15,9 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 
 ## What's New
 
-- ✅ **Gemma 4 support path is now active** (`E2B`, `E4B`, `26B-A4B`, `31B`) via conversion workflows.
+- ✅ **Gemma 4 support path is now active** (`E2B`, `E4B`, `12B Unified`, `26B-A4B`, `31B`) via conversion workflows.
 - 🔄 **Gemma 4 status moved from pending to convert** across the model tables and guides.
-- ⬆️ **ONNX Runtime GenAI upgraded to `0.14.0`** across library, tests, samples, and benchmarks.
+- ⬆️ **ONNX Runtime GenAI upgraded to `0.14.1`** across library, tests, samples, and benchmarks.
 
 ## Features
 
@@ -254,6 +254,7 @@ For detailed troubleshooting, see [docs/troubleshooting-guide.md](docs/troublesh
 | 🟡 Medium | Llama-3.1-8B-Instruct | 8B | ✅ Native | `llama-3.1-8b-instruct` |
 | 🟡 Medium | Mistral-7B-Instruct-v0.3 | 7B | ✅ Native | `mistral-7b-instruct-v0.3` |
 | 🟡 Medium | Gemma-2-9B-IT | 9B | ✅ Native | `gemma-2-9b-it` |
+| 🟡 Medium | Gemma-4-12B-IT | 12B | 🔄 Convert | `gemma-4-12b-it` |
 | 🟡 Medium | Phi-4 | 14B | ✅ Native | `phi-4` |
 | 🟡 Medium | DeepSeek-R1-Distill-Qwen-14B | 14B | ✅ Native | `deepseek-r1-distill-qwen-14b` |
 | 🟡 Medium | Mistral-Small-24B-Instruct | 24B | ✅ Native | `mistral-small-24b-instruct` |

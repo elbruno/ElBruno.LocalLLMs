@@ -2,9 +2,10 @@
 """
 Convert Google Gemma 4 models to ONNX format for ElBruno.LocalLLMs.
 
-Gemma 4 includes four model sizes:
+Gemma 4 includes five model sizes:
 - E2B: 2.3B effective (5.1B total) with Per-Layer Embeddings (PLE)
 - E4B: 4.5B effective (8B total) with Per-Layer Embeddings (PLE)
+- 12B: unified dense model (June 2026 release)
 - 26B: 3.8B active / 25.2B total, Mixture of Experts (MoE)
 - 31B: 30.7B dense
 
@@ -42,6 +43,14 @@ GEMMA4_MODELS = {
         "min_ram_gb": 20,
         "min_disk_gb": 50,
     },
+    "12b": {
+        "hf_id": "google/gemma-4-12B-it",
+        "name": "Gemma 4 12B IT (Unified)",
+        "params": "12B",
+        "architecture": "Dense (Unified)",
+        "min_ram_gb": 32,
+        "min_disk_gb": 90,
+    },
     "26b": {
         "hf_id": "google/gemma-4-26B-A4B-it",
         "name": "Gemma 4 26B A4B IT",
@@ -68,7 +77,7 @@ def parse_args():
     parser.add_argument(
         "--model-size",
         required=True,
-        choices=["e2b", "e4b", "26b", "31b"],
+        choices=["e2b", "e4b", "12b", "26b", "31b"],
         help="Gemma 4 model size to convert",
     )
     parser.add_argument(

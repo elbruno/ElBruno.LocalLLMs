@@ -67,6 +67,24 @@ public class OnnxGenAIModelFallbackTests
             ExecutionProvider.DirectML, ex, ExecutionProvider.Auto));
     }
 
+    [Fact]
+    public void ThreeArg_Auto_DllNotFound_ReturnsTrue()
+    {
+        var ex = new DllNotFoundException("Unable to load DLL 'onnxruntime-genai'.");
+
+        Assert.True(OnnxGenAIModel.ShouldFallbackToNextProvider(
+            ExecutionProvider.DirectML, ex, ExecutionProvider.Auto));
+    }
+
+    [Fact]
+    public void ThreeArg_Auto_EntryPointNotFound_ReturnsTrue()
+    {
+        var ex = new EntryPointNotFoundException("Entry point not found in provider DLL.");
+
+        Assert.True(OnnxGenAIModel.ShouldFallbackToNextProvider(
+            ExecutionProvider.Cuda, ex, ExecutionProvider.Auto));
+    }
+
     // ──────────────────────────────────────────────
     // Provider-specific errors — Auto vs explicit
     // ──────────────────────────────────────────────

@@ -5,6 +5,7 @@
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.24.4" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
     <PackageReference Include="xunit" Version="2.9.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
@@ -14,12 +15,30 @@
     Explicit CPU runtime — required because the library marks its own
     OnnxRuntimeGenAI reference with PrivateAssets="native".
     For GPU support, replace with ONE of the following:
-      <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI.Cuda" Version="0.14.0" />
-      <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI.DirectML" Version="0.14.0" />
+      <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI.Cuda" Version="0.14.1" />
+      <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI.DirectML" Version="0.14.1" />
     -->
-    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI" Version="0.14.0" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI" Version="0.14.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\ElBruno.LocalLLMs\ElBruno.LocalLLMs.csproj" />
   </ItemGroup>
+  <Target Name="CopyOnnxRuntimeForGenAiWindows" AfterTargets="Build"
+          Condition="'$(OS)' == 'Windows_NT' and '$(PkgMicrosoft_ML_OnnxRuntime)' != ''">
+    <PropertyGroup>
+      <OrtNativeDir>$(PkgMicrosoft_ML_OnnxRuntime)\runtimes\win-x64\native</OrtNativeDir>
+      <OutputNativeDir>$(OutputPath)runtimes\win-x64\native</OutputNativeDir>
+    </PropertyGroup>
+    <MakeDir Directories="$(OutputNativeDir)" Condition="Exists('$(OrtNativeDir)')" />
+    <Copy
+      SourceFiles="$(OrtNativeDir)\onnxruntime.dll;$(OrtNativeDir)\onnxruntime_providers_shared.dll"
+      DestinationFolder="$(OutputPath)"
+      SkipUnchangedFiles="true"
+      Condition="Exists('$(OrtNativeDir)')" />
+    <Copy
+      SourceFiles="$(OrtNativeDir)\onnxruntime.dll;$(OrtNativeDir)\onnxruntime_providers_shared.dll"
+      DestinationFolder="$(OutputNativeDir)"
+      SkipUnchangedFiles="true"
+      Condition="Exists('$(OrtNativeDir)')" />
+  </Target>
 </Project>

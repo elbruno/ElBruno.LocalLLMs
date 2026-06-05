@@ -137,9 +137,9 @@ The output directory will contain `.onnx` files plus any associated data files, 
 
 ## Gemma 4 Conversion
 
-> ✅ **Status: Supported with conversion** — Gemma 4 conversion is supported with `onnxruntime-genai` v0.14.0+. Use the dedicated conversion scripts in this repo.
+> ✅ **Status: Supported with conversion** — Gemma 4 conversion is supported with `onnxruntime-genai` v0.14.1+. Use the dedicated conversion scripts in this repo.
 
-Google Gemma 4 is a model family with four sizes featuring Per-Layer Embeddings (PLE) and Mixture of Experts (MoE). Use the dedicated conversion script for all four variants.
+Google Gemma 4 is a model family with five sizes featuring Per-Layer Embeddings (PLE), unified dense architecture, and Mixture of Experts (MoE). Use the dedicated conversion script for all variants.
 
 ### Gemma 4 Model Variants
 
@@ -147,6 +147,7 @@ Google Gemma 4 is a model family with four sizes featuring Per-Layer Embeddings 
 |-------|------|--------------|---------|----------------|
 | **E2B IT** | 2.3B effective (5.1B total) | Dense + PLE | 128K | `google/gemma-4-E2B-it` |
 | **E4B IT** | 4.5B effective (8B total) | Dense + PLE | 128K | `google/gemma-4-E4B-it` |
+| **12B IT (Unified)** | 12B | Dense (Unified) | 256K | `google/gemma-4-12B-it` |
 | **26B A4B IT** | 3.8B active / 25.2B total | MoE (8/128 experts + 1 shared) | 256K | `google/gemma-4-26B-A4B-it` |
 | **31B IT** | 30.7B | Dense | 256K | `google/gemma-4-31B-it` |
 
@@ -156,6 +157,7 @@ Google Gemma 4 is a model family with four sizes featuring Per-Layer Embeddings 
 |-------|-----------------|------------|----------------------------------|
 | E2B | 8-12 GB | ~30 GB | 4-6 GB |
 | E4B | 16-20 GB | ~50 GB | 6-10 GB |
+| 12B | 24-32 GB | ~90 GB | 12-16 GB |
 | 26B | 48-64 GB | ~150 GB | 24-32 GB |
 | 31B | 64-80 GB | ~180 GB | 24-40 GB |
 
@@ -171,6 +173,12 @@ python scripts/convert_gemma4.py --model-size e2b --output-dir ./models/gemma4-e
 
 ```bash
 python scripts/convert_gemma4.py --model-size 26b --output-dir ./models/gemma4-26b --quantize int8
+```
+
+**Convert Gemma 4 12B Unified:**
+
+```bash
+python scripts/convert_gemma4.py --model-size 12b --output-dir ./models/gemma4-12b
 ```
 
 **PowerShell (Windows):**
@@ -190,10 +198,7 @@ The `convert_gemma4.py` script is purpose-built for Gemma 4 and includes:
 - ✅ **Output validation** — Ensures all required files are present after conversion
 - ✅ **Clear progress output** — Shows real-time conversion status
 
-> **Note:** The conversion script is ready but requires onnxruntime-genai to add Gemma 4 architecture support. Key blockers:
-> - **Per-Layer Embeddings (PLE)** — Requires `per_layer_inputs` tensor not yet supported by GenAI runtime
-> - **Variable head dimensions** — Sliding attention (256) vs full attention (512) head sizes
-> - **KV cache sharing** — 35 layers share only 15 KV cache pairs
+> **Note:** Earlier runtime versions had Gemma 4 architecture blockers (PLE, variable head sizes, KV-sharing), but these are now supported in the current conversion flow.
 
 ### Usage Examples
 
@@ -276,7 +281,7 @@ Console.WriteLine(response);
 |---------|----------|
 | **"trust_remote_code" error** | The script adds this automatically; if you see this error, update transformers: `pip install -U transformers` |
 | **Out of memory during conversion** | Close other applications, or use a machine with more RAM. The 26B/31B models genuinely need 64-80 GB. |
-| **MoE conversion fails (26B)** | Ensure you have onnxruntime-genai 0.4.0+: `pip install -U onnxruntime-genai` |
+| **MoE conversion fails (26B)** | Ensure you have a recent onnxruntime-genai: `pip install -U onnxruntime-genai` |
 | **Converted model outputs gibberish** | Try higher precision: use `--quantize int8` or `--quantize fp16` instead of int4 |
 | **Missing genai_config.json** | Use `convert_gemma4.py` not `convert_to_onnx.py` — the GenAI builder is required |
 | **Slow inference on 26B model** | This is expected — MoE routing adds overhead. Use GPU if available (requires CUDA provider). |
@@ -293,7 +298,7 @@ Console.WriteLine(response);
 The Gemma 4 conversion script requires:
 
 ```bash
-pip install onnxruntime-genai>=0.4.0 huggingface-hub transformers torch
+pip install onnxruntime-genai>=0.14.1 huggingface-hub transformers torch
 ```
 
 Or install all conversion dependencies:

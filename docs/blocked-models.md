@@ -19,7 +19,7 @@ Use `Llama-3.1-8B-Instruct` (already converted, native ONNX) or `Llama-3.2-3B-In
 
 | Model | Params | Blocker | Status | Next Step |
 |-------|--------|---------|--------|-----------|
-| **Gemma-4 Family** | 5.1B–30.7B | ~~PLE architecture not supported~~ | ✅ Resolved | Supported with conversion on onnxruntime-genai v0.14.0+ |
+| **Gemma-4 Family** | 5.1B–30.7B | ~~PLE architecture not supported~~ | ✅ Resolved | Supported with conversion on onnxruntime-genai v0.14.1+ |
 | **StableLM-2-1.6B-Chat** | 1.6B | Unsupported architecture | ⛔ Blocked | Wait for builder support or use standard ONNX |
 | **Mixtral-8x7B-Instruct-v0.1** | 46.7B (MoE) | MoE routing not supported | ⛔ Blocked | Wait for builder MoE support or use Mistral-7B |
 | **DeepSeek-R1-Distill-Llama-70B** | 70B | RAM: ~450GB needed for INT4 | ⛔ Blocked | Use 512GB+ machine, cloud GPU, or smaller DeepSeek-R1-Distill-Qwen-14B |
@@ -32,17 +32,18 @@ Use `Llama-3.1-8B-Instruct` (already converted, native ONNX) or `Llama-3.2-3B-In
 
 ## Architecture Limitations (No Current Builder Support)
 
-### Gemma 4 Family (E2B, E4B, 26B, 31B) — Resolved
+### Gemma 4 Family (E2B, E4B, 12B, 26B, 31B) — Resolved
 
 **Models:**
 - google/gemma-4-E2B-it (5.1B total, 2.3B effective)
 - google/gemma-4-E4B-it (8B total, 4.5B effective)
+- google/gemma-4-12B-it (12B unified dense, June 2026 release)
 - google/gemma-4-26B-A4B-it (25.2B total, 3.8B active MoE)
 - google/gemma-4-31B-it (30.7B dense)
 
 **HuggingFace:** https://huggingface.co/google/gemma-4-E2B-it  
 **License:** Apache 2.0 (open, no gating)  
-**Status:** ✅ Resolved — conversion path available with `onnxruntime-genai` v0.14.0+
+**Status:** ✅ Resolved — conversion path available with `onnxruntime-genai` v0.14.1+
 
 #### Historical blocker (resolved)
 
@@ -61,11 +62,11 @@ All three were runtime-level limitations and required runtime-level support.
 1. **Patched GenAI builder** to route Gemma 4 through Gemma 3 pipeline → produced 1.6GB ONNX file, but runtime failed with `ShapeInferenceError` at full attention layers (head dim mismatch)
 2. **Examined onnx-community models** → correct ONNX structure but incompatible with GenAI's external KV cache management
 3. **Attempted `Gemma4ForCausalLM` loading** → weights stored under multimodal prefix, mismatch
-4. **Validated with newer runtime** → support available in `onnxruntime-genai` v0.14.0+
+4. **Validated with newer runtime** → support available in `onnxruntime-genai` v0.14.1+
 
 #### What's available now
 
-- ✅ Model definitions in `KnownModels.cs` (all 4 variants)
+- ✅ Model definitions in `KnownModels.cs` (all 5 variants)
 - ✅ Chat template (GemmaFormatter works — same as Gemma 2/3)
 - ✅ Conversion scripts (`scripts/convert_gemma4.py`, `scripts/convert_gemma4.ps1`)
 - ✅ Unit tests (6 model + 9 tool-calling + 195 multilingual)

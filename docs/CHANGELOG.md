@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+---
+
+## [0.18.0] - 2026-06-05
+
+### Added
+- Added Gemma 4 12B Unified model definition (`KnownModels.Gemma4_12BIT`) and registry/tests coverage.
+- Added Gemma 4 conversion script support for `--model-size 12b` in both Python and PowerShell wrappers.
+
+### Changed
+- Improved Auto execution-provider fallback to continue from DirectML/CUDA to CPU on native load failures (`DllNotFoundException`, `EntryPointNotFoundException`, `BadImageFormatException`).
+- Added retry logic for transient HuggingFace API failures when resolving globbed required files during model download.
+- Hardened model cache validation for glob-pattern models to avoid accepting partial downloads missing ONNX weight data.
+- Added per-model download synchronization to prevent concurrent first-run downloads from racing into partially initialized caches.
+- Upgraded `Microsoft.ML.OnnxRuntimeGenAI` references from `0.14.0` to `0.14.1`.
+- Updated Gemma 4 monitor baseline to `0.14.1`.
+- Integration test build now copies aligned ORT native binaries on Windows to avoid API-mismatch loader failures.
+- Updated README and model/conversion docs to include the Gemma 4 12B Unified variant.
+
+---
+
 ## [0.17.0] - 2026-06-03
 
 ### Added

@@ -16,7 +16,7 @@ permissions:
   issues: write
 
 env:
-  KNOWN_BLOCKED_VERSION: '0.14.0'
+  KNOWN_BLOCKED_VERSION: '0.14.1'
   UPSTREAM_REPO: 'microsoft/onnxruntime-genai'
   UPSTREAM_ISSUE: '2062'
 
@@ -56,7 +56,7 @@ jobs:
         run: |
           REPO="${{ env.UPSTREAM_REPO }}"
 
-          # Try common tag patterns: v0.14.0, 0.14.0
+          # Try common tag patterns: v0.14.1, 0.14.1
           NOTES=""
           RELEASE_URL=""
           for TAG_PREFIX in "v" ""; do

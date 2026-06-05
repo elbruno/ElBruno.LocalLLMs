@@ -332,6 +332,20 @@ public static class KnownModels
         HasNativeOnnx = true
     };
 
+    /// <summary>Gemma 4 12B IT (Unified) — Google's June 2026 unified Gemma 4 model.</summary>
+    public static readonly ModelDefinition Gemma4_12BIT = new()
+    {
+        Id = "gemma-4-12b-it",
+        DisplayName = "Gemma-4-12B-IT",
+        HuggingFaceRepoId = "google/gemma-4-12B-it",
+        RequiredFiles = ["*"],
+        ModelType = OnnxModelType.GenAI,
+        ChatTemplate = ChatTemplateFormat.Gemma,
+        Tier = ModelTier.Medium,
+        HasNativeOnnx = false,
+        SupportsToolCalling = true
+    };
+
     // ────────────────────────────────────────────────────────
     // 🔴 Large tier — heavy workloads, multi-GPU
     // ────────────────────────────────────────────────────────
@@ -473,6 +487,7 @@ public static class KnownModels
         Phi4,
         DeepSeekR1DistillQwen14B,
         MistralSmall24BInstruct,
+        Gemma4_12BIT,
         // Large
         Qwen25_14BInstruct,
         Qwen25_32BInstruct,

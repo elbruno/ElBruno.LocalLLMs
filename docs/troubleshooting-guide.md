@@ -81,6 +81,8 @@ using var client = await LocalChatClient.CreateAsync(options);
 | Error | Cause | Solution |
 |-------|-------|----------|
 | `ExecutionProviderException` | GPU not available or incompatible | Use `ExecutionProvider.Auto` to fallback to CPU, or install required GPU drivers |
+| `DllNotFoundException` / `0x8007045A` for `onnxruntime-genai` | Native ORT runtime mismatch or missing VC++ runtime | Use aligned `Microsoft.ML.OnnxRuntimeGenAI` + `Microsoft.ML.OnnxRuntime` versions, install Microsoft VC++ 2015-2022 x64 runtime, and avoid stale ORT DLLs earlier in PATH |
+| `requested API version [24] is not available (available: 23)` | Older `onnxruntime.dll` loaded before app-local runtime | Ensure app-local ORT binaries are copied to test/app output and remove conflicting older ORT locations from PATH |
 | `ModelCapacityExceededException` | Prompt too long for model's context window | Truncate prompt or use larger model with higher `MaxSequenceLength` |
 | `FileNotFoundException` (model download) | Model files missing after download attempt | Check `CacheDirectory` setting; ensure HuggingFace repo is public or `HF_TOKEN` is set |
 | `OutOfMemoryException` | System RAM exhausted | Reduce model size, close other applications, increase virtual memory |
@@ -95,8 +97,8 @@ using var client = await LocalChatClient.CreateAsync(options);
 
 ```xml
 <ItemGroup>
-    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI" Version="0.7.0" />
-    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI.Cuda" Version="0.7.0" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI" Version="0.14.1" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI.Cuda" Version="0.14.1" />
 </ItemGroup>
 ```
 
@@ -107,21 +109,21 @@ using var client = await LocalChatClient.CreateAsync(options);
 **For CPU-only:**
 ```xml
 <ItemGroup>
-    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI" Version="0.7.0" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI" Version="0.14.1" />
 </ItemGroup>
 ```
 
 **For CUDA:**
 ```xml
 <ItemGroup>
-    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI.Cuda" Version="0.7.0" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI.Cuda" Version="0.14.1" />
 </ItemGroup>
 ```
 
 **For DirectML:**
 ```xml
 <ItemGroup>
-    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI.DirectML" Version="0.7.0" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI.DirectML" Version="0.14.1" />
 </ItemGroup>
 ```
 

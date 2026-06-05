@@ -5,7 +5,7 @@
 
 param(
     [Parameter(Mandatory=$true)]
-    [ValidateSet("e2b", "e4b", "26b", "31b")]
+    [ValidateSet("e2b", "e4b", "12b", "26b", "31b")]
     [string]$ModelSize,
     
     [Parameter(Mandatory=$true)]

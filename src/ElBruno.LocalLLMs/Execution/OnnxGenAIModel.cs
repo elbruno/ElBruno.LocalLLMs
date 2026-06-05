@@ -158,6 +158,12 @@ ModelInitialized:
         // even without a provider-specific token (ONNX Runtime throws generic messages).
         if (initialProvider == ExecutionProvider.Auto)
         {
+            // Native runtime/package load failures should always fall back in Auto mode.
+            if (ex is DllNotFoundException or BadImageFormatException or EntryPointNotFoundException)
+            {
+                return true;
+            }
+
             if (normalized.Contains("is not supported", StringComparison.Ordinal) ||
                 normalized.Contains("not available", StringComparison.Ordinal) ||
                 normalized.Contains("is unavailable", StringComparison.Ordinal) ||
