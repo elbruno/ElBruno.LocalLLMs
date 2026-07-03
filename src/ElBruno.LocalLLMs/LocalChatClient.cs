@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using ElBruno.LocalLLMs.Diagnostics;
@@ -176,32 +177,83 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentNullException.ThrowIfNull(messages);
 
-        await EnsureInitializedAsync(progress: null, cancellationToken).ConfigureAwait(false);
+        using var activity = LocalLLMsInstrumentation.StartChatActivity(_options.Model.Id, streaming: false, ActiveExecutionProvider);
+        activity.AddQueuedEvent();
+        var sw = Stopwatch.StartNew();
 
-        LogMessages.InferenceStart(_logger, _options.Model.Id, streaming: false);
-        var messageList = messages as IList<ChatMessage> ?? messages.ToList();
-        var tools = options?.Tools;
-        var prompt = _formatter.FormatMessages(messageList, tools);
-        var genParams = BuildGenerationParameters(options);
-
-        var responseText = await Task.Run(
-            () => _model!.Generate(prompt, genParams, cancellationToken),
-            cancellationToken).ConfigureAwait(false);
-
-        var trimmedResponse = responseText.Trim();
-
-        // Parse for tool calls if tools are available
-        var toolCalls = tools is { Count: > 0 } 
-            ? _toolCallParser.Parse(trimmedResponse) 
-            : [];
-
-        var responseMessage = BuildResponseMessage(trimmedResponse, toolCalls);
-
-        return new ChatResponse(responseMessage)
+        try
         {
-            ModelId = _options.Model.Id,
-            CreatedAt = DateTimeOffset.UtcNow,
-        };
+            await EnsureInitializedAsync(progress: null, cancellationToken).ConfigureAwait(false);
+            activity.AddModelReadyEvent();
+            activity?.SetTag(LocalLLMsInstrumentation.TagNames.ExecutionProvider, ActiveExecutionProvider.ToString());
+
+            LogMessages.InferenceStart(_logger, _options.Model.Id, streaming: false);
+            var messageList = messages as IList<ChatMessage> ?? messages.ToList();
+            var tools = options?.Tools;
+            var prompt = _formatter.FormatMessages(messageList, tools);
+            var genParams = BuildGenerationParameters(options);
+            StampRequestTags(activity, genParams);
+
+            if (LocalLLMsInstrumentation.ShouldCaptureContent(_options))
+            {
+                activity.AddPromptEvent(prompt);
+            }
+
+            activity.AddGenerationStartedEvent();
+
+            var result = await Task.Run(
+                () => _model!.Generate(prompt, genParams, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+
+            activity.AddFirstTokenEvent(result.TimeToFirstToken);
+
+            var trimmedResponse = result.Text.Trim();
+
+            if (LocalLLMsInstrumentation.ShouldCaptureContent(_options))
+            {
+                activity.AddCompletionEvent(trimmedResponse);
+            }
+
+            // Parse for tool calls if tools are available
+            var toolCalls = tools is { Count: > 0 }
+                ? _toolCallParser.Parse(trimmedResponse)
+                : [];
+
+            var responseMessage = BuildResponseMessage(trimmedResponse, toolCalls);
+
+            sw.Stop();
+            activity.AddCompletedEvent(result.InputTokenCount, result.OutputTokenCount);
+            LocalLLMsInstrumentation.RecordMetrics(
+                _options.Model.Id, ActiveExecutionProvider, streaming: false,
+                LocalLLMsInstrumentation.Outcomes.Completed, sw.Elapsed, result.TimeToFirstToken,
+                result.InputTokenCount, result.OutputTokenCount);
+
+            return new ChatResponse(responseMessage)
+            {
+                ModelId = _options.Model.Id,
+                CreatedAt = DateTimeOffset.UtcNow,
+            };
+        }
+        catch (OperationCanceledException)
+        {
+            sw.Stop();
+            activity.AddCancelledEvent();
+            LocalLLMsInstrumentation.RecordMetrics(
+                _options.Model.Id, ActiveExecutionProvider, streaming: false,
+                LocalLLMsInstrumentation.Outcomes.Cancelled, sw.Elapsed, timeToFirstToken: null,
+                inputTokens: null, outputTokens: null);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            sw.Stop();
+            activity.AddFailedEvent(ex);
+            LocalLLMsInstrumentation.RecordMetrics(
+                _options.Model.Id, ActiveExecutionProvider, streaming: false,
+                LocalLLMsInstrumentation.Outcomes.Error, sw.Elapsed, timeToFirstToken: null,
+                inputTokens: null, outputTokens: null);
+            throw;
+        }
     }
 
     /// <inheritdoc />
@@ -213,30 +265,129 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentNullException.ThrowIfNull(messages);
 
-        await EnsureInitializedAsync(progress: null, cancellationToken).ConfigureAwait(false);
+        using var activity = LocalLLMsInstrumentation.StartChatActivity(_options.Model.Id, streaming: true, ActiveExecutionProvider);
+        activity.AddQueuedEvent();
+        var sw = Stopwatch.StartNew();
+        var cancelled = false;
+        Exception? failure = null;
+        var inputTokenCount = 0;
+        var outputTokenCount = 0;
+        TimeSpan? timeToFirstToken = null;
 
-        LogMessages.InferenceStart(_logger, _options.Model.Id, streaming: true);
         var messageList = messages as IList<ChatMessage> ?? messages.ToList();
         var tools = options?.Tools;
-        var prompt = _formatter.FormatMessages(messageList, tools);
-        var genParams = BuildGenerationParameters(options);
+        string prompt;
+        GenerationParameters genParams;
 
-        var fullText = new System.Text.StringBuilder();
-
-        await foreach (var token in _model!.GenerateStreamingAsync(prompt, genParams, cancellationToken).ConfigureAwait(false))
+        try
         {
-            fullText.Append(token);
-            yield return new ChatResponseUpdate(ChatRole.Assistant, token)
+            try
             {
-                ModelId = _options.Model.Id,
-                CreatedAt = DateTimeOffset.UtcNow,
-            };
-        }
+                await EnsureInitializedAsync(progress: null, cancellationToken).ConfigureAwait(false);
+                activity.AddModelReadyEvent();
+                activity?.SetTag(LocalLLMsInstrumentation.TagNames.ExecutionProvider, ActiveExecutionProvider.ToString());
 
-        // After streaming completes, check for tool calls
-        if (tools is { Count: > 0 })
-        {
-            var toolCalls = _toolCallParser.Parse(fullText.ToString());
+                LogMessages.InferenceStart(_logger, _options.Model.Id, streaming: true);
+                prompt = _formatter.FormatMessages(messageList, tools);
+                genParams = BuildGenerationParameters(options);
+                StampRequestTags(activity, genParams);
+                inputTokenCount = _model!.CountPromptTokens(prompt);
+
+                if (LocalLLMsInstrumentation.ShouldCaptureContent(_options))
+                {
+                    activity.AddPromptEvent(prompt);
+                }
+
+                activity.AddGenerationStartedEvent();
+            }
+            catch (OperationCanceledException)
+            {
+                cancelled = true;
+                throw;
+            }
+            catch (Exception ex)
+            {
+                failure = ex;
+                throw;
+            }
+
+            var fullText = new System.Text.StringBuilder();
+            var firstTokenSeen = false;
+
+            var enumerator = _model!.GenerateStreamingAsync(prompt, genParams, cancellationToken)
+                .GetAsyncEnumerator(cancellationToken);
+            try
+            {
+                while (true)
+                {
+                    bool hasNext;
+                    try
+                    {
+                        hasNext = await enumerator.MoveNextAsync().ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        cancelled = true;
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        failure = ex;
+                        throw;
+                    }
+
+                    if (!hasNext)
+                    {
+                        break;
+                    }
+
+                    var token = enumerator.Current;
+                    if (!firstTokenSeen)
+                    {
+                        firstTokenSeen = true;
+                        timeToFirstToken = sw.Elapsed;
+                        activity.AddFirstTokenEvent(timeToFirstToken.Value);
+                    }
+
+                    outputTokenCount++;
+                    fullText.Append(token);
+                    yield return new ChatResponseUpdate(ChatRole.Assistant, token)
+                    {
+                        ModelId = _options.Model.Id,
+                        CreatedAt = DateTimeOffset.UtcNow,
+                    };
+                }
+            }
+            finally
+            {
+                await enumerator.DisposeAsync().ConfigureAwait(false);
+            }
+
+            if (LocalLLMsInstrumentation.ShouldCaptureContent(_options))
+            {
+                activity.AddCompletionEvent(fullText.ToString());
+            }
+
+            // After streaming completes, check for tool calls
+            IReadOnlyList<ParsedToolCall> toolCalls = [];
+            if (tools is { Count: > 0 })
+            {
+                try
+                {
+                    toolCalls = _toolCallParser.Parse(fullText.ToString());
+                }
+                catch (OperationCanceledException)
+                {
+                    cancelled = true;
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    failure = ex;
+                    throw;
+                }
+            }
+
             if (toolCalls.Count > 0)
             {
                 // Send function call updates
@@ -256,7 +407,36 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
                 }
             }
         }
+        finally
+        {
+            sw.Stop();
+            if (cancelled)
+            {
+                activity.AddCancelledEvent();
+                LocalLLMsInstrumentation.RecordMetrics(
+                    _options.Model.Id, ActiveExecutionProvider, streaming: true,
+                    LocalLLMsInstrumentation.Outcomes.Cancelled, sw.Elapsed, timeToFirstToken,
+                    inputTokens: null, outputTokens: null);
+            }
+            else if (failure is not null)
+            {
+                activity.AddFailedEvent(failure);
+                LocalLLMsInstrumentation.RecordMetrics(
+                    _options.Model.Id, ActiveExecutionProvider, streaming: true,
+                    LocalLLMsInstrumentation.Outcomes.Error, sw.Elapsed, timeToFirstToken,
+                    inputTokens: null, outputTokens: null);
+            }
+            else
+            {
+                activity.AddCompletedEvent(inputTokenCount, outputTokenCount);
+                LocalLLMsInstrumentation.RecordMetrics(
+                    _options.Model.Id, ActiveExecutionProvider, streaming: true,
+                    LocalLLMsInstrumentation.Outcomes.Completed, sw.Elapsed, timeToFirstToken,
+                    inputTokenCount, outputTokenCount);
+            }
+        }
     }
+
 
     /// <inheritdoc />
     public object? GetService(Type serviceType, object? serviceKey = null)
@@ -340,6 +520,22 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
         finally
         {
             _initLock.Release();
+        }
+    }
+
+    private static void StampRequestTags(Activity? activity, GenerationParameters genParams)
+    {
+        if (activity is null)
+        {
+            return;
+        }
+
+        activity.SetTag(LocalLLMsInstrumentation.TagNames.RequestMaxTokens, genParams.MaxLength);
+        activity.SetTag(LocalLLMsInstrumentation.TagNames.RequestTemperature, genParams.Temperature);
+        activity.SetTag(LocalLLMsInstrumentation.TagNames.RequestTopP, genParams.TopP);
+        if (genParams.TopK.HasValue)
+        {
+            activity.SetTag(LocalLLMsInstrumentation.TagNames.RequestTopK, genParams.TopK.Value);
         }
     }
 

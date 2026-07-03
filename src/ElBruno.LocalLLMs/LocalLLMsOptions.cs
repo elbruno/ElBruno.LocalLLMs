@@ -56,4 +56,13 @@ public sealed class LocalLLMsOptions
     /// Optional system prompt prepended to conversations.
     /// </summary>
     public string? SystemPrompt { get; set; }
+
+    /// <summary>
+    /// When <see langword="true"/>, prompt and completion text are attached to
+    /// OpenTelemetry activities (<c>gen_ai.prompt</c> / <c>gen_ai.completion</c> events).
+    /// Default: <see langword="false"/> — telemetry never contains prompt/response content
+    /// unless explicitly opted in. Can also be enabled via the environment variable
+    /// <c>OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true</c>.
+    /// </summary>
+    public bool CaptureTelemetryContent { get; set; }
 }

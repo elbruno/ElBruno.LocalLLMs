@@ -83,6 +83,25 @@ public class LocalLLMsOptionsTests
         Assert.Equal(0.9f, options.TopP);
     }
 
+    [Fact]
+    public void Defaults_CaptureTelemetryContent_IsFalse()
+    {
+        var options = new LocalLLMsOptions();
+
+        Assert.False(options.CaptureTelemetryContent);
+    }
+
+    [Fact]
+    public void Custom_CaptureTelemetryContent_CanBeEnabled()
+    {
+        var options = new LocalLLMsOptions
+        {
+            CaptureTelemetryContent = true
+        };
+
+        Assert.True(options.CaptureTelemetryContent);
+    }
+
     // ──────────────────────────────────────────────
     // Custom values
     // ──────────────────────────────────────────────
