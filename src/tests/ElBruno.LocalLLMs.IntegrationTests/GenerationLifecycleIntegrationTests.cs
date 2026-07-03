@@ -156,8 +156,8 @@ public class GenerationLifecycleIntegrationTests : IAsyncDisposable
         return true;
     }
 
-    private static object? GetTag(Activity activity, string key)
-        => activity.TagObjects.FirstOrDefault(t => t.Key == key).Value;
+    private static object? GetTag(ActivitySnapshot activity, string key)
+        => activity.Tags.TryGetValue(key, out var value) ? value : null;
 
     private static void SkipIfNotEnabled()
     {
@@ -171,7 +171,7 @@ public class GenerationLifecycleIntegrationTests : IAsyncDisposable
     {
         private readonly ActivityListener _listener;
 
-        public List<Activity> CompletedActivities { get; } = [];
+        public List<ActivitySnapshot> CompletedActivities { get; } = [];
 
         public ActivityCapture()
         {
@@ -179,12 +179,34 @@ public class GenerationLifecycleIntegrationTests : IAsyncDisposable
             {
                 ShouldListenTo = source => source.Name == LocalLLMsInstrumentation.ActivitySourceName,
                 Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-                ActivityStopped = activity => CompletedActivities.Add(activity)
+                ActivityStopped = activity => CompletedActivities.Add(ActivitySnapshot.Create(activity))
             };
             ActivitySource.AddActivityListener(_listener);
         }
 
         public void Dispose() => _listener.Dispose();
+    }
+
+    private sealed record ActivitySnapshot(
+        ActivityStatusCode Status,
+        IReadOnlyList<ActivityEventSnapshot> Events,
+        IReadOnlyDictionary<string, object?> Tags)
+    {
+        public static ActivitySnapshot Create(Activity activity)
+            => new(
+                activity.Status,
+                activity.Events.Select(ActivityEventSnapshot.Create).ToArray(),
+                activity.TagObjects.ToDictionary(tag => tag.Key, tag => tag.Value));
+    }
+
+    private sealed record ActivityEventSnapshot(
+        string Name,
+        IReadOnlyDictionary<string, object?> Tags)
+    {
+        public static ActivityEventSnapshot Create(ActivityEvent activityEvent)
+            => new(
+                activityEvent.Name,
+                activityEvent.Tags.ToDictionary(tag => tag.Key, tag => tag.Value));
     }
 
     public async ValueTask DisposeAsync()

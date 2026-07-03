@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using ElBruno.LocalLLMs;
 using Microsoft.Extensions.AI;
 
@@ -90,7 +91,7 @@ public class StreamingTests : IAsyncDisposable
     // ──────────────────────────────────────────────
 
     [SkippableFact]
-    public async Task GetStreamingResponseAsync_CancellationDuringStream_Stops()
+    public async Task GetStreamingResponseAsync_CancellationDuringStream_StopsAtTokenBoundary_AndClientCanBeReused()
     {
         SkipIfNotEnabled();
 
@@ -98,26 +99,38 @@ public class StreamingTests : IAsyncDisposable
 
         using var cts = new CancellationTokenSource();
         var tokenCount = 0;
+        Stopwatch? cancellationStopwatch = null;
 
-        try
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
         {
             await foreach (var update in _client.GetStreamingResponseAsync(
                 [new ChatMessage(ChatRole.User, "Tell me a very long story about dragons.")],
                 cancellationToken: cts.Token))
             {
-                tokenCount++;
-                if (tokenCount >= 5)
+                if (string.IsNullOrEmpty(update.Text))
                 {
+                    continue;
+                }
+
+                tokenCount++;
+                if (tokenCount == 3)
+                {
+                    cancellationStopwatch = Stopwatch.StartNew();
                     cts.Cancel();
                 }
             }
-        }
-        catch (OperationCanceledException)
-        {
-            // Expected
-        }
+        });
 
-        Assert.True(tokenCount >= 5, "Should have received at least 5 tokens before cancellation");
+        Assert.Equal(3, tokenCount);
+        Assert.NotNull(cancellationStopwatch);
+        Assert.True(cancellationStopwatch!.Elapsed <= TimeSpan.FromSeconds(2),
+            $"Cancellation should stop promptly at a token boundary, but took {cancellationStopwatch.Elapsed.TotalMilliseconds:F0} ms.");
+
+        var followUp = await _client.GetResponseAsync([
+            new ChatMessage(ChatRole.User, "Say ready.")
+        ]);
+
+        Assert.False(string.IsNullOrWhiteSpace(followUp.Text));
     }
 
     // ──────────────────────────────────────────────

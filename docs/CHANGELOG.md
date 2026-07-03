@@ -11,6 +11,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.19.1] - 2026-07-03
+
+### Added
+- Deterministic streaming-cancellation tests covering token-boundary cancellation, no stale
+  post-cancel token leakage, and client reuse after cancellation.
+- Real-model streaming integration coverage for voice barge-in style cancellation, including a
+  documented upper bound for stopping at the next token boundary.
+- Dedicated cancellation guidance in `docs/cancellation.md`.
+
+### Changed
+- `LocalChatClient.GetStreamingResponseAsync()` now rechecks cancellation after token generation
+  and again immediately before yielding each token, preventing a cancelled request from emitting a
+  stale trailing update.
+- `OnnxGenAIModel.GenerateStreamingAsync()` now performs matching post-generation and pre-yield
+  cancellation checks so cancellation is observed at token boundaries as early as possible.
+- Internal text-generation seams were introduced for deterministic streaming tests without
+  changing the public API surface.
+
+---
+
 ## [0.19.0] - 2026-07-03
 
 ### Added
