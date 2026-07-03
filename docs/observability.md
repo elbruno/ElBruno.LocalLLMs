@@ -21,6 +21,12 @@ The library also records these metrics:
 - `gen_ai.client.token.usage`
 - `gen_ai.client.generation.count`
 
+Cancellation-specific behavior is observable through the same contract:
+
+- `gen_ai.cancelled` is emitted when a request stops because its `CancellationToken` was signaled.
+- `gen_ai.failed` is reserved for real failures and is never used for normal cancellation.
+- `gen_ai.client.generation.count` records `gen_ai.outcome=cancelled` for cancelled requests.
+
 ## Privacy defaults
 
 Prompt and completion text are **excluded by default**.
@@ -65,3 +71,8 @@ When your app is already exporting OpenTelemetry data, Aspire can display these 
 - Cancellation is recorded as `gen_ai.cancelled` with `ActivityStatusCode.Unset`.
 - Failures are recorded as `gen_ai.failed` with `ActivityStatusCode.Error`.
 - Time-to-first-token is captured for both buffered and streaming generation paths.
+- Streaming cancellation is checked at token boundaries, including immediately after token
+  generation and again just before a token is yielded to the caller.
+
+For voice barge-in usage patterns and cancellation examples, see
+[docs/cancellation.md](cancellation.md).

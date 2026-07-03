@@ -31,7 +31,7 @@ internal sealed record GenerationResult(
 /// Thin wrapper around ONNX Runtime GenAI for model loading and inference.
 /// Manages Model, Tokenizer, and generation lifecycle.
 /// </summary>
-internal sealed class OnnxGenAIModel : IDisposable
+internal sealed class OnnxGenAIModel : ITextGenerationModel
 {
     private readonly Model _model;
     private readonly Tokenizer _tokenizer;
@@ -41,6 +41,10 @@ internal sealed class OnnxGenAIModel : IDisposable
     internal ExecutionProvider ActiveProvider { get; }
     internal string? ProviderSelectionDetails { get; }
     internal ModelMetadata? Metadata { get; }
+
+    ExecutionProvider ITextGenerationModel.ActiveProvider => ActiveProvider;
+    string? ITextGenerationModel.ProviderSelectionDetails => ProviderSelectionDetails;
+    ModelMetadata? ITextGenerationModel.Metadata => Metadata;
 
     internal OnnxGenAIModel(string modelPath, ExecutionProvider provider, int gpuDeviceId, int? optionsMaxSequenceLength = null, ILogger? logger = null)
     {
@@ -335,12 +339,14 @@ ModelInitialized:
         {
             ct.ThrowIfCancellationRequested();
             generator.GenerateNextToken();
+            ct.ThrowIfCancellationRequested();
 
             var seq = generator.GetSequence(0);
             var tokenId = seq[^1];
             var tokenText = tokenizerStream.Decode(tokenId);
             if (!string.IsNullOrEmpty(tokenText))
             {
+                ct.ThrowIfCancellationRequested();
                 yield return tokenText;
             }
 
@@ -348,6 +354,18 @@ ModelInitialized:
             await Task.Yield();
         }
     }
+
+    GenerationResult ITextGenerationModel.Generate(string prompt, GenerationParameters parameters, CancellationToken ct)
+        => Generate(prompt, parameters, ct);
+
+    int ITextGenerationModel.CountPromptTokens(string prompt)
+        => CountPromptTokens(prompt);
+
+    IAsyncEnumerable<string> ITextGenerationModel.GenerateStreamingAsync(
+        string prompt,
+        GenerationParameters parameters,
+        CancellationToken ct)
+        => GenerateStreamingAsync(prompt, parameters, ct);
 
     private static void ApplyParameters(GeneratorParams genParams, GenerationParameters parameters)
     {

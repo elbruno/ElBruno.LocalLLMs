@@ -20,9 +20,10 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
     private readonly IModelDownloader _downloader;
     private readonly IChatTemplateFormatter _formatter;
     private readonly IToolCallParser _toolCallParser;
+    private readonly ITextGenerationModelFactory _modelFactory;
     private readonly ILogger _logger;
 
-    private OnnxGenAIModel? _model;
+    private ITextGenerationModel? _model;
     private string? _resolvedModelPath;
     private bool _disposed;
     private readonly SemaphoreSlim _initLock = new(1, 1);
@@ -54,12 +55,17 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
     {
     }
 
-    internal LocalChatClient(LocalLLMsOptions options, IModelDownloader downloader, ILoggerFactory? loggerFactory = null)
+    internal LocalChatClient(
+        LocalLLMsOptions options,
+        IModelDownloader downloader,
+        ILoggerFactory? loggerFactory = null,
+        ITextGenerationModelFactory? modelFactory = null)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _downloader = downloader ?? throw new ArgumentNullException(nameof(downloader));
         _formatter = ChatTemplateFactory.Create(options.Model.ChatTemplate);
         _toolCallParser = ToolCallParserFactory.Create(options.Model.ChatTemplate);
+        _modelFactory = modelFactory ?? new OnnxGenAIModelFactory();
         _logger = loggerFactory?.CreateLogger<LocalChatClient>() ?? NullLogger<LocalChatClient>.Instance;
 
         Metadata = new ChatClientMetadata(
@@ -341,6 +347,7 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
                         break;
                     }
 
+                    cancellationToken.ThrowIfCancellationRequested();
                     var token = enumerator.Current;
                     if (!firstTokenSeen)
                     {
@@ -351,6 +358,7 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
 
                     outputTokenCount++;
                     fullText.Append(token);
+                    cancellationToken.ThrowIfCancellationRequested();
                     yield return new ChatResponseUpdate(ChatRole.Assistant, token)
                     {
                         ModelId = _options.Model.Id,
@@ -363,6 +371,7 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
                 await enumerator.DisposeAsync().ConfigureAwait(false);
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             if (LocalLLMsInstrumentation.ShouldCaptureContent(_options))
             {
                 activity.AddCompletionEvent(fullText.ToString());
@@ -374,6 +383,7 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
             {
                 try
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     toolCalls = _toolCallParser.Parse(fullText.ToString());
                 }
                 catch (OperationCanceledException)
@@ -393,12 +403,14 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
                 // Send function call updates
                 foreach (var call in toolCalls)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     var funcCallContent = new FunctionCallContent(
                         callId: call.CallId,
                         name: call.FunctionName,
                         arguments: call.Arguments);
 
                     // ChatResponseUpdate requires role + content in constructor
+                    cancellationToken.ThrowIfCancellationRequested();
                     yield return new ChatResponseUpdate(ChatRole.Assistant, [funcCallContent])
                     {
                         ModelId = _options.Model.Id,
@@ -508,7 +520,7 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
             LogMessages.ModelLoadingStart(_logger, _resolvedModelPath, _options.ExecutionProvider);
-            _model = new OnnxGenAIModel(
+            _model = _modelFactory.Create(
                 _resolvedModelPath,
                 _options.ExecutionProvider,
                 _options.GpuDeviceId,

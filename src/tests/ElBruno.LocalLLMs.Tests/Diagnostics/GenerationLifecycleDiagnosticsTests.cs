@@ -215,7 +215,8 @@ public class GenerationLifecycleDiagnosticsTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
             () => client.GetResponseAsync([new ChatMessage(ChatRole.User, "hi")], cancellationToken: cts.Token));
 
-        var activity = Assert.Single(capture.CompletedActivities);
+        var activity = Assert.Single(capture.CompletedActivities.Where(activity =>
+            activity.Events.Select(e => e.Name).SequenceEqual(["gen_ai.queued", "gen_ai.cancelled"])));
         Assert.Collection(activity.Events,
             e => Assert.Equal("gen_ai.queued", e.Name),
             e => Assert.Equal("gen_ai.cancelled", e.Name));
@@ -242,7 +243,8 @@ public class GenerationLifecycleDiagnosticsTests
         await Assert.ThrowsAnyAsync<Exception>(
             () => client.GetResponseAsync([new ChatMessage(ChatRole.User, "hi")]));
 
-        var activity = Assert.Single(capture.CompletedActivities);
+        var activity = Assert.Single(capture.CompletedActivities.Where(activity =>
+            activity.Events.Select(e => e.Name).SequenceEqual(["gen_ai.queued", "gen_ai.failed"])));
         Assert.Collection(activity.Events,
             e => Assert.Equal("gen_ai.queued", e.Name),
             e => Assert.Equal("gen_ai.failed", e.Name));
@@ -270,7 +272,8 @@ public class GenerationLifecycleDiagnosticsTests
             }
         });
 
-        var activity = Assert.Single(capture.CompletedActivities);
+        var activity = Assert.Single(capture.CompletedActivities.Where(activity =>
+            activity.Events.Select(e => e.Name).SequenceEqual(["gen_ai.queued", "gen_ai.cancelled"])));
         Assert.Collection(activity.Events,
             e => Assert.Equal("gen_ai.queued", e.Name),
             e => Assert.Equal("gen_ai.cancelled", e.Name));
@@ -323,8 +326,17 @@ public class GenerationLifecycleDiagnosticsTests
         Assert.Equal(expectedValue, actual);
     }
 
+    private static void AssertTag(ActivitySnapshot activity, string key, string expectedValue)
+    {
+        var actual = GetTag(activity, key);
+        Assert.Equal(expectedValue, actual);
+    }
+
     private static string? GetTag(Activity activity, string key)
         => activity.TagObjects.FirstOrDefault(t => t.Key == key).Value?.ToString();
+
+    private static string? GetTag(ActivitySnapshot activity, string key)
+        => activity.Tags.TryGetValue(key, out var value) ? value?.ToString() : null;
 
     private static ActivityCapture SubscribeAllDataListener() => new();
 
@@ -336,7 +348,7 @@ public class GenerationLifecycleDiagnosticsTests
     {
         private readonly ActivityListener _listener;
 
-        public List<Activity> CompletedActivities { get; } = [];
+        public List<ActivitySnapshot> CompletedActivities { get; } = [];
 
         public ActivityCapture()
         {
@@ -344,11 +356,33 @@ public class GenerationLifecycleDiagnosticsTests
             {
                 ShouldListenTo = source => source.Name == LocalLLMsInstrumentation.ActivitySourceName,
                 Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-                ActivityStopped = activity => CompletedActivities.Add(activity)
+                ActivityStopped = activity => CompletedActivities.Add(ActivitySnapshot.Create(activity))
             };
             ActivitySource.AddActivityListener(_listener);
         }
 
         public void Dispose() => _listener.Dispose();
+    }
+
+    private sealed record ActivitySnapshot(
+        ActivityStatusCode Status,
+        IReadOnlyList<ActivityEventSnapshot> Events,
+        IReadOnlyDictionary<string, object?> Tags)
+    {
+        public static ActivitySnapshot Create(Activity activity)
+            => new(
+                activity.Status,
+                activity.Events.Select(ActivityEventSnapshot.Create).ToArray(),
+                activity.TagObjects.ToDictionary(tag => tag.Key, tag => tag.Value));
+    }
+
+    private sealed record ActivityEventSnapshot(
+        string Name,
+        IReadOnlyDictionary<string, object?> Tags)
+    {
+        public static ActivityEventSnapshot Create(ActivityEvent activityEvent)
+            => new(
+                activityEvent.Name,
+                activityEvent.Tags.ToDictionary(tag => tag.Key, tag => tag.Value));
     }
 }

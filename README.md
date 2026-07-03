@@ -238,7 +238,7 @@ var options = new LocalLLMsOptions
 };
 ```
 
-See [docs/observability.md](docs/observability.md) for the lifecycle event contract, metric names, and Aspire wiring notes.
+See [docs/observability.md](docs/observability.md) for the lifecycle event contract, metric names, and Aspire wiring notes, and [docs/cancellation.md](docs/cancellation.md) for voice barge-in cancellation behavior.
 
 ## Troubleshooting
 
@@ -342,6 +342,7 @@ dotnet test ElBruno.LocalLLMs.slnx --framework net8.0
 - [Getting Started](docs/getting-started.md) — installation, first steps, configuration
 - [Supported Models](docs/supported-models.md) — full model reference with tiers, specs, decision tree
 - [BitNet Guide](docs/bitnet-guide.md) — setup and usage of 1.58-bit BitNet models
+- [Cancellation Guide](docs/cancellation.md) — streaming cancellation semantics and voice barge-in usage
 - [Observability](docs/observability.md) — OpenTelemetry, lifecycle events, metrics, Aspire wiring
 - [Architecture](docs/architecture.md) — design decisions and internal structure
 - [Samples Guide](docs/samples.md) — walkthrough of each sample application
