@@ -30,6 +30,7 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 - 📊 **Multi-model** — switch between Phi-3.5, Phi-4, Qwen2.5, Llama 3.2, and more
 - 🎯 **Fine-tuned models** — pre-trained Qwen2.5 variants for tool calling and RAG ([guide](docs/fine-tuning-guide.md))
 - ⚡ **BitNet support** — run 1.58-bit ternary models via [bitnet.cpp](https://github.com/microsoft/BitNet) with extreme efficiency ([guide](docs/bitnet-guide.md))
+- 📈 **OpenTelemetry diagnostics** — lifecycle activities and metrics for queued, first-token, completion, cancellation, and failure ([guide](docs/observability.md))
 
 ## Packages
 
@@ -216,6 +217,29 @@ catch (InvalidOperationException ex)
 }
 ```
 
+## Observability
+
+`LocalChatClient` emits generation lifecycle diagnostics through `ActivitySource` and `Meter`, both named `ElBruno.LocalLLMs`.
+
+```csharp
+using ElBruno.LocalLLMs.Diagnostics;
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing.AddSource(LocalLLMsInstrumentation.ActivitySourceName))
+    .WithMetrics(metrics => metrics.AddMeter(LocalLLMsInstrumentation.MeterName));
+```
+
+By default, telemetry excludes prompt and completion text. Opt in only when you want content attached:
+
+```csharp
+var options = new LocalLLMsOptions
+{
+    CaptureTelemetryContent = true
+};
+```
+
+See [docs/observability.md](docs/observability.md) for the lifecycle event contract, metric names, and Aspire wiring notes.
+
 ## Troubleshooting
 
 **GPU not working?** Use `ExecutionProvider.Cpu` explicitly. See [GPU Setup Validation](docs/troubleshooting-guide.md#gpu-setup-validation).
@@ -318,6 +342,7 @@ dotnet test ElBruno.LocalLLMs.slnx --framework net8.0
 - [Getting Started](docs/getting-started.md) — installation, first steps, configuration
 - [Supported Models](docs/supported-models.md) — full model reference with tiers, specs, decision tree
 - [BitNet Guide](docs/bitnet-guide.md) — setup and usage of 1.58-bit BitNet models
+- [Observability](docs/observability.md) — OpenTelemetry, lifecycle events, metrics, Aspire wiring
 - [Architecture](docs/architecture.md) — design decisions and internal structure
 - [Samples Guide](docs/samples.md) — walkthrough of each sample application
 - [Benchmarks](docs/benchmarks.md) — how to run and interpret performance benchmarks

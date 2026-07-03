@@ -11,6 +11,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.19.0] - 2026-07-03
+
+### Added
+- **Generation-lifecycle diagnostics (Issue #21)**: `LocalChatClient.GetResponseAsync` and
+  `GetStreamingResponseAsync` now emit a single root `Activity` per call (an
+  `ActivitySource`/`Meter` pair both named `ElBruno.LocalLLMs`) with
+  `ActivityEvent`s for queued, model ready, generation started, first token, completed,
+  cancelled, and failed. Metrics: `gen_ai.client.operation.duration`,
+  `gen_ai.client.time_to_first_token`, `gen_ai.client.token.usage`,
+  `gen_ai.client.generation.count`. See `ElBruno.LocalLLMs.Diagnostics.LocalLLMsInstrumentation`.
+- Added `LocalLLMsOptions.CaptureTelemetryContent` (default `false`) to opt in to attaching
+  prompt/completion text to telemetry — off by default for privacy. Can also be enabled via
+  `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true`.
+- Cancellation is now classified distinctly from failure in telemetry (`ActivityStatusCode.Unset`
+  + `gen_ai.outcome=cancelled` vs. `ActivityStatusCode.Error` + `gen_ai.outcome=error`).
+- Time-to-first-token is now measurable end-to-end (buffered and streaming paths).
+
+---
+
 ## [0.18.0] - 2026-06-05
 
 ### Added

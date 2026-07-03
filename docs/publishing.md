@@ -55,9 +55,10 @@ The automated flow:
 
 1. Update `<Version>` in `src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj`
 2. Update `docs/CHANGELOG.md` with a `## [X.Y.Z]` entry
-3. Push to `main`
-4. `squad-release.yml` automatically creates a GitHub Release with tag `vX.Y.Z`
-5. The release event triggers `publish.yml` → package is built and pushed to NuGet.org
+3. Update the user-facing docs for the release surface (`README.md` plus any feature-specific guide such as `docs/observability.md`)
+4. Push to `main`
+5. `squad-release.yml` automatically creates a GitHub Release with tag `vX.Y.Z`
+6. The release event triggers `publish.yml` → package is built and pushed to NuGet.org
 
 ### Option B: Manual Dispatch
 
@@ -66,6 +67,18 @@ For ad-hoc or pre-release publishes:
 1. Go to **Actions → Publish to NuGet → Run workflow**
 2. Optionally enter a version (e.g., `1.2.0-beta.1`)
 3. If left empty, the version from the `.csproj` is used
+
+> **Local machine note:** this repository's normal publish path is GitHub Actions OIDC. A local `dotnet pack` can validate the package contents, but a local `dotnet nuget push` still requires a maintainer-provided NuGet API key. Without that key, publish from the workflow instead of the terminal.
+
+## Release Checklist
+
+Before triggering publish:
+
+1. `<Version>` matches the release you intend to ship.
+2. `docs/CHANGELOG.md` contains the same version.
+3. README and any feature docs reflect the shipped behavior.
+4. `dotnet test ElBruno.LocalLLMs.slnx --framework net8.0` passes locally.
+5. `dotnet pack src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj -c Release` succeeds locally.
 
 ---
 

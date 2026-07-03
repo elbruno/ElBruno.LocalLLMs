@@ -16,6 +16,18 @@ internal sealed record GenerationParameters(
     float RepetitionPenalty = 1.0f);
 
 /// <summary>
+/// Result of a buffered (non-streaming) generation call. Carries the token-boundary
+/// information needed for generation-lifecycle diagnostics (time-to-first-token, input/output
+/// token counts) without leaking a callback API — the model is the single source of truth for
+/// counts since it owns both the encoded prompt sequence and the per-token generation loop.
+/// </summary>
+internal sealed record GenerationResult(
+    string Text,
+    int InputTokenCount,
+    int OutputTokenCount,
+    TimeSpan TimeToFirstToken);
+
+/// <summary>
 /// Thin wrapper around ONNX Runtime GenAI for model loading and inference.
 /// Manages Model, Tokenizer, and generation lifecycle.
 /// </summary>
@@ -238,9 +250,10 @@ ModelInitialized:
     }
 
     /// <summary>
-    /// Synchronous full generation. Returns the complete generated text (excluding the prompt).
+    /// Synchronous full generation. Returns the complete generated text (excluding the prompt)
+    /// plus token-boundary diagnostics (input/output token counts, time-to-first-token).
     /// </summary>
-    internal string Generate(string prompt, GenerationParameters parameters, CancellationToken ct)
+    internal GenerationResult Generate(string prompt, GenerationParameters parameters, CancellationToken ct)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
@@ -249,11 +262,17 @@ ModelInitialized:
         ApplyParameters(genParams, parameters);
 
         using var sequences = _tokenizer.Encode(prompt);
+        var inputTokenCount = sequences[0].Length;
+
         using var generator = new Generator(_model, genParams);
         generator.AppendTokenSequences(sequences);
 
         using var tokenizerStream = _tokenizer.CreateStream();
         var outputText = new System.Text.StringBuilder();
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var timeToFirstToken = TimeSpan.Zero;
+        var outputTokenCount = 0;
+        var firstTokenSeen = false;
 
         while (!generator.IsDone())
         {
@@ -264,10 +283,33 @@ ModelInitialized:
             var tokenId = seq[^1];
             var decoded = tokenizerStream.Decode(tokenId);
             outputText.Append(decoded);
+            outputTokenCount++;
+
+            if (!firstTokenSeen)
+            {
+                firstTokenSeen = true;
+                timeToFirstToken = sw.Elapsed;
+            }
         }
 
-        return outputText.ToString();
+        return new GenerationResult(outputText.ToString(), inputTokenCount, outputTokenCount, timeToFirstToken);
     }
+
+    /// <summary>
+    /// Counts the number of tokens the tokenizer produces for <paramref name="prompt"/>,
+    /// without running generation. Used by the streaming path to report input token counts
+    /// for diagnostics (the streaming loop itself yields tokens one at a time, so it does not
+    /// need a buffered result type to observe output token boundaries).
+    /// </summary>
+    internal int CountPromptTokens(string prompt)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
+
+        using var sequences = _tokenizer.Encode(prompt);
+        return sequences[0].Length;
+    }
+
 
     /// <summary>
     /// Streaming generation. Yields decoded token strings as they are produced.
