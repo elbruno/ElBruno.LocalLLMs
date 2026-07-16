@@ -54,7 +54,7 @@ The key insight: when weights are {-1, 0, 1}, matrix multiplication becomes addi
 
 ## Performance Comparison: BitNet vs ONNX
 
-We built a [benchmark sample](../src/samples/BitNetPerformance/) that compares three models on the same hardware:
+We built a [benchmark sample](../../src/samples/BitNetPerformance/) that compares three models on the same hardware:
 
 | Model | Type | Size | Load Time | Tokens/sec | Peak RAM |
 |-------|------|------|-----------|------------|----------|
@@ -145,7 +145,7 @@ Both implement `IChatClient`, so your application code doesn't change — just s
    dotnet add package ElBruno.LocalLLMs.BitNet
    ```
 
-2. **Build bitnet.cpp** — see the [BitNet Guide](../docs/bitnet-guide.md#1-build-bitnetcpp)
+2. **Build bitnet.cpp** — see the [BitNet Guide](../bitnet-guide.md#1-build-bitnetcpp)
 
 3. **Download a model:**
    ```bash
@@ -163,7 +163,7 @@ Both implement `IChatClient`, so your application code doesn't change — just s
    using var client = new BitNetChatClient(options);
    ```
 
-Full setup guide: [docs/bitnet-guide.md](../docs/bitnet-guide.md)
+Full setup guide: [docs/bitnet-guide.md](../bitnet-guide.md)
 
 ---
 
@@ -182,7 +182,7 @@ Full setup guide: [docs/bitnet-guide.md](../docs/bitnet-guide.md)
 - **GitHub:** [elbruno/ElBruno.LocalLLMs](https://github.com/elbruno/ElBruno.LocalLLMs)
 - **BitNet:** [microsoft/BitNet](https://github.com/microsoft/BitNet)
 - **Paper:** [The Era of 1-bit LLMs](https://arxiv.org/abs/2402.17764)
-- **Docs:** [BitNet Guide](../docs/bitnet-guide.md) | [Supported Models](../docs/supported-models.md) | [Changelog](../docs/CHANGELOG.md)
+- **Docs:** [BitNet Guide](../bitnet-guide.md) | [Supported Models](../supported-models.md) | [Changelog](../CHANGELOG.md)
 
 ---
 

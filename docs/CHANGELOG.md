@@ -241,7 +241,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Validates correct Unicode handling in ChatML, Phi3, Llama3, Qwen, Mistral, Gemma, and DeepSeek formatters
 
 **Documentation**
-- New blog post: `docs/blog-gemma4-support.md` — announcing Gemma 4 support
+- New blog post: `docs/blog/blog-gemma4-support.md` — announcing Gemma 4 support
 - Updated `docs/supported-models.md` with Gemma 4 entries
 - Updated `docs/onnx-conversion.md` with Gemma 4 section and technical blocker details
 - Updated `docs/blocked-models.md` with Gemma 4 architecture analysis

@@ -250,4 +250,4 @@ Useful datasets for fine-tuning:
 - [Tool Calling Guide](tool-calling-guide.md) — how tool calling works in the library
 - [Supported Models](supported-models.md) — complete model reference
 - [ONNX Conversion Guide](onnx-conversion.md) — converting models to ONNX format
-- [Fine-tuning plan](plan-finetune-qwen.md) — full implementation plan with dataset details
+- [Fine-tuning plan](plans/plan-finetune-qwen.md) — full implementation plan with dataset details

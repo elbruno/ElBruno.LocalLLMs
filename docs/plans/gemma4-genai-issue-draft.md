@@ -130,7 +130,7 @@ Run:
 ```bash
 gh issue create --repo microsoft/onnxruntime-genai \
   --title "Feature Request: Support for Google Gemma 4 model family (PLE architecture, variable head dims, KV cache sharing)" \
-  --body-file docs/gemma4-genai-issue-draft.md \
+  --body-file docs/plans/gemma4-genai-issue-draft.md \
   --label "enhancement"
 ```
 

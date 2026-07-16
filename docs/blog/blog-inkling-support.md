@@ -1,6 +1,6 @@
 # 🧠 Someone Asked Me to Add a 975B Model to My Library — Here's Why I Can't (Yet)
 
-![Inkling support evaluation — a 975B multimodal brain towering over a small C# laptop in a data center](../images/blog-inkling-support.png)
+![Inkling support evaluation — a 975B multimodal brain towering over a small C# laptop in a data center](../../images/blog-inkling-support.png)
 
 ⚠️ _This blog post was created with the help of AI tools. The geeky fun and the 🤖 in C# are 100% mine._
 
@@ -17,7 +17,7 @@ Inkling is a **975B-parameter, Mixture-of-Experts, multimodal** (text + image + 
 - **Size:** ~490 GB+ of weights *even at INT4* — this is a data-center model, not a laptop model.
 - **NVFP4 numerics** + custom architecture = no conversion path exists.
 
-So I documented it honestly as **Not Viable** in [`blocked-models.md`](blocked-models.md), pointed folks at hosted APIs for Inkling itself, and recommended small local alternatives (**Phi-4**, **Qwen2.5-32B**, **DeepSeek-R1-Distill-Qwen-14B**). If you want it on your own hardware today — you'd need a rack, not a ThinkPad. 😅
+So I documented it honestly as **Not Viable** in [`blocked-models.md`](../blocked-models.md), pointed folks at hosted APIs for Inkling itself, and recommended small local alternatives (**Phi-4**, **Qwen2.5-32B**, **DeepSeek-R1-Distill-Qwen-14B**). If you want it on your own hardware today — you'd need a rack, not a ThinkPad. 😅
 
 ---
 
@@ -71,8 +71,8 @@ Any *one* of these would be enough to block it. Inkling has all four. It's essen
 
 I didn't want this to be a silent "no." So I:
 
-- ✅ Ran the full evaluation and wrote it up in **[`docs/blocked-models.md`](blocked-models.md)** with a proper blocker table.
-- ✅ Added a heads-up (with a link) in **[`docs/supported-models.md`](supported-models.md)** so nobody wastes an afternoon trying to convert it.
+- ✅ Ran the full evaluation and wrote it up in **[`docs/blocked-models.md`](../blocked-models.md)** with a proper blocker table.
+- ✅ Added a heads-up (with a link) in **[`docs/supported-models.md`](../supported-models.md)** so nobody wastes an afternoon trying to convert it.
 - ✅ Logged it in the changelog.
 
 And most importantly — **alternatives**:
@@ -92,4 +92,4 @@ Thanks for the request, whoever you are. Keep 'em coming. 🤖
 
 ---
 
-📌 _Full technical breakdown: [Blocked Models Reference](blocked-models.md) · Models that DO run locally: [Supported Models](supported-models.md)_
+📌 _Full technical breakdown: [Blocked Models Reference](../blocked-models.md) · Models that DO run locally: [Supported Models](../supported-models.md)_
