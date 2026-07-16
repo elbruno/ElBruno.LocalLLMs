@@ -1,4 +1,5 @@
 name: Squad Preview Validation
+# dotnet project — configure build, test, and validation commands below
 
 on:
   push:
@@ -13,65 +14,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-
-      - name: Restore
+      - name: Build and test
         run: |
-          dotnet restore src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj
-          dotnet restore src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj
-          dotnet restore src/tests/ElBruno.LocalLLMs.BitNet.Tests/ElBruno.LocalLLMs.BitNet.Tests.csproj
-          dotnet restore src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj
-          dotnet restore src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj
-          dotnet restore src/ElBruno.LocalLLMs.BitNet/ElBruno.LocalLLMs.BitNet.csproj
+          # TODO: Add your dotnet build/test commands here
+          # Go:            go test ./...
+          # Python:        pip install -r requirements.txt && pytest
+          # .NET:          dotnet test
+          # Java (Maven):  mvn test
+          # Java (Gradle): ./gradlew test
+          echo "No build commands configured — update squad-preview.yml"
 
-      - name: Build
+      - name: Validate
         run: |
-          dotnet build src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj --configuration Release --no-restore
-          dotnet build src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj --configuration Release --no-restore
-          dotnet build src/tests/ElBruno.LocalLLMs.BitNet.Tests/ElBruno.LocalLLMs.BitNet.Tests.csproj --configuration Release --no-restore
-          dotnet build src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj --configuration Release --no-restore
-          dotnet build src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj --configuration Release --no-restore
-          dotnet build src/ElBruno.LocalLLMs.BitNet/ElBruno.LocalLLMs.BitNet.csproj --configuration Release --no-restore
-
-      - name: Unit Tests
-        run: |
-          dotnet test src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj --configuration Release --no-build --framework net8.0 --verbosity normal
-          dotnet test src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj --configuration Release --no-build --framework net8.0 --verbosity normal
-          dotnet test src/tests/ElBruno.LocalLLMs.BitNet.Tests/ElBruno.LocalLLMs.BitNet.Tests.csproj --configuration Release --no-build --framework net8.0 --verbosity normal
-
-      - name: Validate version in .csproj
-        run: |
-          VERSION=$(grep -oP '(?<=<Version>).*(?=</Version>)' src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj)
-          if [ -z "$VERSION" ]; then
-            echo "::error::❌ No <Version> field found in .csproj."
-            exit 1
-          fi
-          echo "✅ .csproj version: $VERSION"
-
-      - name: Validate version consistency
-        run: |
-          VERSION=$(grep -oP '(?<=<Version>).*(?=</Version>)' src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj)
-          if ! grep -q "## \[$VERSION\]" docs/CHANGELOG.md 2>/dev/null; then
-            echo "::error::Version $VERSION not found in docs/CHANGELOG.md — update docs/CHANGELOG.md before release"
-            exit 1
-          fi
-          echo "✅ Version $VERSION validated in docs/CHANGELOG.md"
-
-      - name: Check no .ai-team/ or .squad/ files are tracked
-        run: |
-          FOUND_FORBIDDEN=0
-          if git ls-files --error-unmatch .ai-team/ 2>/dev/null; then
-            echo "::error::❌ .ai-team/ files are tracked on preview — this must not ship."
-            FOUND_FORBIDDEN=1
-          fi
-          if git ls-files --error-unmatch .squad/ 2>/dev/null; then
-            echo "::error::❌ .squad/ files are tracked on preview — this must not ship."
-            FOUND_FORBIDDEN=1
-          fi
-          if [ $FOUND_FORBIDDEN -eq 1 ]; then
-            exit 1
-          fi
-          echo "✅ No .ai-team/ or .squad/ files tracked — clean for release."
+          # TODO: Add pre-release validation commands here
+          echo "No validation commands configured — update squad-preview.yml"

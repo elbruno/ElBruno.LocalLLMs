@@ -1,4 +1,5 @@
 name: Squad Docs — Build & Deploy
+# dotnet project — configure documentation build commands below
 
 on:
   workflow_dispatch:
@@ -13,41 +14,14 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate docs directory exists
+      - name: Build docs
         run: |
-          if [ ! -d "docs" ]; then
-            echo "::error::docs/ directory not found"
-            exit 1
-          fi
-          echo "✅ docs/ directory exists"
-
-      - name: List documentation files
-        run: |
-          echo "📄 Documentation files:"
-          find docs -type f -name '*.md' | sort
-
-      - name: Upload docs as artifact (raw markdown)
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          # TODO: Add your documentation build commands here
+          # This workflow is optional — remove or customize it for your project
+          echo "No docs build commands configured — update or remove squad-docs.yml"

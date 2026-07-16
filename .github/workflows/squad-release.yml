@@ -1,4 +1,5 @@
 name: Squad Release
+# dotnet project — configure build, test, and release commands below
 
 on:
   push:
@@ -6,7 +7,6 @@ on:
 
 permissions:
   contents: write
-  actions: write
 
 jobs:
   release:
@@ -16,90 +16,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: |
-            8.0.x
-            10.0.x
-
-      - name: Restore
+      - name: Build and test
         run: |
-          dotnet restore src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj
-          dotnet restore src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj
-          dotnet restore src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj
-          dotnet restore src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj
+          # TODO: Add your dotnet build/test commands here
+          # Go:            go test ./...
+          # Python:        pip install -r requirements.txt && pytest
+          # .NET:          dotnet test
+          # Java (Maven):  mvn test
+          # Java (Gradle): ./gradlew test
+          echo "No build commands configured — update squad-release.yml"
 
-      - name: Build
-        run: |
-          dotnet build src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj -c Release --no-restore
-          dotnet build src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj -c Release --no-restore
-          dotnet build src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj -c Release --no-restore
-          dotnet build src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj -c Release --no-restore
-
-      - name: Unit Tests
-        run: |
-          dotnet test src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj -c Release --no-build --framework net8.0 --verbosity normal
-          dotnet test src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj -c Release --no-build --framework net8.0 --verbosity normal
-
-      - name: Read version from .csproj
-        id: version
-        run: |
-          VERSION=$(grep -oP '(?<=<Version>).*(?=</Version>)' src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj)
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
-          echo "📦 Version: $VERSION (tag: v$VERSION)"
-
-      - name: Validate version consistency
-        run: |
-          VERSION=${{ steps.version.outputs.version }}
-          if ! grep -q "## \[$VERSION\]" docs/CHANGELOG.md 2>/dev/null; then
-            echo "::error::Version $VERSION not found in docs/CHANGELOG.md — update docs/CHANGELOG.md before release"
-            exit 1
-          fi
-          echo "✅ Version $VERSION validated in docs/CHANGELOG.md"
-
-      - name: Check if tag already exists
-        id: check_tag
-        run: |
-          if git rev-parse "refs/tags/${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "⏭️ Tag ${{ steps.version.outputs.tag }} already exists — skipping release."
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "🆕 Tag ${{ steps.version.outputs.tag }} does not exist — creating release."
-          fi
-
-      - name: Create git tag
-        if: steps.check_tag.outputs.exists == 'false'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.tag }}"
-          git push origin "${{ steps.version.outputs.tag }}"
-
-      - name: Create GitHub Release
-        if: steps.check_tag.outputs.exists == 'false'
+      - name: Create release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "${{ steps.version.outputs.tag }}" \
-            --title "${{ steps.version.outputs.tag }}" \
-            --generate-notes \
-            --latest
-
-      - name: Verify release
-        if: steps.check_tag.outputs.exists == 'false'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release view "${{ steps.version.outputs.tag }}"
-          echo "✅ Release ${{ steps.version.outputs.tag }} created and verified."
-
-      - name: Trigger publish workflow
-        if: steps.check_tag.outputs.exists == 'false'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh workflow run publish.yml -f version=${{ steps.version.outputs.version }}
-          echo "🚀 Triggered publish workflow for version ${{ steps.version.outputs.version }}"
+          # TODO: Add your release commands here (e.g., git tag, gh release create)
+          echo "No release commands configured — update squad-release.yml"

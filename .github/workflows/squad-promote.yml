@@ -54,8 +54,7 @@ jobs:
 
           # Commit if there are staged changes
           if ! git diff --cached --quiet; then
-            VERSION=$(grep -oP '(?<=<Version>).*(?=</Version>)' src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj)
-            git commit -m "chore: promote dev → preview (v${VERSION})"
+            git commit -m "chore: promote dev → preview (v$(node -e "console.log(require('./package.json').version)"))"
             git push origin preview
             echo "✅ Pushed preview branch"
           else
@@ -88,15 +87,14 @@ jobs:
         run: |
           echo "=== preview HEAD ===" && git log origin/preview -1 --oneline
           echo "=== main HEAD ===" && git log origin/main -1 --oneline
-          VERSION=$(grep -oP '(?<=<Version>).*(?=</Version>)' src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj)
-          echo "=== Version ===" && echo "v${VERSION}"
+          echo "=== Version ===" && node -e "console.log('v' + require('./package.json').version)"
 
       - name: Validate preview is release-ready
         run: |
           git checkout preview
-          VERSION=$(grep -oP '(?<=<Version>).*(?=</Version>)' src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj)
-          if ! grep -q "## \[$VERSION\]" docs/CHANGELOG.md 2>/dev/null; then
-            echo "::error::Version $VERSION not found in docs/CHANGELOG.md — update before releasing"
+          VERSION=$(node -e "console.log(require('./package.json').version)")
+          if ! grep -q "## \[$VERSION\]" CHANGELOG.md 2>/dev/null; then
+            echo "::error::Version $VERSION not found in CHANGELOG.md — update before releasing"
             exit 1
           fi
           echo "✅ Version $VERSION has CHANGELOG entry"
@@ -113,8 +111,7 @@ jobs:
         if: ${{ inputs.dry_run == 'false' }}
         run: |
           git checkout main
-          VERSION=$(grep -oP '(?<=<Version>).*(?=</Version>)' src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj)
-          git merge origin/preview --no-ff -m "chore: promote preview → main (v${VERSION})"
+          git merge origin/preview --no-ff -m "chore: promote preview → main (v$(node -e "console.log(require('./package.json').version)"))"
           git push origin main
           echo "✅ Pushed main — squad-release.yml will tag and publish the release"
 
