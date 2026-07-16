@@ -27,6 +27,7 @@ Use `Llama-3.1-8B-Instruct` (already converted, native ONNX) or `Llama-3.2-3B-In
 | **Llama-3.3-70B-Instruct** | 70B | ~~RAM: ~450GB needed for INT4~~ | ✅ Resolved | CUDA conversion succeeded; uploaded to elbruno/Llama-3.3-70B-Instruct-onnx |
 | **Codestral-22B-v0.1** | 22B | MNPL license (non-production only) | ⛔ Blocked | Use Devstral Small 2 (Apache 2.0) or Qwen2.5-Coder-7B-Instruct instead |
 | **Devstral-Small-2-24B** | 24B | No ONNX conversion path exists | ⛔ Blocked | Wait for onnxruntime-genai support or use GGUF via llama.cpp |
+| **Inkling** | 975B (MoE, multimodal) | MoE + massive size + multimodal (text/image/audio) | 🔴 Not Viable | Use a hosted API (Tinker / 3rd-party inference) or a small local model |
 
 ---
 
@@ -496,6 +497,41 @@ These models are in the `team.md` roadmap but haven't been added to the library 
 
 ---
 
+### Inkling
+
+#### Inkling (975B MoE, Multimodal)
+
+**Model:** thinkingmachines/Inkling  
+**Parameters:** 975B total, 41B active (sparse MoE — 6 of 256 experts routed + 2 shared per token)  
+**Architecture:** 66-layer decoder-only transformer, hybrid local/global attention, **natively multimodal** (text + image + audio in → text out) via a hierarchical patch vision encoder and discrete audio token encoder  
+**Numerics:** BF16 and NVFP4 only  
+**HuggingFace:** https://huggingface.co/thinkingmachines/Inkling  
+**Status:** 🔴 Not Viable (multiple blockers)
+
+**Why Not Viable:**
+
+| Blocker | Reason |
+|---------|--------|
+| MoE Architecture | ONNX Runtime GenAI doesn't support MoE; can't express 256-expert routing (same class of blocker as Mixtral / DeepSeek-V3) |
+| Multimodal I/O | Vision (patch encoder) + audio (discrete token) inputs have no path through the text-only `optimum` / GenAI text-generation-with-past pipeline |
+| RAM (Conversion) | 975B params ≈ ~2 TB in BF16; INT4 quantization needs multiple TB of RAM |
+| RAM (Inference) | Even INT4 ≈ ~490 GB+ of weights — requires data-center multi-GPU, not local/consumer hardware |
+| Numerics | NVFP4 is an NVIDIA 4-bit format, not ONNX; no export path exists for this custom multimodal MoE architecture |
+
+**Assessment:**
+- **Not intended for local inference on consumer/enterprise hardware** — a larger, multimodal sibling of DeepSeek-V3 (671B MoE).
+- Designed for cloud/data-center serving. Vendor guidance points to the Tinker platform and third-party inference providers.
+- Even with future MoE support in the builder, the size and multimodal constraints remain insurmountable for this library.
+
+**Recommendation:**
+- Access Inkling via a hosted API (Tinker cookbook / third-party inference providers) — outside this library's local-ONNX scope.
+- For local inference, use smaller alternatives:
+  - **Phi-4** (14B, native ONNX)
+  - **Qwen2.5-32B** (32B, native ONNX)
+  - **DeepSeek-R1-Distill-Qwen-14B** (14B, native ONNX, exceptional reasoning)
+
+---
+
 ## Future Outlook
 
 ### Near-Term (2025)
@@ -508,10 +544,12 @@ These models are in the `team.md` roadmap but haven't been added to the library 
 - ✅ Gemma-3-12B-IT (likely works with current builder)
 
 **Unlikely without builder updates:**
-- ❌ Gemma-4 family (PLE architecture — requires runtime-level support for per-layer embeddings, variable head dims, KV sharing)
 - ❌ Mixtral-8x7B, Llama-4-Scout, Llama-4-Maverick (all MoE — requires builder update)
 - ❌ StableLM-2-1.6B-Chat (unsupported architecture — requires builder update)
 - ❌ DeepSeek-V3 (671B + MoE + impractical for local)
+- ❌ Inkling (975B + MoE + multimodal — data-center only)
+
+> **Note:** Gemma 4 family (E2B, E4B, 12B, 26B-A4B, 31B) was previously listed here as blocked (PLE architecture). It is now **✅ Resolved** — supported via conversion on `onnxruntime-genai` v0.14.1+. See the Gemma 4 section above.
 
 ### Mid-Term (2025–2026)
 
@@ -520,6 +558,7 @@ These models are in the `team.md` roadmap but haven't been added to the library 
 - ✅ Llama-4-Scout (17B MoE)
 - ⚠️ Llama-4-Maverick (128-expert — very heavy, still impractical)
 - ⚠️ DeepSeek-V3 (would help, but 671B still too large)
+- ⚠️ Inkling (would help, but 975B + multimodal still data-center only)
 
 **If ONNX Runtime GenAI adds architecture support:**
 - ✅ StableLM-2-1.6B-Chat (custom architecture)
@@ -528,10 +567,10 @@ These models are in the `team.md` roadmap but haven't been added to the library 
 
 | Model | Realistic Timeline | Effort Level |
 |-------|-------------------|--------------|
-| Gemma-4-E2B-IT | 2026 (when GenAI supports PLE) | 🟡 Medium (conversion scripts ready) |
-| Gemma-4-E4B-IT | 2026 (when GenAI supports PLE) | 🟡 Medium (conversion scripts ready) |
-| Gemma-4-26B-A4B-IT | 2026+ (PLE + MoE support needed) | 🔴 High (MoE + PLE) |
-| Gemma-4-31B-IT | 2026 (when GenAI supports PLE) | 🟡 Medium (dense + PLE) |
+| Gemma-4-E2B-IT | ✅ Done | ✅ Resolved (conversion on onnxruntime-genai v0.14.1+) |
+| Gemma-4-E4B-IT | ✅ Done | ✅ Resolved (conversion on onnxruntime-genai v0.14.1+) |
+| Gemma-4-26B-A4B-IT | ✅ Done | ✅ Resolved (conversion on onnxruntime-genai v0.14.1+) |
+| Gemma-4-31B-IT | ✅ Done | ✅ Resolved (conversion on onnxruntime-genai v0.14.1+) |
 | Qwen3-8B, Qwen3-32B | 2025 | ✅ Low (architecture compatible) |
 | Gemma-3-12B-IT | 2025 | ✅ Low (Gemma-2 compatible) |
 | Mixtral-8x7B | 2025–2026 | 🔴 High (requires MoE builder support) |
@@ -540,6 +579,7 @@ These models are in the `team.md` roadmap but haven't been added to the library 
 | StableLM-2-1.6B | 2025–2026 | 🔴 High (requires new architecture support) |
 | Llama-4-Maverick | 2026+ | 🔴 Very High (complex MoE, rarely practical) |
 | DeepSeek-V3 | 2026+ | 🔴 Impractical (even with MoE, too large) |
+| Inkling | Not viable | 🔴 Impractical (975B MoE + multimodal, data-center only) |
 
 ---
 

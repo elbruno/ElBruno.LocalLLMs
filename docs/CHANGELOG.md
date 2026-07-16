@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Docs
+- Evaluated `thinkingmachines/Inkling` (975B MoE, multimodal text/image/audio) for local support and documented it as 🔴 **Not Viable**: MoE routing is unsupported by the ONNX Runtime GenAI builder, multimodal I/O has no text-generation export path, and weights run to ~490 GB+ even at INT4 (data-center only).
+- Added a full Inkling blocker analysis to `docs/blocked-models.md` (Quick Summary, detail subsection, and Future Outlook) and a not-viable note linking to it from `docs/supported-models.md`.
+
 ---
 
 ## [0.19.1] - 2026-07-03

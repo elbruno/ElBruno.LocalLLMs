@@ -233,6 +233,13 @@ using var client = await LocalChatClient.CreateAsync(options);
 - May require architecture-specific ONNX conversion work
 - Not all are well-tested in the ElBruno.LocalLLMs ecosystem yet
 
+> **⚠️ Some frontier models are not viable for local inference.** Very large
+> Mixture-of-Experts and/or multimodal models — e.g. **DeepSeek-V3 (671B MoE)** and
+> **Inkling (975B MoE, multimodal text/image/audio)** — cannot be converted to ONNX
+> or run locally with this library (MoE routing is unsupported, and weights run to
+> hundreds of GB even at INT4). See [Blocked Models](blocked-models.md) for the full
+> analysis and recommended alternatives.
+
 **Example:**
 ```csharp
 // Create custom ModelDefinition for Qwen3-8B
