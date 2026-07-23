@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>MagenticUIServer.Agents</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\ElBruno.LocalLLMs\ElBruno.LocalLLMs.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- SK stable packages for Kernel and agent type definitions -->
+    <!-- Orchestration uses MEAI OmniAgent loop (Path B) — Agents.Magentic 1.78.0-preview excluded -->
+    <!-- Agents.Magentic preview requires IChatCompletionService (SK-native); blocked by IChatClient mismatch -->
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.78.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Agents.Core" Version="1.78.0" />
+    <PackageReference Include="ElBruno.MarkItDotNet" Version="0.9.*" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.*" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.6" />
+  </ItemGroup>
+</Project>

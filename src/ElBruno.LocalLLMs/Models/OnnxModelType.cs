@@ -9,5 +9,8 @@ public enum OnnxModelType
     CausalLM,
 
     /// <summary>ONNX Runtime GenAI model (uses GenAI API directly).</summary>
-    GenAI
+    GenAI,
+
+    /// <summary>ONNX Runtime GenAI vision-language model (uses MultiModalProcessor instead of Tokenizer).</summary>
+    VisionGenAI
 }

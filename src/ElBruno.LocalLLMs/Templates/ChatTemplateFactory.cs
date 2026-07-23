@@ -11,6 +11,8 @@ internal static class ChatTemplateFactory
         ChatTemplateFormat.Phi3 => new Phi3Formatter(),
         ChatTemplateFormat.Llama3 => new Llama3Formatter(),
         ChatTemplateFormat.Qwen => new QwenFormatter(),
+        ChatTemplateFormat.Qwen3 => new Qwen3Formatter(),
+        ChatTemplateFormat.Fara => new FaraFormatter(),
         ChatTemplateFormat.Mistral => new MistralFormatter(),
         ChatTemplateFormat.DeepSeek => new DeepSeekFormatter(),
         ChatTemplateFormat.Gemma => new GemmaFormatter(),

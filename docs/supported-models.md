@@ -1,6 +1,6 @@
 # Supported Models Reference
 
-ElBruno.LocalLLMs supports **30 LLMs** across 5 tiers. This guide details each model, its capabilities, and how to use it.
+ElBruno.LocalLLMs supports **33 LLMs** across 6 tiers. This guide details each model, its capabilities, and how to use it.
 
 ---
 
@@ -43,6 +43,26 @@ ElBruno.LocalLLMs supports **30 LLMs** across 5 tiers. This guide details each m
 | 🟣 Next-Gen | Qwen3-32B | 32B | Qwen/Qwen3-32B | 🔄 Convert | Qwen | ✅ | 24–32 GB | 🐢 |
 | 🟣 Next-Gen | Gemma-3-12B-IT | 12B | google/gemma-3-12b-it | 🔄 Convert | ChatML | — | 12–16 GB | ⚡ |
 | 🟣 Next-Gen | DeepSeek-V3 | 671B (MoE) | deepseek-ai/DeepSeek-V3 | 🔄 Convert | ChatML | — | 128+ GB | 🐢 |
+| 🟣 Next-Gen | Qwen3-14B-Instruct | 14.77B | onnx-community/Qwen3-14B-ONNX | ✅ Native | **Qwen3** | ✅ | 16–24 GB | ⚡ |
+
+### 🤖 Agentic Models (MagenticLite)
+
+These models are purpose-built for multi-agent orchestration, tool calling, and agentic loops. They follow the [MagenticUI protocol](https://github.com/microsoft/magentic-ui) with `submit` as a terminal tool signal.
+
+| Model | Params | HuggingFace ID | ONNX Status | Chat Template | Tool Calling | Recommended RAM | Notes |
+|-------|--------|----------------|-------------|--------------|---|---|---|
+| **MagenticBrain** | ~14.77B | microsoft/MagenticBrain | 🔄 Convert¹ | **Qwen3** | ✅ | 16–24 GB | Use `onnx-community/Qwen3-14B-ONNX`; requires `enable_thinking=False` |
+| **Fara1.5-9B** | ~9.4B | microsoft/Fara1.5-9B | 🔄 Convert² | **Fara** | — | 12–16 GB | VLM; image + text; coordinate action output; use `LocalVisionChatClient` |
+
+> **¹ MagenticBrain ONNX:** No official ONNX for `microsoft/MagenticBrain` yet. Use `onnx-community/Qwen3-14B-ONNX` (official Qwen3-14B ONNX, INT4) as a drop-in equivalent until Microsoft publishes a native conversion.
+>
+> **² Fara1.5-9B ONNX:** No official ONNX. Convert via ORT-GenAI model builder (`--model_type qwen_vl`). See [`docs/onnx-conversion-fara.md`](onnx-conversion-fara.md) for the full guide. Output: `vision_encoder.onnx` + `embedding_injector.onnx` + `text_decoder.onnx`.
+>
+> **Recommended sampling:** `temperature=0.7, top_p=0.8, presence_penalty=1.0` — greedy decoding causes infinite loops.
+>
+> **Submit protocol:** MagenticBrain signals task completion by calling `submit` (a declared tool with no parameters). The `MagenticBrainAgent` sample demonstrates the full OmniAgent loop.
+
+See [`src/samples/MagenticBrainAgent/`](../src/samples/MagenticBrainAgent/) for a ready-to-run demo.
 
 ### ⚡ BitNet Models (1.58-bit Ternary)
 

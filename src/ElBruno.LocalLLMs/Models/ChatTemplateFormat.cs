@@ -15,8 +15,12 @@ public enum ChatTemplateFormat
     Gemma,
     /// <summary>Mistral format ([INST]).</summary>
     Mistral,
-    /// <summary>Qwen format.</summary>
+    /// <summary>Qwen format (Qwen2.5 and earlier).</summary>
     Qwen,
+    /// <summary>Qwen3 format — non-thinking mode with XML tool tags.</summary>
+    Qwen3,
+    /// <summary>Fara1.5 VLM format — Qwen3 ChatML with Qwen-VL vision token injection. No tool calling.</summary>
+    Fara,
     /// <summary>DeepSeek format.</summary>
     DeepSeek,
     /// <summary>Custom user-defined format.</summary>

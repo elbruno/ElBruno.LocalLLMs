@@ -15,6 +15,7 @@
     <Project Path="src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj" />
     <Project Path="src/tests/ElBruno.LocalLLMs.FineTuneEval/ElBruno.LocalLLMs.FineTuneEval.csproj" />
     <Project Path="src/tests/ElBruno.LocalLLMs.BitNet.Tests/ElBruno.LocalLLMs.BitNet.Tests.csproj" />
+    <Project Path="src/tests/MagenticUIServer.Agents.Tests/MagenticUIServer.Agents.Tests.csproj" />
   </Folder>
   <Folder Name="/src/benchmarks/">
     <Project Path="src/benchmarks/ElBruno.LocalLLMs.Benchmarks/ElBruno.LocalLLMs.Benchmarks.csproj" />
@@ -32,5 +33,9 @@
     <Project Path="src/samples/RagChatbot/RagChatbot.csproj" />
     <Project Path="src/samples/ZeroCloudRag/ZeroCloudRag.csproj" />
     <Project Path="src/samples/OpenAiServer/OpenAiServer.csproj" />
+    <Project Path="src/samples/MagenticBrainAgent/MagenticBrainAgent.csproj" />
+    <Project Path="src/samples/FaraVisionAgent/FaraVisionAgent.csproj" />
+    <Project Path="src/samples/MagenticUIServer/MagenticUIServer/MagenticUIServer.csproj" />
+    <Project Path="src/samples/MagenticUIServer/MagenticUIServer.Agents/MagenticUIServer.Agents.csproj" />
   </Folder>
 </Solution>

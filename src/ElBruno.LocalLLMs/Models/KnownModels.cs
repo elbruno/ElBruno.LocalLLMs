@@ -456,6 +456,63 @@ public static class KnownModels
         SupportsToolCalling = true
     };
 
+    // ────────────────────────────────────────────────────────
+    // 🤖 Agentic — Qwen3 and agentic fine-tunes
+    // ────────────────────────────────────────────────────────
+
+    /// <summary>Qwen3-14B Instruct — official Microsoft ONNX conversion (base model).</summary>
+    public static readonly ModelDefinition Qwen3_14BInstruct = new()
+    {
+        Id = "qwen3-14b-instruct",
+        DisplayName = "Qwen3-14B Instruct",
+        HuggingFaceRepoId = "onnx-community/Qwen3-14B-ONNX",
+        RequiredFiles = ["onnxruntime/cpu_and_mobile/cpu-int4-kld-block-128/*"],
+        ModelSubPath = "onnxruntime/cpu_and_mobile/cpu-int4-kld-block-128",
+        ModelType = OnnxModelType.GenAI,
+        ChatTemplate = ChatTemplateFormat.Qwen3,
+        Tier = ModelTier.Large,
+        HasNativeOnnx = true,
+        SupportsToolCalling = true,
+    };
+
+    /// <summary>MagenticBrain — Microsoft fine-tune of Qwen3-14B for agentic tasks (requires ONNX conversion — see docs/onnx-conversion.md).</summary>
+    public static readonly ModelDefinition MagenticBrain = new()
+    {
+        Id = "magentic-brain",
+        DisplayName = "MagenticBrain (Qwen3-14B agentic fine-tune)",
+        HuggingFaceRepoId = "microsoft/MagenticBrain",
+        RequiredFiles = ["*"],
+        ModelType = OnnxModelType.GenAI,
+        ChatTemplate = ChatTemplateFormat.Qwen3,
+        Tier = ModelTier.Large,
+        HasNativeOnnx = false,
+        SupportsToolCalling = true,
+    };
+
+    // ────────────────────────────────────────────────────────
+    // 👁️ Vision — Vision-Language Models (VLMs)
+    // ────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Fara1.5-9B — Microsoft VLM based on Qwen3.5-9B-VL, supports image + text input and coordinate-based action output.
+    /// No official Microsoft ONNX. Community conversion required via ORT-GenAI model builder:
+    ///   python -m onnxruntime_genai.models.builder -m microsoft/Fara1.5-9B --model_type qwen_vl -o ./fara-onnx
+    /// Output: vision_encoder.onnx + embedding_injector.onnx + text_decoder.onnx + genai_config.json (model.type = "qwen_vl").
+    /// Point LocalLLMsOptions.ModelPath at the conversion output directory. See docs/onnx-conversion-fara.md.
+    /// </summary>
+    public static readonly ModelDefinition Fara15_9B = new()
+    {
+        Id = "fara1.5-9b",
+        DisplayName = "Fara1.5-9B",
+        HuggingFaceRepoId = "microsoft/Fara1.5-9B",
+        RequiredFiles = ["*"],
+        ModelType = OnnxModelType.VisionGenAI,
+        ChatTemplate = ChatTemplateFormat.Fara,
+        Tier = ModelTier.Medium,
+        HasNativeOnnx = false,
+        SupportsToolCalling = false
+    };
+
     /// <summary>
     /// Returns all known model definitions.
     /// </summary>
@@ -497,6 +554,11 @@ public static class KnownModels
         CommandR35B,
         Gemma4_26BA4BIT,
         Gemma4_31BIT,
+        // Agentic (Qwen3 / MagenticBrain)
+        Qwen3_14BInstruct,
+        MagenticBrain,
+        // Vision
+        Fara15_9B,
     ];
 
     /// <summary>
