@@ -8,7 +8,7 @@
     <PackageIcon>nuget_logo.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>llm;onnx;ai;local;chat;microsoft-extensions-ai;ichatclient;phi;qwen;llama;gemma;gemma4;genai;code;copilot</PackageTags>
-    <Version>0.20.0</Version>
+    <Version>0.20.1</Version>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
@@ -43,5 +43,7 @@
   <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
     <None Include="..\..\images\nuget_logo.png" Pack="true" PackagePath="" />
+    <None Include="buildTransitive\ElBruno.LocalLLMs.props" Pack="true" PackagePath="buildTransitive\" />
+    <None Include="buildTransitive\ElBruno.LocalLLMs.targets" Pack="true" PackagePath="buildTransitive\" />
   </ItemGroup>
 </Project>

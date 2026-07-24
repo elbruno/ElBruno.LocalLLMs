@@ -15,6 +15,7 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 
 ## What's New
 
+- 📦 **Transitive native runtime fix** (`v0.20.1`) — Added `buildTransitive` packaging so `onnxruntime-genai.dll` is copied for downstream consumers that reference `ElBruno.LocalLLMs` transitively (Issue #24).
 - 🤖 **Qwen3 & MagenticBrain support** (`v0.20.0`) — New `ChatTemplateFormat.Qwen3` formatter and `KnownModels.MagenticBrain` / `KnownModels.Qwen3_14BInstruct` for agentic multi-agent orchestration loops.
 - 👁️ **Fara 1.5-9B vision-language model** (`v0.20.0`) — Run Microsoft's Fara VLM locally via the new `LocalVisionChatClient`, `IVisionGenerationModel`, and `VisionChatOptions` with image paths.
 - 🌐 **[ElBruno.MagenticUI](https://github.com/elbruno/ElBruno.MagenticUI) reference app** — Full Blazor Server multi-agent app (FileSurfer, WebFetcher, Coder, UserProxy) powered by this library. Drop-in .NET port of [microsoft/magentic-ui](https://github.com/microsoft/magentic-ui) with human-in-the-loop support.
@@ -51,12 +52,11 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 dotnet add package ElBruno.LocalLLMs
 ```
 
-Then add **one** runtime package depending on your target hardware:
+For CPU scenarios, no extra package is required — the transitive `buildTransitive` shim copies `onnxruntime-genai.dll` automatically on Windows.
+
+Add a runtime package only when you want a specific GPU provider:
 
 ```bash
-# 🖥️ CPU (works everywhere — required for CPU-only apps):
-dotnet add package Microsoft.ML.OnnxRuntimeGenAI
-
 # 🟢 NVIDIA GPU (CUDA):
 dotnet add package Microsoft.ML.OnnxRuntimeGenAI.Cuda
 
@@ -64,9 +64,12 @@ dotnet add package Microsoft.ML.OnnxRuntimeGenAI.Cuda
 dotnet add package Microsoft.ML.OnnxRuntimeGenAI.DirectML
 ```
 
-> ⚠️ **Add exactly one runtime package.** Do not reference both `Microsoft.ML.OnnxRuntimeGenAI`
-> and `Microsoft.ML.OnnxRuntimeGenAI.Cuda` simultaneously — the native binaries conflict and
-> GPU support will silently fail.
+> ⚠️ **Add at most one GPU runtime package.** Do not reference both `Microsoft.ML.OnnxRuntimeGenAI.Cuda`
+> and `Microsoft.ML.OnnxRuntimeGenAI.DirectML` simultaneously.
+>
+> If you use a GPU runtime package and want to disable the transitive CPU copy shim, set:
+> `<ElBrunoLocalLLMsDisableCpuNativeCopy>true</ElBrunoLocalLLMsDisableCpuNativeCopy>`
+> in your application `.csproj`.
 
 > 🚀 The library defaults to `ExecutionProvider.Auto` — it tries GPU first and falls back to CPU automatically. No code changes needed.
 

@@ -15,6 +15,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.20.1] - 2026-07-24
+
+### Fixed
+- **Issue #24**: Added package-level `buildTransitive` assets to ensure `onnxruntime-genai.dll` is copied for downstream/transitive consumers on Windows x64.
+
+### Changed
+- Updated `README.md` and `docs/getting-started.md` installation guidance to reflect automatic CPU native runtime copy for transitive consumers.
+
+---
+
 ## [0.19.1] - 2026-07-03
 
 ### Added

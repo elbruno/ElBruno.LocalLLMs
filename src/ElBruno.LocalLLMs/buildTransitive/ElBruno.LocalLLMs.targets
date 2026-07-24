@@ -1,0 +1,9 @@
+<Project>
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT'
+                        and '$(ElBrunoLocalLLMsDisableCpuNativeCopy)' != 'true'">
+    <None Include="$(NuGetPackageRoot)microsoft.ml.onnxruntimegenai\*\runtimes\win-x64\native\onnxruntime-genai.dll"
+          CopyToOutputDirectory="PreserveNewest"
+          Link="onnxruntime-genai.dll"
+          Visible="false" />
+  </ItemGroup>
+</Project>

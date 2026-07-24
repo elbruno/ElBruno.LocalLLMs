@@ -281,18 +281,17 @@ ElBruno.LocalLLMs supports GPU inference out of the box via NuGet packages — n
 
 ### Installation
 
-Add the library **and** exactly one runtime package to your application project:
+Add the library to your application project:
 
 ```bash
 dotnet add package ElBruno.LocalLLMs
 ```
 
-Then pick **one** runtime package for your hardware:
+For CPU scenarios, no extra package is required — `onnxruntime-genai.dll` is copied automatically on Windows through `buildTransitive`.
+
+Pick a runtime package only when targeting GPU:
 
 ```bash
-# 🖥️ CPU (works everywhere):
-dotnet add package Microsoft.ML.OnnxRuntimeGenAI
-
 # 🟢 NVIDIA GPU (CUDA 11.8+):
 dotnet add package Microsoft.ML.OnnxRuntimeGenAI.Cuda
 
@@ -300,9 +299,11 @@ dotnet add package Microsoft.ML.OnnxRuntimeGenAI.Cuda
 dotnet add package Microsoft.ML.OnnxRuntimeGenAI.DirectML
 ```
 
-> ⚠️ **Add exactly one runtime package.** Do not reference both `Microsoft.ML.OnnxRuntimeGenAI`
-> and `Microsoft.ML.OnnxRuntimeGenAI.Cuda` simultaneously — the native binaries conflict and
-> GPU support will silently fail.
+> ⚠️ **Add at most one GPU runtime package.** Do not reference both `Microsoft.ML.OnnxRuntimeGenAI.Cuda`
+> and `Microsoft.ML.OnnxRuntimeGenAI.DirectML` simultaneously.
+>
+> If needed, disable the transitive CPU copy shim in your app project:
+> `<ElBrunoLocalLLMsDisableCpuNativeCopy>true</ElBrunoLocalLLMsDisableCpuNativeCopy>`
 
 By default, `LocalChatClient` uses `ExecutionProvider.Auto` which tries GPU first and falls back to CPU. To use a specific provider:
 

@@ -1,0 +1,5 @@
+<Project>
+  <PropertyGroup>
+    <ElBrunoLocalLLMsDisableCpuNativeCopy Condition="'$(ElBrunoLocalLLMsDisableCpuNativeCopy)' == ''">false</ElBrunoLocalLLMsDisableCpuNativeCopy>
+  </PropertyGroup>
+</Project>
