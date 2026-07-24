@@ -15,9 +15,12 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 
 ## What's New
 
-- ✅ **Gemma 4 support path is now active** (`E2B`, `E4B`, `12B Unified`, `26B-A4B`, `31B`) via conversion workflows.
-- 🔄 **Gemma 4 status moved from pending to convert** across the model tables and guides.
-- ⬆️ **ONNX Runtime GenAI upgraded to `0.14.1`** across library, tests, samples, and benchmarks.
+- 🤖 **Qwen3 & MagenticBrain support** (`v0.20.0`) — New `ChatTemplateFormat.Qwen3` formatter and `KnownModels.MagenticBrain` / `KnownModels.Qwen3_14BInstruct` for agentic multi-agent orchestration loops.
+- 👁️ **Fara 1.5-9B vision-language model** (`v0.20.0`) — Run Microsoft's Fara VLM locally via the new `LocalVisionChatClient`, `IVisionGenerationModel`, and `VisionChatOptions` with image paths.
+- 🌐 **[ElBruno.MagenticUI](https://github.com/elbruno/ElBruno.MagenticUI) reference app** — Full Blazor Server multi-agent app (FileSurfer, WebFetcher, Coder, UserProxy) powered by this library. Drop-in .NET port of [microsoft/magentic-ui](https://github.com/microsoft/magentic-ui) with human-in-the-loop support.
+- 📡 **OpenTelemetry diagnostics** (`v0.19.0`) — Generation lifecycle activities and metrics (`gen_ai.client.*`) via `ActivitySource` + `Meter` both named `ElBruno.LocalLLMs`.
+- ✅ **Gemma 4 family active** — `E2B`, `E4B`, `12B Unified`, `26B-A4B`, `31B` all supported via conversion workflows.
+- ⬆️ **ONNX Runtime GenAI `0.14.1`** — upgraded across library, tests, samples, and benchmarks.
 
 ## Features
 
@@ -27,7 +30,9 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 - 🖥️ **Multi-hardware** — CPU, CUDA, and DirectML execution providers
 - 💉 **DI-friendly** — register with `AddLocalLLMs()` or `AddBitNetChatClient()` in ASP.NET Core
 - 🔄 **Streaming** — token-by-token streaming via `GetStreamingResponseAsync`
-- 📊 **Multi-model** — switch between Phi-3.5, Phi-4, Qwen2.5, Llama 3.2, and more
+- 📊 **Multi-model** — switch between Phi-3.5, Phi-4, Qwen2.5, Qwen3, Llama 3.2, MagenticBrain, and more
+- 👁️ **Vision-language models** — run Fara 1.5-9B image+text models via `LocalVisionChatClient`
+- 🤖 **Agentic models** — Qwen3 / MagenticBrain support for multi-agent orchestration loops
 - 🎯 **Fine-tuned models** — pre-trained Qwen2.5 variants for tool calling and RAG ([guide](docs/fine-tuning-guide.md))
 - ⚡ **BitNet support** — run 1.58-bit ternary models via [bitnet.cpp](https://github.com/microsoft/BitNet) with extreme efficiency ([guide](docs/bitnet-guide.md))
 - 📈 **OpenTelemetry diagnostics** — lifecycle activities and metrics for queued, first-token, completion, cancellation, and failure ([guide](docs/observability.md))
@@ -275,6 +280,7 @@ For detailed troubleshooting, see [docs/troubleshooting-guide.md](docs/troublesh
 | 🟢 Small | Gemma-2-2B-IT | 2B | ✅ Native | `gemma-2-2b-it` |
 | 🟢 Small | Gemma-4-E4B-IT | 8B (4B active) | 🔄 Convert | `gemma-4-e4b-it` |
 | 🟡 Medium | Qwen2.5-7B-Instruct | 7B | ✅ Native | `qwen2.5-7b-instruct` |
+| 🟡 Medium | Qwen2.5-Coder-7B-Instruct | 7B | 🔄 Convert | `qwen2.5-coder-7b-instruct` |
 | 🟡 Medium | Llama-3.1-8B-Instruct | 8B | ✅ Native | `llama-3.1-8b-instruct` |
 | 🟡 Medium | Mistral-7B-Instruct-v0.3 | 7B | ✅ Native | `mistral-7b-instruct-v0.3` |
 | 🟡 Medium | Gemma-2-9B-IT | 9B | ✅ Native | `gemma-2-9b-it` |
@@ -290,8 +296,21 @@ For detailed troubleshooting, see [docs/troubleshooting-guide.md](docs/troublesh
 | 🔴 Large | Command-R (35B) | 35B | 🔄 Convert | `command-r-35b` |
 | 🔴 Large | Gemma-4-26B-A4B-IT | 25.2B (3.8B active) | 🔄 Convert | `gemma-4-26b-a4b-it` |
 | 🔴 Large | Gemma-4-31B-IT | 30.7B | 🔄 Convert | `gemma-4-31b-it` |
+| 🟣 Next-Gen | Qwen3-8B | 8B | 🔄 Convert | `qwen3-8b` |
+| 🟣 Next-Gen | Qwen3-14B-Instruct | 14.77B | ✅ ONNX | `qwen3-14b-instruct` |
+| 🟣 Next-Gen | Qwen3-32B | 32B | 🔄 Convert | `qwen3-32b` |
+| 🟣 Next-Gen | Gemma-3-12B-IT | 12B | 🔄 Convert | `gemma-3-12b-it` |
+| 🟣 Next-Gen | Llama-4-Scout | ~17B (MoE) | 🔄 Convert | `llama-4-scout` |
+| 🟣 Next-Gen | Llama-4-Maverick | ~17B (MoE) | 🔄 Convert | `llama-4-maverick` |
+| 🟣 Next-Gen | DeepSeek-V3 | 671B (MoE) | 🔄 Convert | `deepseek-v3` |
+| 🤖 Agentic | MagenticBrain | ~14.77B | ✅ ONNX¹ | `magentic-brain` |
+| 👁️ VLM | Fara 1.5-9B | ~9.4B | 🔄 Convert² | `fara-1.5-9b` |
 
 > **🔄 Convert** = Use the conversion scripts in `scripts/` to export ONNX locally before running the model.
+>
+> **¹ MagenticBrain ONNX:** No official ONNX yet. Use `onnx-community/Qwen3-14B-ONNX` as drop-in until Microsoft publishes a native conversion.
+>
+> **² Fara 1.5-9B ONNX:** Convert via ORT-GenAI model builder (`--model_type qwen_vl`). Use `LocalVisionChatClient` (not `LocalChatClient`). See [ONNX Conversion — Fara](docs/onnx-conversion-fara.md).
 
 ### Fine-Tuned Models
 
@@ -319,7 +338,12 @@ See the [Supported Models Guide](docs/supported-models.md) for detailed model ca
 | [ZeroCloudRag](src/samples/ZeroCloudRag) | Zero-cloud RAG pipeline with real local embeddings and LLM inference |
 | [BitNetChat](src/samples/BitNetChat) | BitNet 1.58-bit model chat completion |
 | [BitNetPerformance](src/samples/BitNetPerformance) | Performance benchmark: BitNet vs ONNX models |
+| [MagenticBrainAgent](src/samples/MagenticBrainAgent) | Multi-agent orchestration loop using Qwen3/MagenticBrain |
+| [FaraVisionAgent](src/samples/FaraVisionAgent) | Vision-language model (Fara 1.5-9B) image+text inference |
+| [MagenticUIServer](src/samples/MagenticUIServer) | ASP.NET Core + SignalR multi-agent server (FileSurfer, WebFetcher, Coder) |
 | [ConsoleAppDemo](src/samples/ConsoleAppDemo) | Interactive console application |
+
+> 🌐 **Reference App:** [ElBruno.MagenticUI](https://github.com/elbruno/ElBruno.MagenticUI) — full Blazor Server port of [microsoft/magentic-ui](https://github.com/microsoft/magentic-ui) running locally with this library.
 
 ## Requirements
 
@@ -349,6 +373,7 @@ dotnet test ElBruno.LocalLLMs.slnx --framework net8.0
 - [Benchmarks](docs/benchmarks.md) — how to run and interpret performance benchmarks
 - [Fine-Tuning Guide](docs/fine-tuning-guide.md) — using and training fine-tuned models
 - [ONNX Conversion](docs/onnx-conversion.md) — converting HuggingFace models to ONNX format
+- [ONNX Conversion — Fara VLM](docs/onnx-conversion-fara.md) — converting Fara 1.5-9B vision-language model
 - [Publishing](docs/publishing.md) — NuGet package publishing with OIDC
 - [Contributing](docs/CONTRIBUTING.md) — how to contribute
 - [Changelog](docs/CHANGELOG.md) — version history
