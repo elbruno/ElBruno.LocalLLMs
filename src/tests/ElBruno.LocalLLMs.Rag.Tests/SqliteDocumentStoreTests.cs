@@ -1,22 +1,21 @@
 using ElBruno.LocalLLMs.Rag;
 using ElBruno.LocalLLMs.Rag.Storage;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace ElBruno.LocalLLMs.Rag.Tests;
 
-[TestClass]
 public class SqliteDocumentStoreTests
 {
-    [TestMethod]
+    [Fact]
     public void Constructor_CreatesDatabase()
     {
         using var store = new SqliteDocumentStore("Data Source=:memory:");
 
         // If constructor succeeds, database schema was created
-        Assert.IsNotNull(store);
+        Assert.NotNull(store);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task AddChunkAsync_StoresChunk()
     {
         using var store = new SqliteDocumentStore("Data Source=:memory:");
@@ -26,13 +25,13 @@ public class SqliteDocumentStoreTests
         await store.AddChunkAsync(chunk);
 
         var results = await store.SearchAsync(embedding, topK: 10, minSimilarity: -1.0f);
-        Assert.AreEqual(1, results.Count);
-        Assert.AreEqual("chunk1", results[0].Id);
-        Assert.AreEqual("doc1", results[0].DocumentId);
-        Assert.AreEqual("Test content", results[0].Content);
+        Assert.Equal(1, results.Count);
+        Assert.Equal("chunk1", results[0].Id);
+        Assert.Equal("doc1", results[0].DocumentId);
+        Assert.Equal("Test content", results[0].Content);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task AddChunkAsync_WithMetadata_StoresAndRetrievesMetadata()
     {
         using var store = new SqliteDocumentStore("Data Source=:memory:");
@@ -43,11 +42,11 @@ public class SqliteDocumentStoreTests
         await store.AddChunkAsync(chunk);
 
         var results = await store.SearchAsync(embedding, topK: 1, minSimilarity: -1.0f);
-        Assert.AreEqual(1, results.Count);
-        Assert.IsNotNull(results[0].Metadata);
+        Assert.Equal(1, results.Count);
+        Assert.NotNull(results[0].Metadata);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task SearchAsync_ReturnsResultsOrderedBySimilarity()
     {
         using var store = new SqliteDocumentStore("Data Source=:memory:");
@@ -64,12 +63,12 @@ public class SqliteDocumentStoreTests
 
         var results = await store.SearchAsync(queryEmbedding, topK: 3, minSimilarity: -1.0f);
 
-        Assert.AreEqual(3, results.Count);
+        Assert.Equal(3, results.Count);
         // First result should be most similar (chunk1)
-        Assert.AreEqual("chunk1", results[0].Id);
+        Assert.Equal("chunk1", results[0].Id);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task SearchAsync_RespectsTopK()
     {
         using var store = new SqliteDocumentStore("Data Source=:memory:");
@@ -83,10 +82,10 @@ public class SqliteDocumentStoreTests
 
         var results = await store.SearchAsync(embedding, topK: 3, minSimilarity: -1.0f);
 
-        Assert.AreEqual(3, results.Count);
+        Assert.Equal(3, results.Count);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task SearchAsync_RespectsMinSimilarity()
     {
         using var store = new SqliteDocumentStore("Data Source=:memory:");
@@ -101,12 +100,12 @@ public class SqliteDocumentStoreTests
         // High similarity threshold should filter out dissimilar chunk
         var results = await store.SearchAsync(queryEmbedding, topK: 10, minSimilarity: 0.9f);
 
-        Assert.IsTrue(results.Count >= 1, "Should return at least the similar chunk");
-        Assert.IsTrue(results.All(r => r.Id != "chunk2" || r.Content == "similar"), 
+        Assert.True(results.Count >= 1, "Should return at least the similar chunk");
+        Assert.True(results.All(r => r.Id != "chunk2" || r.Content == "similar"), 
             "Dissimilar chunk should be filtered by minSimilarity");
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ClearAsync_RemovesAllChunks()
     {
         using var store = new SqliteDocumentStore("Data Source=:memory:");
@@ -116,15 +115,15 @@ public class SqliteDocumentStoreTests
         await store.AddChunkAsync(new DocumentChunk("chunk2", "doc2", "content2", embedding));
 
         var beforeClear = await store.SearchAsync(embedding, topK: 10, minSimilarity: -1.0f);
-        Assert.AreEqual(2, beforeClear.Count);
+        Assert.Equal(2, beforeClear.Count);
 
         await store.ClearAsync();
 
         var afterClear = await store.SearchAsync(embedding, topK: 10, minSimilarity: -1.0f);
-        Assert.AreEqual(0, afterClear.Count);
+        Assert.Equal(0, afterClear.Count);
     }
 
-    [TestMethod]
+    [Fact]
     public void Dispose_CleansUpConnection()
     {
         var store = new SqliteDocumentStore("Data Source=:memory:");
@@ -132,10 +131,10 @@ public class SqliteDocumentStoreTests
         store.Dispose();
 
         // If dispose succeeds without exception, cleanup worked
-        Assert.IsNotNull(store);
+        Assert.NotNull(store);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task AddChunkAsync_MultipleChunksFromSameDocument()
     {
         using var store = new SqliteDocumentStore("Data Source=:memory:");
@@ -147,11 +146,11 @@ public class SqliteDocumentStoreTests
 
         var results = await store.SearchAsync(embedding1, topK: 10, minSimilarity: -1.0f);
 
-        Assert.AreEqual(2, results.Count);
-        Assert.IsTrue(results.All(r => r.DocumentId == "doc1"));
+        Assert.Equal(2, results.Count);
+        Assert.True(results.All(r => r.DocumentId == "doc1"));
     }
 
-    [TestMethod]
+    [Fact]
     public async Task AddChunkAsync_MultipleChunksFromDifferentDocuments()
     {
         using var store = new SqliteDocumentStore("Data Source=:memory:");
@@ -163,12 +162,12 @@ public class SqliteDocumentStoreTests
 
         var results = await store.SearchAsync(embedding, topK: 10, minSimilarity: -1.0f);
 
-        Assert.AreEqual(3, results.Count);
+        Assert.Equal(3, results.Count);
         var documentIds = results.Select(r => r.DocumentId).Distinct().ToList();
-        Assert.AreEqual(3, documentIds.Count);
+        Assert.Equal(3, documentIds.Count);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task SearchAsync_EmptyStore_ReturnsEmpty()
     {
         using var store = new SqliteDocumentStore("Data Source=:memory:");
@@ -176,10 +175,10 @@ public class SqliteDocumentStoreTests
 
         var results = await store.SearchAsync(embedding, topK: 10, minSimilarity: -1.0f);
 
-        Assert.AreEqual(0, results.Count);
+        Assert.Equal(0, results.Count);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task AddChunkAsync_ReplaceExisting_UpdatesChunk()
     {
         using var store = new SqliteDocumentStore("Data Source=:memory:");
@@ -194,11 +193,11 @@ public class SqliteDocumentStoreTests
 
         var results = await store.SearchAsync(embedding2, topK: 10, minSimilarity: -1.0f);
 
-        Assert.AreEqual(1, results.Count);
-        Assert.AreEqual("updated content", results[0].Content);
+        Assert.Equal(1, results.Count);
+        Assert.Equal("updated content", results[0].Content);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task SearchAsync_WithCancellationToken_Succeeds()
     {
         using var store = new SqliteDocumentStore("Data Source=:memory:");
@@ -208,10 +207,10 @@ public class SqliteDocumentStoreTests
         using var cts = new CancellationTokenSource();
         var results = await store.SearchAsync(embedding, topK: 10, minSimilarity: -1.0f, cancellationToken: cts.Token);
 
-        Assert.AreEqual(1, results.Count);
+        Assert.Equal(1, results.Count);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ClearAsync_WithCancellationToken_Succeeds()
     {
         using var store = new SqliteDocumentStore("Data Source=:memory:");
@@ -222,6 +221,6 @@ public class SqliteDocumentStoreTests
         await store.ClearAsync(cts.Token);
 
         var results = await store.SearchAsync(embedding, topK: 10, minSimilarity: -1.0f);
-        Assert.AreEqual(0, results.Count);
+        Assert.Equal(0, results.Count);
     }
 }

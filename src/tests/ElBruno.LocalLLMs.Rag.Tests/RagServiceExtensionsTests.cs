@@ -3,22 +3,20 @@ using ElBruno.LocalLLMs.Rag.Chunking;
 using ElBruno.LocalLLMs.Rag.Storage;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace ElBruno.LocalLLMs.Rag.Tests;
 
-[TestClass]
 public class RagServiceExtensionsTests
 {
-    private MockEmbeddingGenerator _mockGenerator = null!;
+    private readonly MockEmbeddingGenerator _mockGenerator;
 
-    [TestInitialize]
-    public void Setup()
+    public RagServiceExtensionsTests()
     {
         _mockGenerator = new MockEmbeddingGenerator();
     }
 
-    [TestMethod]
+    [Fact]
     public void AddLocalRagPipeline_RegistersAllServices()
     {
         var services = new ServiceCollection();
@@ -27,13 +25,13 @@ public class RagServiceExtensionsTests
 
         var provider = services.BuildServiceProvider();
 
-        Assert.IsNotNull(provider.GetService<IRagPipeline>());
-        Assert.IsNotNull(provider.GetService<IDocumentStore>());
-        Assert.IsNotNull(provider.GetService<IDocumentChunker>());
-        Assert.IsNotNull(provider.GetService<RagOptions>());
+        Assert.NotNull(provider.GetService<IRagPipeline>());
+        Assert.NotNull(provider.GetService<IDocumentStore>());
+        Assert.NotNull(provider.GetService<IDocumentChunker>());
+        Assert.NotNull(provider.GetService<RagOptions>());
     }
 
-    [TestMethod]
+    [Fact]
     public void AddLocalRagPipeline_WithCustomOptions_AppliesOptions()
     {
         var services = new ServiceCollection();
@@ -49,13 +47,13 @@ public class RagServiceExtensionsTests
         var provider = services.BuildServiceProvider();
         var ragOptions = provider.GetRequiredService<RagOptions>();
 
-        Assert.AreEqual(1024, ragOptions.ChunkSize);
-        Assert.AreEqual(256, ragOptions.ChunkOverlap);
-        Assert.AreEqual(10, ragOptions.DefaultTopK);
-        Assert.AreEqual(0.5f, ragOptions.DefaultMinSimilarity);
+        Assert.Equal(1024, ragOptions.ChunkSize);
+        Assert.Equal(256, ragOptions.ChunkOverlap);
+        Assert.Equal(10, ragOptions.DefaultTopK);
+        Assert.Equal(0.5f, ragOptions.DefaultMinSimilarity);
     }
 
-    [TestMethod]
+    [Fact]
     public void AddLocalRagPipeline_WithoutOptions_UsesDefaults()
     {
         var services = new ServiceCollection();
@@ -65,13 +63,13 @@ public class RagServiceExtensionsTests
         var provider = services.BuildServiceProvider();
         var ragOptions = provider.GetRequiredService<RagOptions>();
 
-        Assert.AreEqual(512, ragOptions.ChunkSize);
-        Assert.AreEqual(128, ragOptions.ChunkOverlap);
-        Assert.AreEqual(5, ragOptions.DefaultTopK);
-        Assert.AreEqual(0.0f, ragOptions.DefaultMinSimilarity);
+        Assert.Equal(512, ragOptions.ChunkSize);
+        Assert.Equal(128, ragOptions.ChunkOverlap);
+        Assert.Equal(5, ragOptions.DefaultTopK);
+        Assert.Equal(0.0f, ragOptions.DefaultMinSimilarity);
     }
 
-    [TestMethod]
+    [Fact]
     public void AddLocalRagPipeline_WithEmbeddingGenerator_RegistersGenerator()
     {
         var services = new ServiceCollection();
@@ -81,11 +79,11 @@ public class RagServiceExtensionsTests
         var provider = services.BuildServiceProvider();
         var generator = provider.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>();
 
-        Assert.IsNotNull(generator);
-        Assert.AreSame(_mockGenerator, generator);
+        Assert.NotNull(generator);
+        Assert.Same(_mockGenerator, generator);
     }
 
-    [TestMethod]
+    [Fact]
     public void AddLocalRagPipeline_WithEmbeddingGeneratorAndOptions_AppliesBoth()
     {
         var services = new ServiceCollection();
@@ -99,11 +97,11 @@ public class RagServiceExtensionsTests
         var generator = provider.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>();
         var ragOptions = provider.GetRequiredService<RagOptions>();
 
-        Assert.AreSame(_mockGenerator, generator);
-        Assert.AreEqual(2048, ragOptions.ChunkSize);
+        Assert.Same(_mockGenerator, generator);
+        Assert.Equal(2048, ragOptions.ChunkSize);
     }
 
-    [TestMethod]
+    [Fact]
     public void AddLocalRagPipeline_RegistersInMemoryStore()
     {
         var services = new ServiceCollection();
@@ -113,10 +111,10 @@ public class RagServiceExtensionsTests
         var provider = services.BuildServiceProvider();
         var store = provider.GetRequiredService<IDocumentStore>();
 
-        Assert.IsInstanceOfType<InMemoryDocumentStore>(store);
+        Assert.IsAssignableFrom<InMemoryDocumentStore>(store);
     }
 
-    [TestMethod]
+    [Fact]
     public void AddLocalRagPipeline_RegistersLocalRagPipeline()
     {
         var services = new ServiceCollection();
@@ -126,10 +124,10 @@ public class RagServiceExtensionsTests
         var provider = services.BuildServiceProvider();
         var pipeline = provider.GetRequiredService<IRagPipeline>();
 
-        Assert.IsInstanceOfType<LocalRagPipeline>(pipeline);
+        Assert.IsAssignableFrom<LocalRagPipeline>(pipeline);
     }
 
-    [TestMethod]
+    [Fact]
     public void AddLocalRagPipeline_RegistersSlidingWindowChunker()
     {
         var services = new ServiceCollection();
@@ -139,10 +137,10 @@ public class RagServiceExtensionsTests
         var provider = services.BuildServiceProvider();
         var chunker = provider.GetRequiredService<IDocumentChunker>();
 
-        Assert.IsInstanceOfType<SlidingWindowChunker>(chunker);
+        Assert.IsAssignableFrom<SlidingWindowChunker>(chunker);
     }
 
-    [TestMethod]
+    [Fact]
     public void AddLocalRagPipeline_ChunkerUsesOptions()
     {
         var services = new ServiceCollection();
@@ -156,10 +154,10 @@ public class RagServiceExtensionsTests
         var provider = services.BuildServiceProvider();
         var chunker = provider.GetRequiredService<IDocumentChunker>() as SlidingWindowChunker;
 
-        Assert.IsNotNull(chunker);
+        Assert.NotNull(chunker);
     }
 
-    [TestMethod]
+    [Fact]
     public void AddSqliteDocumentStore_RegistersSqliteStore()
     {
         var services = new ServiceCollection();
@@ -170,10 +168,10 @@ public class RagServiceExtensionsTests
         var provider = services.BuildServiceProvider();
         var store = provider.GetRequiredService<IDocumentStore>();
 
-        Assert.IsInstanceOfType<SqliteDocumentStore>(store);
+        Assert.IsAssignableFrom<SqliteDocumentStore>(store);
     }
 
-    [TestMethod]
+    [Fact]
     public void AddSqliteDocumentStore_UsesProvidedConnectionString()
     {
         var services = new ServiceCollection();
@@ -184,10 +182,10 @@ public class RagServiceExtensionsTests
         var provider = services.BuildServiceProvider();
         var store = provider.GetRequiredService<IDocumentStore>() as SqliteDocumentStore;
 
-        Assert.IsNotNull(store);
+        Assert.NotNull(store);
     }
 
-    [TestMethod]
+    [Fact]
     public void AddLocalRagPipeline_IsSingleton()
     {
         var services = new ServiceCollection();
@@ -198,10 +196,10 @@ public class RagServiceExtensionsTests
         var pipeline1 = provider.GetRequiredService<IRagPipeline>();
         var pipeline2 = provider.GetRequiredService<IRagPipeline>();
 
-        Assert.AreSame(pipeline1, pipeline2);
+        Assert.Same(pipeline1, pipeline2);
     }
 
-    [TestMethod]
+    [Fact]
     public void AddSqliteDocumentStore_ReplacesDefaultInMemoryStore()
     {
         var services = new ServiceCollection();
@@ -216,6 +214,6 @@ public class RagServiceExtensionsTests
 
         // The last registered store should be SqliteDocumentStore
         var store = provider.GetRequiredService<IDocumentStore>();
-        Assert.IsInstanceOfType<SqliteDocumentStore>(store);
+        Assert.IsAssignableFrom<SqliteDocumentStore>(store);
     }
 }

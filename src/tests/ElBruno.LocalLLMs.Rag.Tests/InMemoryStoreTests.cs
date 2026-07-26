@@ -1,12 +1,11 @@
 using ElBruno.LocalLLMs.Rag.Storage;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace ElBruno.LocalLLMs.Rag.Tests;
 
-[TestClass]
 public class InMemoryStoreTests
 {
-    [TestMethod]
+    [Fact]
     public async Task AddChunk_SingleChunk_CanRetrieve()
     {
         var store = new InMemoryDocumentStore();
@@ -16,11 +15,11 @@ public class InMemoryStoreTests
         await store.AddChunkAsync(chunk);
         var results = await store.SearchAsync(embedding, topK: 1);
 
-        Assert.AreEqual(1, results.Count);
-        Assert.AreEqual("chunk1", results[0].Id);
+        Assert.Equal(1, results.Count);
+        Assert.Equal("chunk1", results[0].Id);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task SearchAsync_IdenticalVectors_ReturnsSimilarityOne()
     {
         var store = new InMemoryDocumentStore();
@@ -30,10 +29,10 @@ public class InMemoryStoreTests
         await store.AddChunkAsync(chunk);
         var results = await store.SearchAsync(embedding, topK: 1);
 
-        Assert.AreEqual(1, results.Count);
+        Assert.Equal(1, results.Count);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task SearchAsync_TopK_ReturnsCorrectCount()
     {
         var store = new InMemoryDocumentStore();
@@ -48,10 +47,10 @@ public class InMemoryStoreTests
         var queryEmbedding = new float[] { 5.0f, 6.0f, 7.0f };
         var results = await store.SearchAsync(queryEmbedding, topK: 3);
 
-        Assert.AreEqual(3, results.Count);
+        Assert.Equal(3, results.Count);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task SearchAsync_MinSimilarity_FiltersResults()
     {
         var store = new InMemoryDocumentStore();
@@ -67,10 +66,10 @@ public class InMemoryStoreTests
         var queryEmbedding = new float[] { 1.0f, 0.0f, 0.0f };
         var results = await store.SearchAsync(queryEmbedding, topK: 10, minSimilarity: 0.9f);
 
-        Assert.IsTrue(results.Count <= 2);
+        Assert.True(results.Count <= 2);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ClearAsync_RemovesAllChunks()
     {
         var store = new InMemoryDocumentStore();
@@ -84,20 +83,20 @@ public class InMemoryStoreTests
         await store.ClearAsync();
 
         var results = await store.SearchAsync(new float[] { 1.0f, 2.0f }, topK: 10);
-        Assert.AreEqual(0, results.Count);
+        Assert.Equal(0, results.Count);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task SearchAsync_EmptyStore_ReturnsEmpty()
     {
         var store = new InMemoryDocumentStore();
 
         var results = await store.SearchAsync(new float[] { 1.0f, 2.0f }, topK: 5);
 
-        Assert.AreEqual(0, results.Count);
+        Assert.Equal(0, results.Count);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task SearchAsync_ResultsOrderedBySimilarity()
     {
         var store = new InMemoryDocumentStore();
@@ -113,6 +112,6 @@ public class InMemoryStoreTests
         var queryEmbedding = new float[] { 1.0f, 0.0f };
         var results = await store.SearchAsync(queryEmbedding, topK: 3);
 
-        Assert.AreEqual("chunk1", results[0].Id);
+        Assert.Equal("chunk1", results[0].Id);
     }
 }

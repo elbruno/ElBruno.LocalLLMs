@@ -1,12 +1,11 @@
 using ElBruno.LocalLLMs.Rag.Chunking;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace ElBruno.LocalLLMs.Rag.Tests;
 
-[TestClass]
 public class ChunkerTests
 {
-    [TestMethod]
+    [Fact]
     public void ChunkDocument_EmptyContent_ReturnsNoChunks()
     {
         var chunker = new SlidingWindowChunker(chunkSize: 10, overlap: 2);
@@ -14,10 +13,10 @@ public class ChunkerTests
 
         var chunks = chunker.ChunkDocument(document).ToList();
 
-        Assert.AreEqual(0, chunks.Count);
+        Assert.Equal(0, chunks.Count);
     }
 
-    [TestMethod]
+    [Fact]
     public void ChunkDocument_WhitespaceContent_ReturnsNoChunks()
     {
         var chunker = new SlidingWindowChunker(chunkSize: 10, overlap: 2);
@@ -25,10 +24,10 @@ public class ChunkerTests
 
         var chunks = chunker.ChunkDocument(document).ToList();
 
-        Assert.AreEqual(0, chunks.Count);
+        Assert.Equal(0, chunks.Count);
     }
 
-    [TestMethod]
+    [Fact]
     public void ChunkDocument_SingleChar_ReturnsSingleChunk()
     {
         var chunker = new SlidingWindowChunker(chunkSize: 10, overlap: 2);
@@ -36,11 +35,11 @@ public class ChunkerTests
 
         var chunks = chunker.ChunkDocument(document).ToList();
 
-        Assert.AreEqual(1, chunks.Count);
-        Assert.AreEqual("a", chunks[0]);
+        Assert.Equal(1, chunks.Count);
+        Assert.Equal("a", chunks[0]);
     }
 
-    [TestMethod]
+    [Fact]
     public void ChunkDocument_SmallerThanChunkSize_ReturnsSingleChunk()
     {
         var chunker = new SlidingWindowChunker(chunkSize: 100, overlap: 20);
@@ -48,11 +47,11 @@ public class ChunkerTests
 
         var chunks = chunker.ChunkDocument(document).ToList();
 
-        Assert.AreEqual(1, chunks.Count);
-        Assert.AreEqual("Hello world", chunks[0]);
+        Assert.Equal(1, chunks.Count);
+        Assert.Equal("Hello world", chunks[0]);
     }
 
-    [TestMethod]
+    [Fact]
     public void ChunkDocument_ExactlyChunkSize_ReturnsSingleChunk()
     {
         var chunker = new SlidingWindowChunker(chunkSize: 5, overlap: 1);
@@ -60,11 +59,11 @@ public class ChunkerTests
 
         var chunks = chunker.ChunkDocument(document).ToList();
 
-        Assert.AreEqual(1, chunks.Count);
-        Assert.AreEqual("Hello", chunks[0]);
+        Assert.Equal(1, chunks.Count);
+        Assert.Equal("Hello", chunks[0]);
     }
 
-    [TestMethod]
+    [Fact]
     public void ChunkDocument_NoOverlap_ReturnsSequentialChunks()
     {
         var chunker = new SlidingWindowChunker(chunkSize: 5, overlap: 0);
@@ -72,12 +71,12 @@ public class ChunkerTests
 
         var chunks = chunker.ChunkDocument(document).ToList();
 
-        Assert.AreEqual(2, chunks.Count);
-        Assert.AreEqual("01234", chunks[0]);
-        Assert.AreEqual("56789", chunks[1]);
+        Assert.Equal(2, chunks.Count);
+        Assert.Equal("01234", chunks[0]);
+        Assert.Equal("56789", chunks[1]);
     }
 
-    [TestMethod]
+    [Fact]
     public void ChunkDocument_WithOverlap_ReturnsOverlappingChunks()
     {
         var chunker = new SlidingWindowChunker(chunkSize: 5, overlap: 2);
@@ -86,13 +85,13 @@ public class ChunkerTests
         var chunks = chunker.ChunkDocument(document).ToList();
 
         // With chunkSize=5, overlap=2, stride=3: 0-4, 3-7, 6-10 (but 10 is max, so 6-9) = 3 chunks
-        Assert.AreEqual(3, chunks.Count);
-        Assert.AreEqual("01234", chunks[0]);
-        Assert.AreEqual("34567", chunks[1]);
-        Assert.AreEqual("6789", chunks[2]);
+        Assert.Equal(3, chunks.Count);
+        Assert.Equal("01234", chunks[0]);
+        Assert.Equal("34567", chunks[1]);
+        Assert.Equal("6789", chunks[2]);
     }
 
-    [TestMethod]
+    [Fact]
     public void ChunkDocument_LargeDocument_ReturnsMultipleChunks()
     {
         var chunker = new SlidingWindowChunker(chunkSize: 10, overlap: 3);
@@ -101,42 +100,37 @@ public class ChunkerTests
 
         var chunks = chunker.ChunkDocument(document).ToList();
 
-        Assert.IsTrue(chunks.Count > 10);
-        Assert.IsTrue(chunks.All(c => c.Length <= 10));
+        Assert.True(chunks.Count > 10);
+        Assert.True(chunks.All(c => c.Length <= 10));
     }
 
-    [TestMethod]
-    [ExpectedException(typeof(ArgumentOutOfRangeException))]
+    [Fact]
     public void Constructor_NegativeChunkSize_ThrowsException()
     {
-        _ = new SlidingWindowChunker(chunkSize: -1, overlap: 0);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SlidingWindowChunker(chunkSize: -1, overlap: 0));
     }
 
-    [TestMethod]
-    [ExpectedException(typeof(ArgumentOutOfRangeException))]
+    [Fact]
     public void Constructor_ZeroChunkSize_ThrowsException()
     {
-        _ = new SlidingWindowChunker(chunkSize: 0, overlap: 0);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SlidingWindowChunker(chunkSize: 0, overlap: 0));
     }
 
-    [TestMethod]
-    [ExpectedException(typeof(ArgumentOutOfRangeException))]
+    [Fact]
     public void Constructor_NegativeOverlap_ThrowsException()
     {
-        _ = new SlidingWindowChunker(chunkSize: 10, overlap: -1);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SlidingWindowChunker(chunkSize: 10, overlap: -1));
     }
 
-    [TestMethod]
-    [ExpectedException(typeof(ArgumentException))]
+    [Fact]
     public void Constructor_OverlapEqualToChunkSize_ThrowsException()
     {
-        _ = new SlidingWindowChunker(chunkSize: 10, overlap: 10);
+        Assert.Throws<ArgumentException>(() => new SlidingWindowChunker(chunkSize: 10, overlap: 10));
     }
 
-    [TestMethod]
-    [ExpectedException(typeof(ArgumentException))]
+    [Fact]
     public void Constructor_OverlapGreaterThanChunkSize_ThrowsException()
     {
-        _ = new SlidingWindowChunker(chunkSize: 10, overlap: 15);
+        Assert.Throws<ArgumentException>(() => new SlidingWindowChunker(chunkSize: 10, overlap: 15));
     }
 }

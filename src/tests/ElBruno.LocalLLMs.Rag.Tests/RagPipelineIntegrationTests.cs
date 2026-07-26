@@ -1,37 +1,24 @@
 using ElBruno.LocalLLMs.Rag;
 using ElBruno.LocalLLMs.Rag.Chunking;
 using ElBruno.LocalLLMs.Rag.Storage;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace ElBruno.LocalLLMs.Rag.Tests;
 
-[TestClass]
-[TestCategory("Integration")]
 public class RagPipelineIntegrationTests
 {
-    private static bool ShouldRunIntegrationTests =>
-        string.Equals(
-            Environment.GetEnvironmentVariable("RUN_INTEGRATION_TESTS"),
-            "true",
-            StringComparison.OrdinalIgnoreCase);
+    private readonly MockEmbeddingGenerator _embeddingGenerator;
+    private readonly LocalRagPipeline _pipeline;
 
-    private MockEmbeddingGenerator _embeddingGenerator = null!;
-    private LocalRagPipeline _pipeline = null!;
-
-    [TestInitialize]
-    public void Setup()
+    public RagPipelineIntegrationTests()
     {
-        if (!ShouldRunIntegrationTests)
-            Assert.Inconclusive("Skipped — set RUN_INTEGRATION_TESTS=true to run integration tests.");
-
         _embeddingGenerator = new MockEmbeddingGenerator();
         var chunker = new SlidingWindowChunker(chunkSize: 200, overlap: 50);
         var store = new InMemoryDocumentStore();
         _pipeline = new LocalRagPipeline(chunker, store, _embeddingGenerator);
     }
 
-    [TestMethod]
-    [TestCategory("Integration")]
+    [Fact]
     public async Task FullRagPipeline_WithMockEmbeddings_EndToEnd()
     {
         var documents = new[]
@@ -55,24 +42,23 @@ public class RagPipelineIntegrationTests
         var progress = new SynchronousProgress<RagIndexProgress>(p => progressReports.Add(p));
         await _pipeline.IndexDocumentsAsync(documents, progress);
 
-        Assert.AreEqual(3, progressReports.Count);
+        Assert.Equal(3, progressReports.Count);
 
         // Retrieve
         var context = await _pipeline.RetrieveContextAsync("How many vacation days do I get?", topK: 3);
 
-        Assert.IsNotNull(context);
-        Assert.IsTrue(context.RetrievedChunks.Count > 0, "Should retrieve relevant chunks.");
-        Assert.AreEqual("How many vacation days do I get?", context.Query);
+        Assert.NotNull(context);
+        Assert.True(context.RetrievedChunks.Count > 0, "Should retrieve relevant chunks.");
+        Assert.Equal("How many vacation days do I get?", context.Query);
 
         // Verify retrieved content relates to the query
         var hasVacationContent = context.RetrievedChunks
             .Any(c => c.Content.Contains("vacation", StringComparison.OrdinalIgnoreCase));
-        Assert.IsTrue(hasVacationContent || context.RetrievedChunks.Count > 0,
+        Assert.True(hasVacationContent || context.RetrievedChunks.Count > 0,
             "Should retrieve chunks containing relevant content.");
     }
 
-    [TestMethod]
-    [TestCategory("Integration")]
+    [Fact]
     public async Task FullRagPipeline_IndexAndRetrieve_MultipleQueries()
     {
         var documents = new[]
@@ -96,15 +82,14 @@ public class RagPipelineIntegrationTests
         {
             var context = await _pipeline.RetrieveContextAsync(query, topK: 3);
 
-            Assert.IsNotNull(context, $"Context should not be null for query: {query}");
-            Assert.IsTrue(context.RetrievedChunks.Count > 0,
+            Assert.NotNull(context);
+            Assert.True(context.RetrievedChunks.Count > 0,
                 $"Should retrieve chunks for query: {query}");
-            Assert.AreEqual(query, context.Query);
+            Assert.Equal(query, context.Query);
         }
     }
 
-    [TestMethod]
-    [TestCategory("Integration")]
+    [Fact]
     public async Task FullRagPipeline_LargeDocumentSet_HandlesScale()
     {
         // Create 15 diverse documents
@@ -121,20 +106,19 @@ public class RagPipelineIntegrationTests
 
         var context = await _pipeline.RetrieveContextAsync("theory and practice", topK: 5);
 
-        Assert.IsNotNull(context);
-        Assert.IsTrue(context.RetrievedChunks.Count > 0,
+        Assert.NotNull(context);
+        Assert.True(context.RetrievedChunks.Count > 0,
             "Should return results from large document set.");
-        Assert.IsTrue(context.RetrievedChunks.Count <= 5,
+        Assert.True(context.RetrievedChunks.Count <= 5,
             "TopK=5 should limit results.");
 
         // Verify all chunks have valid document IDs
-        Assert.IsTrue(
+        Assert.True(
             context.RetrievedChunks.All(c => c.DocumentId.StartsWith("doc-")),
             "All chunks should reference valid documents.");
     }
 
-    [TestMethod]
-    [TestCategory("Integration")]
+    [Fact]
     public async Task FullRagPipeline_ClearAndReindex_WorksCorrectly()
     {
         // First indexing pass
@@ -147,13 +131,13 @@ public class RagPipelineIntegrationTests
         await _pipeline.IndexDocumentsAsync(originalDocs);
 
         var beforeClear = await _pipeline.RetrieveContextAsync("cats", topK: 10, minSimilarity: -1.0f);
-        Assert.IsTrue(beforeClear.RetrievedChunks.Count > 0, "Should have results before clear.");
+        Assert.True(beforeClear.RetrievedChunks.Count > 0, "Should have results before clear.");
 
         // Clear
         await _pipeline.ClearIndexAsync();
 
         var afterClear = await _pipeline.RetrieveContextAsync("cats", topK: 10, minSimilarity: -1.0f);
-        Assert.AreEqual(0, afterClear.RetrievedChunks.Count, "Should be empty after clear.");
+        Assert.Equal(0, afterClear.RetrievedChunks.Count);
 
         // Reindex with different documents
         var newDocs = new[]
@@ -165,8 +149,8 @@ public class RagPipelineIntegrationTests
         await _pipeline.IndexDocumentsAsync(newDocs);
 
         var afterReindex = await _pipeline.RetrieveContextAsync("programming", topK: 10, minSimilarity: -1.0f);
-        Assert.IsTrue(afterReindex.RetrievedChunks.Count > 0, "Should have results after reindex.");
-        Assert.IsTrue(
+        Assert.True(afterReindex.RetrievedChunks.Count > 0, "Should have results after reindex.");
+        Assert.True(
             afterReindex.RetrievedChunks.All(c => c.DocumentId.StartsWith("new-")),
             "After reindex, only new documents should be present.");
     }

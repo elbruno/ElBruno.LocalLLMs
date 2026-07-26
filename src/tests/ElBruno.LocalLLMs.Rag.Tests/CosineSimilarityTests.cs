@@ -1,12 +1,11 @@
 using ElBruno.LocalLLMs.Rag.Storage;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace ElBruno.LocalLLMs.Rag.Tests;
 
-[TestClass]
 public class CosineSimilarityTests
 {
-    [TestMethod]
+    [Fact]
     public async Task CosineSimilarity_IdenticalVectors_ReturnsOne()
     {
         var store = new InMemoryDocumentStore();
@@ -16,11 +15,11 @@ public class CosineSimilarityTests
         await store.AddChunkAsync(chunk);
         var results = await store.SearchAsync(embedding, topK: 1);
 
-        Assert.AreEqual(1, results.Count);
-        Assert.AreEqual("chunk1", results[0].Id);
+        Assert.Equal(1, results.Count);
+        Assert.Equal("chunk1", results[0].Id);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task CosineSimilarity_OrthogonalVectors_ReturnsZero()
     {
         var store = new InMemoryDocumentStore();
@@ -31,10 +30,10 @@ public class CosineSimilarityTests
         await store.AddChunkAsync(chunk);
         var results = await store.SearchAsync(embedding2, topK: 1, minSimilarity: 0.01f);
 
-        Assert.AreEqual(0, results.Count);
+        Assert.Equal(0, results.Count);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task CosineSimilarity_OppositeVectors_ReturnsNegativeOne()
     {
         var store = new InMemoryDocumentStore();
@@ -45,10 +44,10 @@ public class CosineSimilarityTests
         await store.AddChunkAsync(chunk);
         var results = await store.SearchAsync(embedding2, topK: 1, minSimilarity: -2.0f);
 
-        Assert.AreEqual(1, results.Count);
+        Assert.Equal(1, results.Count);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task CosineSimilarity_ScaledVectors_SameDirection()
     {
         var store = new InMemoryDocumentStore();
@@ -59,11 +58,11 @@ public class CosineSimilarityTests
         await store.AddChunkAsync(chunk);
         var results = await store.SearchAsync(embedding2, topK: 1);
 
-        Assert.AreEqual(1, results.Count);
-        Assert.AreEqual("chunk1", results[0].Id);
+        Assert.Equal(1, results.Count);
+        Assert.Equal("chunk1", results[0].Id);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task CosineSimilarity_ZeroVector_ReturnsZero()
     {
         var store = new InMemoryDocumentStore();
@@ -74,6 +73,6 @@ public class CosineSimilarityTests
         await store.AddChunkAsync(chunk);
         var results = await store.SearchAsync(embedding2, topK: 1, minSimilarity: 0.01f);
 
-        Assert.AreEqual(0, results.Count);
+        Assert.Equal(0, results.Count);
     }
 }

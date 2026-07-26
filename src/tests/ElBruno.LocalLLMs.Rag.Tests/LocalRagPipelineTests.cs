@@ -2,20 +2,18 @@ using ElBruno.LocalLLMs.Rag;
 using ElBruno.LocalLLMs.Rag.Chunking;
 using ElBruno.LocalLLMs.Rag.Storage;
 using Microsoft.Extensions.AI;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace ElBruno.LocalLLMs.Rag.Tests;
 
-[TestClass]
 public class LocalRagPipelineTests
 {
-    private MockEmbeddingGenerator _embeddingGenerator = null!;
-    private SlidingWindowChunker _chunker = null!;
-    private InMemoryDocumentStore _store = null!;
-    private LocalRagPipeline _pipeline = null!;
+    private readonly MockEmbeddingGenerator _embeddingGenerator;
+    private readonly SlidingWindowChunker _chunker;
+    private readonly InMemoryDocumentStore _store;
+    private readonly LocalRagPipeline _pipeline;
 
-    [TestInitialize]
-    public void Setup()
+    public LocalRagPipelineTests()
     {
         _embeddingGenerator = new MockEmbeddingGenerator();
         _chunker = new SlidingWindowChunker(chunkSize: 200, overlap: 50);
@@ -23,7 +21,7 @@ public class LocalRagPipelineTests
         _pipeline = new LocalRagPipeline(_chunker, _store, _embeddingGenerator);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task IndexDocuments_EmptyCollection_Succeeds()
     {
         var documents = Enumerable.Empty<Document>();
@@ -31,10 +29,10 @@ public class LocalRagPipelineTests
         await _pipeline.IndexDocumentsAsync(documents);
 
         var context = await _pipeline.RetrieveContextAsync("anything");
-        Assert.AreEqual(0, context.RetrievedChunks.Count);
+        Assert.Equal(0, context.RetrievedChunks.Count);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task IndexDocuments_SingleDocument_ChunksAndStores()
     {
         var doc = new Document("doc1", "This is a short test document for indexing.");
@@ -43,13 +41,13 @@ public class LocalRagPipelineTests
 
         // Use minSimilarity=-1 to return all chunks regardless of cosine similarity
         var context = await _pipeline.RetrieveContextAsync("test document", topK: 10, minSimilarity: -1.0f);
-        Assert.IsTrue(context.RetrievedChunks.Count > 0, "Expected at least one chunk after indexing.");
-        Assert.IsTrue(
+        Assert.True(context.RetrievedChunks.Count > 0, "Expected at least one chunk after indexing.");
+        Assert.True(
             context.RetrievedChunks.All(c => c.DocumentId == "doc1"),
             "All chunks should reference the original document.");
     }
 
-    [TestMethod]
+    [Fact]
     public async Task IndexDocuments_MultipleDocuments_ReportsProgress()
     {
         var documents = new[]
@@ -65,16 +63,16 @@ public class LocalRagPipelineTests
 
         await _pipeline.IndexDocumentsAsync(documents, progress);
 
-        Assert.AreEqual(3, progressReports.Count, "Should report progress for each document.");
-        Assert.AreEqual(1, progressReports[0].Processed);
-        Assert.AreEqual(3, progressReports[0].Total);
-        Assert.AreEqual(2, progressReports[1].Processed);
-        Assert.AreEqual(3, progressReports[1].Total);
-        Assert.AreEqual(3, progressReports[2].Processed);
-        Assert.AreEqual(3, progressReports[2].Total);
+        Assert.Equal(3, progressReports.Count);
+        Assert.Equal(1, progressReports[0].Processed);
+        Assert.Equal(3, progressReports[0].Total);
+        Assert.Equal(2, progressReports[1].Processed);
+        Assert.Equal(3, progressReports[1].Total);
+        Assert.Equal(3, progressReports[2].Processed);
+        Assert.Equal(3, progressReports[2].Total);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task RetrieveContext_AfterIndexing_ReturnsRelevantChunks()
     {
         var documents = new[]
@@ -87,21 +85,21 @@ public class LocalRagPipelineTests
 
         var context = await _pipeline.RetrieveContextAsync("vacation days", topK: 5, minSimilarity: -1.0f);
 
-        Assert.IsNotNull(context);
-        Assert.IsTrue(context.RetrievedChunks.Count > 0, "Should return at least one chunk.");
-        Assert.AreEqual("vacation days", context.Query);
+        Assert.NotNull(context);
+        Assert.True(context.RetrievedChunks.Count > 0, "Should return at least one chunk.");
+        Assert.Equal("vacation days", context.Query);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task RetrieveContext_EmptyIndex_ReturnsEmptyContext()
     {
         var context = await _pipeline.RetrieveContextAsync("any query");
 
-        Assert.IsNotNull(context);
-        Assert.AreEqual(0, context.RetrievedChunks.Count);
+        Assert.NotNull(context);
+        Assert.Equal(0, context.RetrievedChunks.Count);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task RetrieveContext_TopKLimitsResults()
     {
         // Index enough documents to produce many chunks
@@ -113,12 +111,12 @@ public class LocalRagPipelineTests
 
         var context = await _pipeline.RetrieveContextAsync("document topic", topK: 3);
 
-        Assert.IsTrue(
+        Assert.True(
             context.RetrievedChunks.Count <= 3,
             $"TopK=3 should return at most 3 results, got {context.RetrievedChunks.Count}.");
     }
 
-    [TestMethod]
+    [Fact]
     public async Task RetrieveContext_MinSimilarityFilters()
     {
         var documents = new[]
@@ -132,12 +130,12 @@ public class LocalRagPipelineTests
         // Very high similarity threshold — should return few or no results
         var context = await _pipeline.RetrieveContextAsync("completely unrelated query xyz", topK: 10, minSimilarity: 0.99f);
 
-        Assert.IsTrue(
+        Assert.True(
             context.RetrievedChunks.Count < 2,
             "High minSimilarity should filter most results.");
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ClearIndex_RemovesAllChunks()
     {
         var doc = new Document("doc1", "Some content to index and then clear.");
@@ -146,15 +144,15 @@ public class LocalRagPipelineTests
 
         // Verify something was indexed
         var beforeClear = await _pipeline.RetrieveContextAsync("content", topK: 10, minSimilarity: -1.0f);
-        Assert.IsTrue(beforeClear.RetrievedChunks.Count > 0, "Should have chunks before clear.");
+        Assert.True(beforeClear.RetrievedChunks.Count > 0, "Should have chunks before clear.");
 
         await _pipeline.ClearIndexAsync();
 
         var afterClear = await _pipeline.RetrieveContextAsync("content", topK: 10, minSimilarity: -1.0f);
-        Assert.AreEqual(0, afterClear.RetrievedChunks.Count, "Should have no chunks after clear.");
+        Assert.Equal(0, afterClear.RetrievedChunks.Count);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task IndexDocuments_CancellationToken_Respected()
     {
         var documents = new[]
@@ -167,13 +165,13 @@ public class LocalRagPipelineTests
         using var cts = new CancellationTokenSource();
         cts.Cancel(); // Pre-cancel
 
-        await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () =>
+        await Assert.ThrowsAsync<OperationCanceledException>(async () =>
         {
             await _pipeline.IndexDocumentsAsync(documents, cancellationToken: cts.Token);
         });
     }
 
-    [TestMethod]
+    [Fact]
     public async Task RagContext_RetrievedChunks_ContainsChunkContent()
     {
         var expectedContent = "The quick brown fox jumps over the lazy dog.";
@@ -183,11 +181,11 @@ public class LocalRagPipelineTests
 
         var context = await _pipeline.RetrieveContextAsync("quick brown fox", topK: 5, minSimilarity: -1.0f);
 
-        Assert.IsTrue(context.RetrievedChunks.Count > 0, "Should have retrieved chunks.");
+        Assert.True(context.RetrievedChunks.Count > 0, "Should have retrieved chunks.");
 
         // Verify the retrieved chunks contain the original document content
         var allContent = string.Join(" ", context.RetrievedChunks.Select(c => c.Content));
-        Assert.IsTrue(
+        Assert.True(
             allContent.Contains("quick brown fox") || allContent.Contains("lazy dog"),
             "Retrieved chunk content should contain text from the indexed document.");
     }
