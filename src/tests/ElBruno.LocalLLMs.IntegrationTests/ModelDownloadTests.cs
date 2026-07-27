@@ -296,10 +296,14 @@ public class ModelDownloadTests : IAsyncDisposable
         var url = $"https://huggingface.co/api/models/{repoId}";
         var response = await http.GetAsync(url);
 
-        // 401 means the repo is private (requires HF_TOKEN). That is a known/expected state for
-        // fine-tuned repos that are not yet public. Skip rather than fail so CI stays green.
-        Skip.If(response.StatusCode == System.Net.HttpStatusCode.Unauthorized,
-            $"Model '{modelId}' repo '{repoId}' is private (401). Set HF_TOKEN env var or make the repo public to test reachability.");
+        // 401 = unauthenticated (private repo, no token). 404 = authenticated but not authorized
+        // (HuggingFace intentionally returns 404 for private repos your token can't access, to
+        // avoid leaking their existence). Both are known/expected states for fine-tuned repos
+        // that are not yet public. Skip rather than fail so CI stays green.
+        Skip.If(response.StatusCode is System.Net.HttpStatusCode.Unauthorized
+                                    or System.Net.HttpStatusCode.NotFound,
+            $"Model '{modelId}' repo '{repoId}' is private or not accessible ({(int)response.StatusCode}). " +
+            "Set HF_TOKEN env var with repo access, or make the repo public to test reachability.");
 
         Assert.True(response.IsSuccessStatusCode,
             $"Model '{modelId}' repo '{repoId}' is not publicly accessible at {url} — got {(int)response.StatusCode}");

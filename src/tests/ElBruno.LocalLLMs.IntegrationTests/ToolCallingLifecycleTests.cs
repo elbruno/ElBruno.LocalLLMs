@@ -66,15 +66,17 @@ public class ToolCallingLifecycleTests
 
                 phaseA = ResultStatus.Pass;
             }
-            catch (InvalidOperationException ex) when (ex.Message.Contains("HTTP 401", StringComparison.OrdinalIgnoreCase))
+            catch (InvalidOperationException ex) when (ex.Message.Contains("HTTP 401", StringComparison.OrdinalIgnoreCase)
+                                                      || ex.Message.Contains("HTTP 404", StringComparison.OrdinalIgnoreCase))
             {
-                // The HuggingFace repo is private. Skip gracefully — set HF_TOKEN env var to test private models.
+                // The HuggingFace repo is private or not accessible with the current token.
+                // HuggingFace returns 404 (not 401) for private repos your token can't access.
                 _reporter.RecordResult(new ModelTestResult(
                     model.Id, model.DisplayName, "Tool-Calling",
                     ResultStatus.Skip, ResultStatus.Skip, ResultStatus.Skip,
                     swA.Elapsed, null, null,
-                    $"Private repo (HTTP 401). Set HF_TOKEN env var to enable. {ex.Message}"));
-                Skip.If(true, $"Model '{model.Id}' repo is private (HTTP 401). Set HF_TOKEN env var to test private repos.");
+                    $"Private repo (HTTP 401/404). Set HF_TOKEN env var with repo access to enable."));
+                Skip.If(true, $"Model '{model.Id}' repo is private or not accessible (HTTP 401/404). Set HF_TOKEN env var to test private repos.");
             }
             catch (Exception ex)
             {

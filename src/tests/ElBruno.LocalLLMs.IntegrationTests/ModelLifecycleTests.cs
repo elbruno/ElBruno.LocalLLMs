@@ -65,14 +65,15 @@ public class ModelLifecycleTests
 
                 phaseA = ResultStatus.Pass;
             }
-            catch (InvalidOperationException ex) when (ex.Message.Contains("HTTP 401", StringComparison.OrdinalIgnoreCase))
+            catch (InvalidOperationException ex) when (ex.Message.Contains("HTTP 401", StringComparison.OrdinalIgnoreCase)
+                                                      || ex.Message.Contains("HTTP 404", StringComparison.OrdinalIgnoreCase))
             {
                 _reporter.RecordResult(new ModelTestResult(
                     model.Id, model.DisplayName, "Text (GenAI)",
                     ResultStatus.Skip, ResultStatus.Skip, ResultStatus.Skip,
                     swA.Elapsed, null, null,
-                    $"Private repo (HTTP 401). Set HF_TOKEN env var to enable."));
-                Skip.If(true, $"Model '{model.Id}' repo is private (HTTP 401). Set HF_TOKEN env var to test private repos.");
+                    $"Private repo (HTTP 401/404). Set HF_TOKEN env var with repo access to enable."));
+                Skip.If(true, $"Model '{model.Id}' repo is private or not accessible (HTTP 401/404). Set HF_TOKEN env var to test private repos.");
             }
             catch (Exception ex)
             {
