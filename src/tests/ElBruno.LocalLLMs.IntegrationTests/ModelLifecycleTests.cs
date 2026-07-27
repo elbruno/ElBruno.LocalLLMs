@@ -65,6 +65,15 @@ public class ModelLifecycleTests
 
                 phaseA = ResultStatus.Pass;
             }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("HTTP 401", StringComparison.OrdinalIgnoreCase))
+            {
+                _reporter.RecordResult(new ModelTestResult(
+                    model.Id, model.DisplayName, "Text (GenAI)",
+                    ResultStatus.Skip, ResultStatus.Skip, ResultStatus.Skip,
+                    swA.Elapsed, null, null,
+                    $"Private repo (HTTP 401). Set HF_TOKEN env var to enable."));
+                Skip.If(true, $"Model '{model.Id}' repo is private (HTTP 401). Set HF_TOKEN env var to test private repos.");
+            }
             catch (Exception ex)
             {
                 error = $"Phase A: {ex.Message}";
@@ -75,7 +84,6 @@ public class ModelLifecycleTests
                 swA.Stop();
                 durationA = swA.Elapsed;
             }
-
             // ── Phase B: Cache hit ────────────────────────────────────────────
             var swB = Stopwatch.StartNew();
             try

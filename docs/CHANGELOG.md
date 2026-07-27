@@ -55,6 +55,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions`** bumped from `9.0.0` to `10.0.5`.
 - **`ElBruno.LocalLLMs.BitNet`**: `Microsoft.Extensions.Logging.Abstractions` bumped to `10.0.5`.
 
+### Fixed
+- **`MaxOutputTokens` bug**: `ChatOptions.MaxOutputTokens` was incorrectly mapped to ORT-GenAI's `max_length`
+  (total sequence length), causing `input_ids size exceeds max length` errors when prompts were
+  longer than the specified value. `MaxOutputTokens` now correctly limits only *output* tokens:
+  `max_length = min(MaxLength, inputTokenCount + MaxOutputTokens)`. Both `LocalChatClient` and
+  `LocalVisionChatClient` are fixed; both `OnnxGenAIModel` and `OnnxVisionModel` updated.
+- **`ElbrunoOnnxRepo_IsPubliclyReachable` test**: now skips (not fails) for private repos returning
+  HTTP 401. Private fine-tuned repos (`elbruno/Qwen2.5-0.5B-LocalLLMs-*`) require `HF_TOKEN`.
+- **Tool-calling and text lifecycle tests**: now skip (not fail) when a model's HuggingFace repo
+  returns HTTP 401 (private repo). Previously these tests recorded as FAIL.
+- **`VisionLifecycleTests` empty-data xUnit error**: when all vision models are excluded from
+  lifecycle tests (via `KnownExportIssueModelIds`), `NativeOnnxVisionModels` now returns a null
+  sentinel entry so xUnit doesn't fail with "0 parameter values provided".
+- **`KnownExportIssueModelIds`** set added to `IntegrationTestModels`: `Fara1.5-9B` excluded from
+  vision lifecycle tests until the model export is corrected (`qwen3_5` architecture requires
+  `inputs_embeds` input with a separate vision processor — no `processor_config.json` uploaded).
+
 ### Docs
 - Evaluated `thinkingmachines/Inkling` (975B MoE, multimodal text/image/audio) for local support and documented it as 🔴 **Not Viable**: MoE routing is unsupported by the ONNX Runtime GenAI builder, multimodal I/O has no text-generation export path, and weights run to ~490 GB+ even at INT4 (data-center only).
 - Added a full Inkling blocker analysis to `docs/blocked-models.md` (Quick Summary, detail subsection, and Future Outlook) and a not-viable note linking to it from `docs/supported-models.md`.

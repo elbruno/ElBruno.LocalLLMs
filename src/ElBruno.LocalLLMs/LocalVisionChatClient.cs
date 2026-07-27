@@ -300,11 +300,12 @@ public sealed class LocalVisionChatClient : IChatClient, IAsyncDisposable
         var topP = _options.TopP;
         int? topK = null;
         var repetitionPenalty = 1.0f;
+        int? maxOutputTokens = null;
 
         if (options is not null)
         {
             if (options.MaxOutputTokens.HasValue)
-                maxLength = options.MaxOutputTokens.Value;
+                maxOutputTokens = options.MaxOutputTokens.Value;
             if (options.Temperature.HasValue)
                 temperature = options.Temperature.Value;
             if (options.TopP.HasValue)
@@ -320,6 +321,7 @@ public sealed class LocalVisionChatClient : IChatClient, IAsyncDisposable
             Temperature: temperature,
             TopP: topP,
             TopK: topK,
-            RepetitionPenalty: repetitionPenalty);
+            RepetitionPenalty: repetitionPenalty,
+            MaxOutputTokens: maxOutputTokens);
     }
 }

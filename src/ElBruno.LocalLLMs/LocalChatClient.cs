@@ -585,11 +585,16 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
         var topP = _options.TopP;
         int? topK = null;
         var repetitionPenalty = 1.0f;
+        int? maxOutputTokens = null;
 
         if (options is not null)
         {
+            // MaxOutputTokens means "max NEW tokens" — store separately so ApplyParameters can
+            // compute effective max_length = min(MaxLength, inputTokenCount + MaxOutputTokens).
+            // Do NOT override maxLength with MaxOutputTokens: that would treat it as total
+            // sequence length and fail when the prompt alone exceeds the value.
             if (options.MaxOutputTokens.HasValue)
-                maxLength = options.MaxOutputTokens.Value;
+                maxOutputTokens = options.MaxOutputTokens.Value;
             if (options.Temperature.HasValue)
                 temperature = options.Temperature.Value;
             if (options.TopP.HasValue)
@@ -605,7 +610,8 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
             Temperature: temperature,
             TopP: topP,
             TopK: topK,
-            RepetitionPenalty: repetitionPenalty);
+            RepetitionPenalty: repetitionPenalty,
+            MaxOutputTokens: maxOutputTokens);
     }
 
     private static ChatMessage BuildResponseMessage(string responseText, IReadOnlyList<ParsedToolCall> toolCalls)

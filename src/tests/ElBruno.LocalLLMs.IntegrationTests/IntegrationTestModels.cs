@@ -30,6 +30,20 @@ public static class IntegrationTestModels
         KnownModels.CommandR35B.Id,               // 35B → ~18 GB (also HasNativeOnnx=false)
     };
 
+    /// <summary>
+    /// Model IDs excluded from lifecycle tests due to known model export issues that
+    /// prevent successful loading with the current OnnxRuntimeGenAI version.
+    ///
+    /// Fara1.5-9B uses the <c>qwen3_5</c> architecture with <c>inputs_embeds</c> as the
+    /// primary input tensor (no <c>input_ids</c>) and has no vision processor config.
+    /// This combination is not loadable via OnnxVisionModel in ORT-GenAI 0.14.1.
+    /// Re-export the model with proper vision processor files before re-enabling.
+    /// </summary>
+    public static readonly HashSet<string> KnownExportIssueModelIds = new(StringComparer.OrdinalIgnoreCase)
+    {
+        KnownModels.Fara15_9B.Id, // qwen3_5 + inputs_embeds only, no processor_config.json
+    };
+
     // ──────────────────────────────────────────────────────────────────────────
     // Group A — Native ONNX text (GenAI) models: auto-download supported
     // ──────────────────────────────────────────────────────────────────────────
@@ -72,12 +86,17 @@ public static class IntegrationTestModels
     // ──────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// All <see cref="OnnxModelType.VisionGenAI"/> models with <see cref="ModelDefinition.HasNativeOnnx"/> = true.
-    /// Currently only Fara1.5-9B.
+    /// All <see cref="OnnxModelType.VisionGenAI"/> models with <see cref="ModelDefinition.HasNativeOnnx"/> = true,
+    /// excluding models with known export issues (<see cref="KnownExportIssueModelIds"/>).
+    /// Currently Fara1.5-9B is excluded because its qwen3_5 architecture uses <c>inputs_embeds</c>
+    /// input only (no <c>input_ids</c>) and has no processor_config.json, which prevents loading
+    /// via OnnxVisionModel in ORT-GenAI 0.14.1.
     /// </summary>
     public static TheoryData<ModelDefinition> NativeOnnxVisionModels { get; } = Build(
         KnownModels.All
-            .Where(m => m.ModelType == OnnxModelType.VisionGenAI && m.HasNativeOnnx));
+            .Where(m => m.ModelType == OnnxModelType.VisionGenAI
+                     && m.HasNativeOnnx
+                     && !KnownExportIssueModelIds.Contains(m.Id)));
 
     // ──────────────────────────────────────────────────────────────────────────
     // Group B — Non-native ONNX models: require user-provided ModelPath

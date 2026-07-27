@@ -25,8 +25,12 @@ public class VisionLifecycleTests
 
     [SkippableTheory]
     [MemberData(nameof(NativeOnnxVisionModels))]
-    public async Task VisionModel_FullLifecycle_DownloadInferenceCacheHitDelete(ModelDefinition model)
+    public async Task VisionModel_FullLifecycle_DownloadInferenceCacheHitDelete(ModelDefinition? model)
     {
+        // Null sentinel: no vision models are currently available for testing.
+        Skip.If(model is null, "No native ONNX vision models are available for lifecycle testing. " +
+            "Check IntegrationTestModels.KnownExportIssueModelIds for excluded models.");
+
         if (!IsEnabled())
         {
             _reporter.RecordSkipped(model, "Vision");
@@ -156,8 +160,24 @@ public class VisionLifecycleTests
     // MemberData
     // ──────────────────────────────────────────────────────────────────────────
 
-    public static TheoryData<ModelDefinition> NativeOnnxVisionModels()
-        => IntegrationTestModels.NativeOnnxVisionModels;
+    public static TheoryData<ModelDefinition?> NativeOnnxVisionModels()
+    {
+        // When all vision models are excluded (e.g. due to known export issues),
+        // return a null sentinel so xUnit doesn't fail with "0 parameter values provided".
+        // The test body skips immediately when model is null.
+        var source = IntegrationTestModels.NativeOnnxVisionModels;
+        var data = new TheoryData<ModelDefinition?>();
+        if (source.Count == 0)
+        {
+            data.Add(null);
+        }
+        else
+        {
+            foreach (var m in source)
+                data.Add(m);
+        }
+        return data;
+    }
 
     // ──────────────────────────────────────────────────────────────────────────
     // Helpers

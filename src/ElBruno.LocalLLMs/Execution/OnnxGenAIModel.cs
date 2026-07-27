@@ -8,12 +8,27 @@ namespace ElBruno.LocalLLMs.Internal;
 /// <summary>
 /// Generation configuration parameters for ONNX Runtime GenAI.
 /// </summary>
+/// <param name="MaxLength">
+/// Maximum total sequence length (input tokens + output tokens). Mapped to ORT-GenAI's
+/// <c>max_length</c> search option. Acts as the upper bound on context usage.
+/// </param>
+/// <param name="Temperature">Sampling temperature (0 = greedy).</param>
+/// <param name="TopP">Top-p nucleus sampling threshold.</param>
+/// <param name="TopK">Top-k sampling limit; null to disable.</param>
+/// <param name="RepetitionPenalty">Repetition penalty multiplier (1.0 = no penalty).</param>
+/// <param name="MaxOutputTokens">
+/// When non-null, limits output tokens independently of input length. The effective
+/// <c>max_length</c> passed to ORT-GenAI is <c>min(MaxLength, inputTokenCount + MaxOutputTokens)</c>.
+/// This correctly maps <see cref="Microsoft.Extensions.AI.ChatOptions.MaxOutputTokens"/>:
+/// a limit on <em>new</em> tokens, not total sequence length.
+/// </param>
 internal sealed record GenerationParameters(
     int MaxLength = 2048,
     float Temperature = 0.7f,
     float TopP = 0.9f,
     int? TopK = null,
-    float RepetitionPenalty = 1.0f);
+    float RepetitionPenalty = 1.0f,
+    int? MaxOutputTokens = null);
 
 /// <summary>
 /// Result of a buffered (non-streaming) generation call. Carries the token-boundary
@@ -262,11 +277,11 @@ ModelInitialized:
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
 
-        using var genParams = new GeneratorParams(_model);
-        ApplyParameters(genParams, parameters);
-
         using var sequences = _tokenizer.Encode(prompt);
         var inputTokenCount = sequences[0].Length;
+
+        using var genParams = new GeneratorParams(_model);
+        ApplyParameters(genParams, parameters, inputTokenCount);
 
         using var generator = new Generator(_model, genParams);
         generator.AppendTokenSequences(sequences);
@@ -326,10 +341,12 @@ ModelInitialized:
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
 
-        using var genParams = new GeneratorParams(_model);
-        ApplyParameters(genParams, parameters);
-
         using var sequences = _tokenizer.Encode(prompt);
+        var streamInputTokenCount = sequences[0].Length;
+
+        using var genParams = new GeneratorParams(_model);
+        ApplyParameters(genParams, parameters, streamInputTokenCount);
+
         using var generator = new Generator(_model, genParams);
         generator.AppendTokenSequences(sequences);
 
@@ -367,9 +384,17 @@ ModelInitialized:
         CancellationToken ct)
         => GenerateStreamingAsync(prompt, parameters, ct);
 
-    private static void ApplyParameters(GeneratorParams genParams, GenerationParameters parameters)
+    private static void ApplyParameters(GeneratorParams genParams, GenerationParameters parameters, int inputTokenCount = 0)
     {
-        genParams.SetSearchOption("max_length", parameters.MaxLength);
+        // When MaxOutputTokens is specified, compute effective max_length as
+        // min(MaxLength, inputTokenCount + MaxOutputTokens) so that the limit applies to
+        // *new* tokens only — matching Microsoft.Extensions.AI.ChatOptions.MaxOutputTokens semantics.
+        // Without MaxOutputTokens, MaxLength is the total context cap as-is.
+        var effectiveMaxLength = parameters.MaxOutputTokens.HasValue
+            ? Math.Min(parameters.MaxLength, inputTokenCount + parameters.MaxOutputTokens.Value)
+            : parameters.MaxLength;
+
+        genParams.SetSearchOption("max_length", Math.Max(effectiveMaxLength, inputTokenCount + 1));
         genParams.SetSearchOption("temperature", parameters.Temperature);
         genParams.SetSearchOption("top_p", parameters.TopP);
 

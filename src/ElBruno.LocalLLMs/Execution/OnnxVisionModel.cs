@@ -126,9 +126,9 @@ internal sealed class OnnxVisionModel : IVisionGenerationModel
         ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
 
         using var genParams = new GeneratorParams(_model);
-        ApplyParameters(genParams, parameters);
 
         var inputTokenCount = CountPromptTokensInternal(prompt);
+        ApplyParameters(genParams, parameters, inputTokenCount);
 
         Images? images = imagePaths.Length > 0 ? Images.Load(imagePaths) : null;
         try
@@ -179,8 +179,10 @@ internal sealed class OnnxVisionModel : IVisionGenerationModel
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
 
+        var streamInputTokenCount = CountPromptTokensInternal(prompt);
+
         using var genParams = new GeneratorParams(_model);
-        ApplyParameters(genParams, parameters);
+        ApplyParameters(genParams, parameters, streamInputTokenCount);
 
         Images? images = imagePaths.Length > 0 ? Images.Load(imagePaths) : null;
         try
@@ -363,9 +365,13 @@ internal sealed class OnnxVisionModel : IVisionGenerationModel
         return new Model(config);
     }
 
-    private static void ApplyParameters(GeneratorParams genParams, GenerationParameters parameters)
+    private static void ApplyParameters(GeneratorParams genParams, GenerationParameters parameters, int inputTokenCount = 0)
     {
-        genParams.SetSearchOption("max_length", parameters.MaxLength);
+        var effectiveMaxLength = parameters.MaxOutputTokens.HasValue
+            ? Math.Min(parameters.MaxLength, inputTokenCount + parameters.MaxOutputTokens.Value)
+            : parameters.MaxLength;
+
+        genParams.SetSearchOption("max_length", Math.Max(effectiveMaxLength, inputTokenCount + 1));
         genParams.SetSearchOption("temperature", parameters.Temperature);
         genParams.SetSearchOption("top_p", parameters.TopP);
 

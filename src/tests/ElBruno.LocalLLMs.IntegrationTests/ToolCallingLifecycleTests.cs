@@ -66,6 +66,16 @@ public class ToolCallingLifecycleTests
 
                 phaseA = ResultStatus.Pass;
             }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("HTTP 401", StringComparison.OrdinalIgnoreCase))
+            {
+                // The HuggingFace repo is private. Skip gracefully — set HF_TOKEN env var to test private models.
+                _reporter.RecordResult(new ModelTestResult(
+                    model.Id, model.DisplayName, "Tool-Calling",
+                    ResultStatus.Skip, ResultStatus.Skip, ResultStatus.Skip,
+                    swA.Elapsed, null, null,
+                    $"Private repo (HTTP 401). Set HF_TOKEN env var to enable. {ex.Message}"));
+                Skip.If(true, $"Model '{model.Id}' repo is private (HTTP 401). Set HF_TOKEN env var to test private repos.");
+            }
             catch (Exception ex)
             {
                 error = $"Phase A: {ex.Message}";
@@ -191,7 +201,8 @@ public class ToolCallingLifecycleTests
         EnsureModelDownloaded = true,
         CacheDirectory = cacheDir,
         Temperature = 0.1f,
-        MaxSequenceLength = 256
+        // Use default MaxSequenceLength (2048) — tool-calling prompts can be 150-200 tokens.
+        // MaxOutputTokens = 128 in ChatOptions caps output only (not total), so no override needed here.
     };
 
     private static bool IsEnabled()
