@@ -178,6 +178,104 @@ public class ModelDownloadTests : IAsyncDisposable
     }
 
     // ──────────────────────────────────────────────
+    // HuggingFace repo reachability — MagenticBrain
+    // ──────────────────────────────────────────────
+
+    [SkippableFact]
+    public async Task MagenticBrainOnnx_HuggingFaceRepo_IsReachable()
+    {
+        SkipIfNotEnabled();
+
+        using var http = new HttpClient();
+        http.Timeout = TimeSpan.FromSeconds(15);
+        http.DefaultRequestHeaders.Add("User-Agent", "ElBruno.LocalLLMs.Tests/1.0");
+
+        var repoId = KnownModels.MagenticBrain.HuggingFaceRepoId;
+        var url = $"https://huggingface.co/api/models/{repoId}";
+
+        var response = await http.GetAsync(url);
+
+        Assert.True(response.IsSuccessStatusCode,
+            $"Expected elbruno/MagenticBrain-onnx to be publicly accessible at {url}, got {(int)response.StatusCode}");
+    }
+
+    [SkippableFact]
+    public async Task MagenticBrainOnnx_HuggingFaceRepo_HasModelOnnxData()
+    {
+        SkipIfNotEnabled();
+
+        using var http = new HttpClient();
+        http.Timeout = TimeSpan.FromSeconds(15);
+        http.DefaultRequestHeaders.Add("User-Agent", "ElBruno.LocalLLMs.Tests/1.0");
+
+        var repoId = KnownModels.MagenticBrain.HuggingFaceRepoId;
+        // Check the file listing API
+        var url = $"https://huggingface.co/api/models/{repoId}";
+
+        var json = await http.GetStringAsync(url);
+
+        Assert.Contains("model.onnx.data", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ──────────────────────────────────────────────
+    // HuggingFace repo reachability — Fara1.5-9B
+    // ──────────────────────────────────────────────
+
+    [SkippableFact]
+    public async Task FaraOnnx_HuggingFaceRepo_IsReachable()
+    {
+        SkipIfNotEnabled();
+
+        using var http = new HttpClient();
+        http.Timeout = TimeSpan.FromSeconds(15);
+        http.DefaultRequestHeaders.Add("User-Agent", "ElBruno.LocalLLMs.Tests/1.0");
+
+        var repoId = KnownModels.Fara15_9B.HuggingFaceRepoId;
+        var url = $"https://huggingface.co/api/models/{repoId}";
+
+        var response = await http.GetAsync(url);
+
+        Assert.True(response.IsSuccessStatusCode,
+            $"Expected elbruno/Fara1.5-9B-onnx to be publicly accessible at {url}, got {(int)response.StatusCode}");
+    }
+
+    [SkippableFact]
+    public async Task FaraOnnx_HuggingFaceRepo_HasModelOnnxData()
+    {
+        SkipIfNotEnabled();
+
+        using var http = new HttpClient();
+        http.Timeout = TimeSpan.FromSeconds(15);
+        http.DefaultRequestHeaders.Add("User-Agent", "ElBruno.LocalLLMs.Tests/1.0");
+
+        var repoId = KnownModels.Fara15_9B.HuggingFaceRepoId;
+        var url = $"https://huggingface.co/api/models/{repoId}";
+
+        var json = await http.GetStringAsync(url);
+
+        Assert.Contains("model.onnx.data", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [SkippableFact]
+    public async Task FaraOnnx_HuggingFaceRepo_ContextLengthIs32K()
+    {
+        SkipIfNotEnabled();
+
+        using var http = new HttpClient();
+        http.Timeout = TimeSpan.FromSeconds(15);
+        http.DefaultRequestHeaders.Add("User-Agent", "ElBruno.LocalLLMs.Tests/1.0");
+
+        var repoId = KnownModels.Fara15_9B.HuggingFaceRepoId;
+        // Fetch genai_config.json to confirm context_length was patched correctly
+        var url = $"https://huggingface.co/{repoId}/resolve/main/genai_config.json";
+
+        var json = await http.GetStringAsync(url);
+
+        Assert.Contains("32768", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("262144", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ──────────────────────────────────────────────
     // Helpers
     // ──────────────────────────────────────────────
 

@@ -367,6 +367,74 @@ public class KnownModelsTests
     }
 
     // ──────────────────────────────────────────────
+    // MagenticBrain (elbruno/MagenticBrain-onnx)
+    // ──────────────────────────────────────────────
+
+    [Fact]
+    public void MagenticBrain_HasCorrectProperties()
+    {
+        var model = KnownModels.MagenticBrain;
+
+        Assert.Equal("magentic-brain", model.Id);
+        Assert.Equal("MagenticBrain (Qwen3-14B agentic fine-tune)", model.DisplayName);
+        Assert.Equal("elbruno/MagenticBrain-onnx", model.HuggingFaceRepoId);
+        Assert.Equal(OnnxModelType.GenAI, model.ModelType);
+        Assert.Equal(ChatTemplateFormat.Qwen3, model.ChatTemplate);
+        Assert.Equal(ModelTier.Large, model.Tier);
+        Assert.True(model.HasNativeOnnx);
+        Assert.True(model.SupportsToolCalling);
+    }
+
+    [Fact]
+    public void MagenticBrain_AppearsInAll()
+    {
+        Assert.Contains(KnownModels.All, m => m.Id == "magentic-brain");
+    }
+
+    [Fact]
+    public void FindById_MagenticBrain_ReturnsModel()
+    {
+        var model = KnownModels.FindById("magentic-brain");
+
+        Assert.NotNull(model);
+        Assert.Equal("magentic-brain", model!.Id);
+    }
+
+    // ──────────────────────────────────────────────
+    // Fara1.5-9B (elbruno/Fara1.5-9B-onnx)
+    // ──────────────────────────────────────────────
+
+    [Fact]
+    public void Fara15_9B_HasCorrectProperties()
+    {
+        var model = KnownModels.Fara15_9B;
+
+        Assert.Equal("fara1.5-9b", model.Id);
+        Assert.Equal("Fara1.5-9B", model.DisplayName);
+        Assert.Equal("elbruno/Fara1.5-9B-onnx", model.HuggingFaceRepoId);
+        Assert.Equal(OnnxModelType.VisionGenAI, model.ModelType);
+        Assert.Equal(ChatTemplateFormat.Fara, model.ChatTemplate);
+        Assert.Equal(ModelTier.Medium, model.Tier);
+        Assert.True(model.HasNativeOnnx);
+        Assert.False(model.SupportsToolCalling);
+    }
+
+    [Fact]
+    public void Fara15_9B_AppearsInAll()
+    {
+        Assert.Contains(KnownModels.All, m => m.Id == "fara1.5-9b");
+    }
+
+    [Fact]
+    public void FindById_Fara15_9B_ReturnsModel()
+    {
+        var model = KnownModels.FindById("fara1.5-9b");
+
+        Assert.NotNull(model);
+        Assert.Equal("fara1.5-9b", model!.Id);
+    }
+
+    // ──────────────────────────────────────────────
     // Static field references
     // ──────────────────────────────────────────────
 
@@ -377,5 +445,7 @@ public class KnownModelsTests
         Assert.Contains(KnownModels.Phi4, KnownModels.All);
         Assert.Contains(KnownModels.Qwen25_05BInstruct, KnownModels.All);
         Assert.Contains(KnownModels.Qwen25Coder_7BInstruct, KnownModels.All);
+        Assert.Contains(KnownModels.MagenticBrain, KnownModels.All);
+        Assert.Contains(KnownModels.Fara15_9B, KnownModels.All);
     }
 }
