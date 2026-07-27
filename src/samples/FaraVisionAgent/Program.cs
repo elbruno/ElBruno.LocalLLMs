@@ -1,18 +1,11 @@
 // FaraVisionAgent — demo of Fara1.5-9B vision-language model via LocalVisionChatClient.
 //
-// Prerequisites (ONNX conversion required — no official Microsoft ONNX export):
-//   pip install onnxruntime-genai
-//   python -m onnxruntime_genai.models.builder \
-//     -m microsoft/Fara1.5-9B \
-//     --model_type qwen_vl \
-//     -o ./fara-onnx
-//
-// This produces: vision_encoder.onnx + embedding_injector.onnx + text_decoder.onnx
-// and genai_config.json (model.type = "qwen_vl"). Point --model-path at that directory.
+// Fara1.5-9B ONNX is available at elbruno/Fara1.5-9B-onnx — set EnsureModelDownloaded = true
+// to auto-download on first run, or pass --model-path to use a local directory.
 //
 // Usage:
+//   dotnet run                              (auto-download from elbruno/Fara1.5-9B-onnx)
 //   dotnet run -- --model-path ./fara-onnx --image ./screenshot.png
-//   dotnet run -- --model-path ./fara-onnx  (text-only mode)
 
 using ElBruno.LocalLLMs;
 using Microsoft.Extensions.AI;

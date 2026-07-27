@@ -475,17 +475,17 @@ public static class KnownModels
         SupportsToolCalling = true,
     };
 
-    /// <summary>MagenticBrain — Microsoft fine-tune of Qwen3-14B for agentic tasks (requires ONNX conversion — see docs/onnx-conversion.md).</summary>
+    /// <summary>MagenticBrain — Microsoft fine-tune of Qwen3-14B for agentic tasks. ONNX INT4 available at elbruno/MagenticBrain-onnx.</summary>
     public static readonly ModelDefinition MagenticBrain = new()
     {
         Id = "magentic-brain",
         DisplayName = "MagenticBrain (Qwen3-14B agentic fine-tune)",
-        HuggingFaceRepoId = "microsoft/MagenticBrain",
+        HuggingFaceRepoId = "elbruno/MagenticBrain-onnx",
         RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Qwen3,
         Tier = ModelTier.Large,
-        HasNativeOnnx = false,
+        HasNativeOnnx = true,
         SupportsToolCalling = true,
     };
 
@@ -494,22 +494,20 @@ public static class KnownModels
     // ────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Fara1.5-9B — Microsoft VLM based on Qwen3.5-9B-VL, supports image + text input and coordinate-based action output.
-    /// No official Microsoft ONNX. Community conversion required via ORT-GenAI model builder:
-    ///   python -m onnxruntime_genai.models.builder -m microsoft/Fara1.5-9B --model_type qwen_vl -o ./fara-onnx
-    /// Output: vision_encoder.onnx + embedding_injector.onnx + text_decoder.onnx + genai_config.json (model.type = "qwen_vl").
-    /// Point LocalLLMsOptions.ModelPath at the conversion output directory. See docs/onnx-conversion-fara.md.
+    /// Fara1.5-9B — Microsoft computer-use agent fine-tuned from Qwen3.5-9B.
+    /// ONNX INT4 available at elbruno/Fara1.5-9B-onnx (context capped at 32K for ORT-GenAI compatibility).
+    /// Set EnsureModelDownloaded = true to auto-download on first use.
     /// </summary>
     public static readonly ModelDefinition Fara15_9B = new()
     {
         Id = "fara1.5-9b",
         DisplayName = "Fara1.5-9B",
-        HuggingFaceRepoId = "microsoft/Fara1.5-9B",
+        HuggingFaceRepoId = "elbruno/Fara1.5-9B-onnx",
         RequiredFiles = ["*"],
         ModelType = OnnxModelType.VisionGenAI,
         ChatTemplate = ChatTemplateFormat.Fara,
         Tier = ModelTier.Medium,
-        HasNativeOnnx = false,
+        HasNativeOnnx = true,
         SupportsToolCalling = false
     };
 

@@ -46,8 +46,9 @@ public static class LocalLLMsServiceExtensions
     /// <summary>
     /// Registers <see cref="LocalVisionChatClient"/> as a singleton IChatClient for vision-language models.
     /// <para>
-    /// VLMs (e.g. <see cref="KnownModels.Fara15_9B"/>) require community ONNX conversion.
-    /// Set <see cref="LocalLLMsOptions.ModelPath"/> to the conversion output directory.
+    /// Set <see cref="LocalLLMsOptions.EnsureModelDownloaded"/> to <c>true</c> to auto-download
+    /// (e.g. <see cref="KnownModels.Fara15_9B"/> from elbruno/Fara1.5-9B-onnx on first run).
+    /// Or set <see cref="LocalLLMsOptions.ModelPath"/> to use a local directory.
     /// </para>
     /// </summary>
     public static IServiceCollection AddLocalVisionLLM(

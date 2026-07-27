@@ -20,9 +20,9 @@ public class KnownModelsVisionTests
     }
 
     [Fact]
-    public void Fara15_9B_HasNativeOnnx_IsFalse()
+    public void Fara15_9B_HasNativeOnnx_IsTrue()
     {
-        Assert.False(KnownModels.Fara15_9B.HasNativeOnnx);
+        Assert.True(KnownModels.Fara15_9B.HasNativeOnnx);
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public class KnownModelsVisionTests
     [Fact]
     public void Fara15_9B_HuggingFaceRepoId_IsCorrect()
     {
-        Assert.Equal("microsoft/Fara1.5-9B", KnownModels.Fara15_9B.HuggingFaceRepoId);
+        Assert.Equal("elbruno/Fara1.5-9B-onnx", KnownModels.Fara15_9B.HuggingFaceRepoId);
     }
 
     [Fact]

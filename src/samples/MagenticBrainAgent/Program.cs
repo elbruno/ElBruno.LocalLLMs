@@ -8,8 +8,8 @@ using Microsoft.Extensions.AI;
 //
 // Models supported:
 //   KnownModels.Qwen3_14BInstruct  — native ONNX, CPU INT4 (~8 GB)
-//   KnownModels.MagenticBrain      — requires ONNX conversion first
-//                                    (see docs/onnx-conversion.md)
+//   KnownModels.MagenticBrain      — native ONNX at elbruno/MagenticBrain-onnx
+//                                    set EnsureModelDownloaded = true
 //
 // Key Qwen3 settings for reliable tool calling:
 //   Temperature = 0.7, TopK = 20, MaxSequenceLength = 32768
