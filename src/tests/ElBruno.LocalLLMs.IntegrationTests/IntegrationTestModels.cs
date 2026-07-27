@@ -16,18 +16,16 @@ public static class IntegrationTestModels
     // ──────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Model IDs estimated to require more than 10 GB of storage (INT4 quantized).
-    /// These models are excluded from per-model lifecycle download tests.
+    /// Model IDs excluded from per-model lifecycle download tests because they have no native
+    /// ONNX package yet. These are non-native models that are also very large.
+    /// See linked issues for ONNX conversion tasks.
     /// </summary>
     public static readonly HashSet<string> LargeModelIds = new(StringComparer.OrdinalIgnoreCase)
     {
-        KnownModels.MistralSmall24BInstruct.Id,   // 24B → ~12 GB
-        KnownModels.Qwen25_32BInstruct.Id,        // 32B → ~16 GB
-        KnownModels.Llama33_70BInstruct.Id,       // 70B → ~35 GB
-        KnownModels.MagenticBrain.Id,             // 14B INT4, confirmed 11 GB
-        KnownModels.Mixtral8x7BInstructV01.Id,    // 47B → ~24 GB (also HasNativeOnnx=false)
-        KnownModels.DeepSeekR1DistillLlama70B.Id, // 70B → ~35 GB (also HasNativeOnnx=false)
-        KnownModels.CommandR35B.Id,               // 35B → ~18 GB (also HasNativeOnnx=false)
+        // Non-native ONNX models that are also large — excluded until ONNX conversion is published
+        KnownModels.Mixtral8x7BInstructV01.Id,    // 47B → ~24 GB (HasNativeOnnx=false, see issue #32)
+        KnownModels.DeepSeekR1DistillLlama70B.Id, // 70B → ~35 GB (HasNativeOnnx=false, see issue #33)
+        KnownModels.CommandR35B.Id,               // 35B → ~18 GB (HasNativeOnnx=false, see issue #34)
     };
 
     /// <summary>
