@@ -1,5 +1,5 @@
-using LocalEmbeddings;
-using LocalEmbeddings.Options;
+using ElBruno.LocalEmbeddings;
+using ElBruno.LocalEmbeddings.Options;
 using ElBruno.LocalLLMs;
 using ElBruno.LocalLLMs.Rag;
 using ElBruno.LocalLLMs.Rag.Chunking;

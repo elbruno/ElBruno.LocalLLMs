@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ElBruno.LocalEmbeddings" Version="1.0.1" />
+    <PackageReference Include="ElBruno.LocalEmbeddings" Version="1.5.1" />
 
     <!--
     Explicit CPU runtime — required because the library marks its own
