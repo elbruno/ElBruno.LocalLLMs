@@ -1,72 +1,63 @@
-// FaraVisionAgent — demo of Fara1.5-9B vision-language model via LocalVisionChatClient.
+// FaraVisionAgent — demo of Fara1.5-9B agentic model via LocalChatClient.
 //
-// Fara1.5-9B ONNX is available at elbruno/Fara1.5-9B-onnx — set EnsureModelDownloaded = true
-// to auto-download on first run, or pass --model-path to use a local directory.
+// Fara1.5-9B uses the qwen3_5 text architecture in ORT-GenAI 0.14.1.
+// It loads via the GenAI/text path (LocalChatClient), not the vision path.
+// ONNX INT4 is available at elbruno/Fara1.5-9B-onnx — set EnsureModelDownloaded = true
+// to auto-download on first run.
 //
 // Usage:
 //   dotnet run                              (auto-download from elbruno/Fara1.5-9B-onnx)
-//   dotnet run -- --model-path ./fara-onnx --image ./screenshot.png
+//   dotnet run -- --model-path ./fara-onnx
 
 using ElBruno.LocalLLMs;
 using Microsoft.Extensions.AI;
 
 var modelPath = GetArg(args, "--model-path");
-var imagePath = GetArg(args, "--image");
-
-if (string.IsNullOrWhiteSpace(modelPath))
-{
-    Console.Error.WriteLine("Usage: FaraVisionAgent --model-path <path> [--image <path>]");
-    Console.Error.WriteLine("  --model-path  Path to the ONNX-converted Fara1.5-9B directory.");
-    Console.Error.WriteLine("  --image       Optional: path to a screenshot PNG to analyze.");
-    return 1;
-}
-
-Console.WriteLine($"Loading Fara1.5-9B from: {modelPath}");
-if (!string.IsNullOrWhiteSpace(imagePath))
-    Console.WriteLine($"Image: {imagePath}");
 
 var options = new LocalLLMsOptions
 {
     Model = KnownModels.Fara15_9B,
-    ModelPath = modelPath,
+    EnsureModelDownloaded = true,
     MaxSequenceLength = 4096,
     Temperature = 0.1f,
 };
 
-await using var client = new LocalVisionChatClient(options);
-
-// ── Query 1: Analyze screenshot ─────────────────────────────────────────────
-Console.WriteLine("\n─── Query 1: Screenshot analysis ───────────────────────────────");
-
-var analyzeMessages = new List<ChatMessage>
+if (!string.IsNullOrWhiteSpace(modelPath))
 {
-    new(ChatRole.User, "What elements do you see in this screenshot? List any interactive elements.")
-};
-
-var visionOptions = new VisionChatOptions
+    options.ModelPath = modelPath;
+    options.EnsureModelDownloaded = false;
+    Console.WriteLine($"Loading Fara1.5-9B from: {modelPath}");
+}
+else
 {
-    ImagePaths = string.IsNullOrWhiteSpace(imagePath) ? [] : [imagePath]
+    Console.WriteLine("Loading Fara1.5-9B (auto-download from elbruno/Fara1.5-9B-onnx)...");
+}
+
+await using var client = await LocalChatClient.CreateAsync(options);
+
+// ── Query 1: Agentic action planning ────────────────────────────────────────
+Console.WriteLine("\n─── Query 1: Agentic action ────────────────────────────────────────");
+
+var messages = new List<ChatMessage>
+{
+    new(ChatRole.User, "Go to https://github.com and search for 'ElBruno.LocalLLMs'. List the steps you would take.")
 };
 
 Console.Write("Fara: ");
-await foreach (var token in client.GetStreamingResponseAsync(analyzeMessages, visionOptions))
+await foreach (var token in client.GetStreamingResponseAsync(messages))
 {
     Console.Write(token.Text);
 }
 Console.WriteLine();
 
-// ── Query 2: Action request ──────────────────────────────────────────────────
-Console.WriteLine("\n─── Query 2: Action request ─────────────────────────────────────");
-Console.WriteLine("(Fara may emit <action>click(x,y)</action> tags for UI actions)");
+// ── Query 2: Follow-up ────────────────────────────────────────────────────────
+Console.WriteLine("\n─── Query 2: Follow-up ─────────────────────────────────────────────");
 
-var actionMessages = new List<ChatMessage>
-{
-    new(ChatRole.User, "Click on the search button.")
-};
+messages.Add(new ChatMessage(ChatRole.Assistant, "I would navigate to GitHub and use the search bar."));
+messages.Add(new ChatMessage(ChatRole.User, "What would you click first?"));
 
-// Text-only request — no image paths needed for follow-up
 Console.Write("Fara: ");
-await foreach (var token in client.GetStreamingResponseAsync(actionMessages))
+await foreach (var token in client.GetStreamingResponseAsync(messages))
 {
     Console.Write(token.Text);
 }

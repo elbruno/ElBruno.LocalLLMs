@@ -31,15 +31,10 @@ public static class IntegrationTestModels
     /// <summary>
     /// Model IDs excluded from lifecycle tests due to known model export issues that
     /// prevent successful loading with the current OnnxRuntimeGenAI version.
-    ///
-    /// Fara1.5-9B uses the <c>qwen3_5</c> architecture with <c>inputs_embeds</c> as the
-    /// primary input tensor (no <c>input_ids</c>) and has no vision processor config.
-    /// This combination is not loadable via OnnxVisionModel in ORT-GenAI 0.14.1.
-    /// Re-export the model with proper vision processor files before re-enabling.
     /// </summary>
     public static readonly HashSet<string> KnownExportIssueModelIds = new(StringComparer.OrdinalIgnoreCase)
     {
-        KnownModels.Fara15_9B.Id, // qwen3_5 + inputs_embeds only, no processor_config.json
+        // Currently empty — Fara1.5-9B was re-classified as GenAI (text path) in fix for issue #35.
     };
 
     // ──────────────────────────────────────────────────────────────────────────

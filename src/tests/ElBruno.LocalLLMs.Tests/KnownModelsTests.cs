@@ -412,7 +412,7 @@ public class KnownModelsTests
         Assert.Equal("fara1.5-9b", model.Id);
         Assert.Equal("Fara1.5-9B", model.DisplayName);
         Assert.Equal("elbruno/Fara1.5-9B-onnx", model.HuggingFaceRepoId);
-        Assert.Equal(OnnxModelType.VisionGenAI, model.ModelType);
+        Assert.Equal(OnnxModelType.GenAI, model.ModelType);
         Assert.Equal(ChatTemplateFormat.Fara, model.ChatTemplate);
         Assert.Equal(ModelTier.Medium, model.Tier);
         Assert.True(model.HasNativeOnnx);

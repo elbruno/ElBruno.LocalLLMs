@@ -496,6 +496,7 @@ public static class KnownModels
     /// <summary>
     /// Fara1.5-9B — Microsoft computer-use agent fine-tuned from Qwen3.5-9B.
     /// ONNX INT4 available at elbruno/Fara1.5-9B-onnx (context capped at 32K for ORT-GenAI compatibility).
+    /// Uses the GenAI (text) path — the qwen3_5 architecture is text-only in ORT-GenAI 0.14.1.
     /// Set EnsureModelDownloaded = true to auto-download on first use.
     /// </summary>
     public static readonly ModelDefinition Fara15_9B = new()
@@ -504,7 +505,7 @@ public static class KnownModels
         DisplayName = "Fara1.5-9B",
         HuggingFaceRepoId = "elbruno/Fara1.5-9B-onnx",
         RequiredFiles = ["*"],
-        ModelType = OnnxModelType.VisionGenAI,
+        ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Fara,
         Tier = ModelTier.Medium,
         HasNativeOnnx = true,
