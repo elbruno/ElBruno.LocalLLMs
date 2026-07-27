@@ -183,12 +183,12 @@ public class KnownModelsAllPropertiesTests
             HasNativeOnnx: true, ToolCalling: true),
 
         new(KnownModels.Qwen25_05B_RAG,
-            "qwen2.5-0.5b-localllms-rag", "elbruno/Qwen2.5-0.5B-LocalLLMs-RAG",
+            "qwen2.5-0.5b-localllms-rag", "elbruno/Qwen2.5-0.5B-Instruct-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Qwen, ModelTier.Tiny,
             HasNativeOnnx: true, ToolCalling: false),
 
         new(KnownModels.Qwen25_05B_Instruct_FineTuned,
-            "qwen2.5-0.5b-localllms-instruct", "elbruno/Qwen2.5-0.5B-LocalLLMs-Instruct",
+            "qwen2.5-0.5b-localllms-instruct", "elbruno/Qwen2.5-0.5B-Instruct-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Qwen, ModelTier.Tiny,
             HasNativeOnnx: true, ToolCalling: true),
 

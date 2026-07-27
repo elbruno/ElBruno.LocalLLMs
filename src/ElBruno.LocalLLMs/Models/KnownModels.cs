@@ -66,12 +66,12 @@ public static class KnownModels
         SupportsToolCalling = true
     };
 
-    /// <summary>Qwen2.5-0.5B fine-tuned for RAG with source citations.</summary>
+    /// <summary>Qwen2.5-0.5B for RAG workflows — uses the public Instruct ONNX repo.</summary>
     public static readonly ModelDefinition Qwen25_05B_RAG = new()
     {
         Id = "qwen2.5-0.5b-localllms-rag",
         DisplayName = "Qwen2.5-0.5B-LocalLLMs-RAG",
-        HuggingFaceRepoId = "elbruno/Qwen2.5-0.5B-LocalLLMs-RAG",
+        HuggingFaceRepoId = "elbruno/Qwen2.5-0.5B-Instruct-onnx",
         RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Qwen,
@@ -79,12 +79,12 @@ public static class KnownModels
         HasNativeOnnx = true
     };
 
-    /// <summary>Qwen2.5-0.5B general fine-tune — tool calling + RAG + instruction following.</summary>
+    /// <summary>Qwen2.5-0.5B general instruct fine-tune — uses the public Instruct ONNX repo.</summary>
     public static readonly ModelDefinition Qwen25_05B_Instruct_FineTuned = new()
     {
         Id = "qwen2.5-0.5b-localllms-instruct",
         DisplayName = "Qwen2.5-0.5B-LocalLLMs-Instruct",
-        HuggingFaceRepoId = "elbruno/Qwen2.5-0.5B-LocalLLMs-Instruct",
+        HuggingFaceRepoId = "elbruno/Qwen2.5-0.5B-Instruct-onnx",
         RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Qwen,
