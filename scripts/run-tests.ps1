@@ -84,7 +84,8 @@ param(
     [switch]$SkipIntegrationTests,
     [string]$Framework = 'net8.0',
     [string]$HfToken,
-    [string]$Filter
+    [string]$Filter,
+    [string]$LogFile   # Optional explicit log path. Auto-generates docs/tests/YYYY-MM-DD-HH-run.log when omitted.
 )
 
 Set-StrictMode -Version Latest
@@ -153,6 +154,22 @@ $unitTestProj = Join-Path $repoRoot 'src\tests\ElBruno.LocalLLMs.Tests\ElBruno.L
 $integrationTestProj = Join-Path $repoRoot 'src\tests\ElBruno.LocalLLMs.IntegrationTests\ElBruno.LocalLLMs.IntegrationTests.csproj'
 
 # ---------------------------------------------------------------------------
+# Log file — tee all output so failures are captured for later analysis
+# ---------------------------------------------------------------------------
+
+$docsTestsDir = Join-Path $repoRoot 'docs\tests'
+if (-not (Test-Path -LiteralPath $docsTestsDir)) {
+    $null = New-Item -ItemType Directory -Path $docsTestsDir -Force
+}
+
+if (-not $LogFile) {
+    $LogFile = Join-Path $docsTestsDir "$(Get-Date -Format 'yyyy-MM-dd-HH')-run.log"
+}
+
+# Start-Transcript captures everything (Write-Host, stdout, stderr) to the log.
+Start-Transcript -Path $LogFile -Append -NoClobber:$false | Out-Null
+
+# ---------------------------------------------------------------------------
 # Banner
 # ---------------------------------------------------------------------------
 
@@ -162,6 +179,7 @@ Write-Banner -Message "run-tests.ps1  |  $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss
 Write-Info "Solution : $solutionFile"
 Write-Info "Framework: $Framework"
 Write-Info "SkipBuild: $($SkipBuild -or $NoBuild)  |  SkipUnitTests: $SkipUnitTests  |  SkipIntegrationTests: $SkipIntegrationTests"
+Write-Info "Log file : $LogFile"
 Write-Host ''
 
 # ---------------------------------------------------------------------------
@@ -187,6 +205,7 @@ else {
     }
     catch {
         Write-Failure "Build failed: $_"
+        Stop-Transcript | Out-Null
         exit 1
     }
 
@@ -219,6 +238,7 @@ else {
     }
     catch {
         Write-Failure "Unit tests failed: $_"
+        Stop-Transcript | Out-Null
         exit 2
     }
 
@@ -308,6 +328,8 @@ else {
     if ($integrationFailed) {
         Write-Host ''
         Write-Failure "Integration tests failed: $integrationError"
+        Write-Host "  Full log saved to: $LogFile" -ForegroundColor DarkGray
+        Stop-Transcript | Out-Null
         exit 3
     }
 
@@ -324,5 +346,8 @@ Write-Host ('=' * 70) -ForegroundColor Green
 Write-Host ("  All checks passed in $(Get-ElapsedSeconds $scriptStart)s.") -ForegroundColor Green
 Write-Host ('=' * 70) -ForegroundColor Green
 Write-Host ''
+Write-Host "  Full log saved to: $LogFile" -ForegroundColor DarkGray
+Write-Host ''
 
+Stop-Transcript | Out-Null
 exit 0
