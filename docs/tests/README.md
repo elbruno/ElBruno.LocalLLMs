@@ -16,6 +16,27 @@ overwrites the first. This prevents unbounded file accumulation while always sho
 
 ## How to run the integration tests
 
+### Using the run-tests script (recommended)
+
+The `scripts/run-tests.ps1` (Windows) / `scripts/run-tests.sh` (Linux/macOS/WSL) scripts handle
+build, unit tests, and integration tests in one command, and print the path to the generated
+results file automatically.
+
+```powershell
+# Full run (builds, unit tests, integration tests)
+.\scripts\run-tests.ps1
+
+# Integration tests only
+.\scripts\run-tests.ps1 -SkipUnitTests
+
+# With HuggingFace token for private repos
+.\scripts\run-tests.ps1 -HfToken "hf_xxxx"
+```
+
+See [`scripts/README.md`](../../scripts/README.md) for the full parameter reference and scheduling examples.
+
+### Manual run (dotnet CLI)
+
 Integration tests require:
 - `RUN_INTEGRATION_TESTS=true` environment variable
 - Sufficient disk space and network access (model downloads)

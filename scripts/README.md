@@ -1,6 +1,89 @@
-# ONNX Conversion Scripts
+# Scripts
 
-Convert HuggingFace models to ONNX format for use with `ElBruno.LocalLLMs`.
+Helper scripts for testing, model management, and ONNX conversion.
+
+---
+
+## Test Runner
+
+Use `run-tests.ps1` (Windows) or `run-tests.sh` (Linux/macOS/WSL) to build the solution, run unit tests, and run the full integration lifecycle test suite. After the integration run, the path to the auto-generated `docs/tests/YYYY-MM-DD-HH-run-results.md` report is printed.
+
+### Quick start
+
+```powershell
+# Full run (PowerShell / Windows)
+.\scripts\run-tests.ps1
+
+# Full run (bash / Linux / macOS / WSL)
+bash scripts/run-tests.sh
+```
+
+### Parameters — `run-tests.ps1`
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `-SkipBuild` / `-NoBuild` | — | Skip `dotnet build` |
+| `-SkipUnitTests` | — | Skip unit test project |
+| `-SkipIntegrationTests` | — | Skip integration tests (build + unit only) |
+| `-Framework` | `net8.0` | Target framework |
+| `-HfToken <token>` | — | Sets `HF_TOKEN` for private HuggingFace repos |
+| `-Filter <expr>` | — | xUnit `--filter` expression (integration tests only) |
+
+### Parameters — `run-tests.sh`
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--skip-build` / `-B` / `--no-build` | — | Skip build |
+| `--skip-unit-tests` / `-U` | — | Skip unit tests |
+| `--skip-integration-tests` / `-I` | — | Skip integration tests |
+| `--framework <value>` | `net8.0` | Target framework |
+| `--hf-token <value>` | — | Sets `HF_TOKEN` |
+| `--filter <value>` | — | xUnit filter expression |
+
+### Common examples
+
+```powershell
+# Unit tests only (fast, no downloads)
+.\scripts\run-tests.ps1 -SkipIntegrationTests
+
+# Integration tests only, lifecycle tests only
+.\scripts\run-tests.ps1 -SkipUnitTests -Filter "FullyQualifiedName~LifecycleTests"
+
+# Integration tests with HuggingFace token (for private repos)
+.\scripts\run-tests.ps1 -HfToken "hf_xxxx"
+
+# Skip build (use existing binaries)
+.\scripts\run-tests.ps1 -SkipBuild
+```
+
+### Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | All requested steps passed |
+| `1` | Build failed |
+| `2` | Unit tests failed |
+| `3` | Integration tests failed |
+| `99` | Unexpected error |
+
+### Scheduling (unattended)
+
+**Windows Task Scheduler** (daily at 2 AM):
+```
+Action:    powershell.exe
+Arguments: -NonInteractive -ExecutionPolicy Bypass -File "C:\src\ElBruno.LocalLLMs\scripts\run-tests.ps1" -SkipBuild
+```
+
+**Linux/macOS cron** (daily at 2 AM):
+```
+0 2 * * * /bin/bash /path/to/scripts/run-tests.sh --skip-build >> /var/log/localllms-tests.log 2>&1
+```
+
+---
+
+## Model Cache Management
+
+Use `manage-models.ps1` to inspect and manage downloaded models in cache roots.
 
 ## Model Cache Management
 
