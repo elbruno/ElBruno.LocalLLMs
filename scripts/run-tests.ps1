@@ -129,6 +129,12 @@ function Get-ElapsedSeconds {
     return [Math]::Round(((Get-Date) - $Start).TotalSeconds, 1)
 }
 
+function Format-Elapsed {
+    param([datetime]$Start)
+    $ts = (Get-Date) - $Start
+    return '{0:D2}:{1:D2}:{2:D2}' -f [int]$ts.TotalHours, $ts.Minutes, $ts.Seconds
+}
+
 # ---------------------------------------------------------------------------
 # Locate repo root (walk up from $PSScriptRoot looking for the .slnx file)
 # ---------------------------------------------------------------------------
@@ -343,7 +349,7 @@ else {
 
 Write-Host ''
 Write-Host ('=' * 70) -ForegroundColor Green
-Write-Host ("  All checks passed in $(Get-ElapsedSeconds $scriptStart)s.") -ForegroundColor Green
+Write-Host ("  All checks passed in $(Format-Elapsed $scriptStart)  (hh:mm:ss)") -ForegroundColor Green
 Write-Host ('=' * 70) -ForegroundColor Green
 Write-Host ''
 Write-Host "  Full log saved to: $LogFile" -ForegroundColor DarkGray
