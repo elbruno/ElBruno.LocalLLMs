@@ -156,6 +156,18 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
         };
     }
 
+    /// <summary>
+    /// Removes all cached files for the specified model from the local cache.
+    /// No-op if the model is not currently cached.
+    /// </summary>
+    public static Task DeleteModelFromCacheAsync(
+        ModelDefinition model,
+        string? cacheDirectory = null,
+        CancellationToken cancellationToken = default)
+    {
+        return new ModelDownloader().DeleteModelAsync(model, cacheDirectory, cancellationToken);
+    }
+
     // --- Model Warmup ---
 
     /// <summary>

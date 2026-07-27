@@ -15,10 +15,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `elbruno/MagenticBrain-onnx`: 14B Qwen3 fine-tune, ~11 GB INT4 (CPU).
   - `elbruno/Fara1.5-9B-onnx`: 9B qwen3_5 fine-tune, ~5 GB INT4; context capped at 32K for ONNX static allocation compatibility.
   - Conversion scripts added: `scripts/convert_magentic_brain.py` and `scripts/convert_fara.py`.
+- **`DeleteModelFromCacheAsync`**: new public static method on both `LocalChatClient` and `LocalVisionChatClient`.
+  Removes all locally cached files for a model. No-op if the model is not cached.
+  Also added `DeleteModelAsync` to `IModelDownloader` / `ModelDownloader` for direct downloader access.
+- **`LocalVisionChatClient` auto-download**: VLMs with `HasNativeOnnx = true` (e.g. Fara1.5-9B) now
+  auto-download when `EnsureModelDownloaded = true`, matching the behavior of `LocalChatClient`.
+  A `CreateAsync` static factory was added for consistency.
+- **E2E lifecycle integration tests** covering all 35 supported models:
+  - `ModelLifecycleTests` — 3-phase lifecycle (fresh download → cache hit → delete) for all
+    practical (`HasNativeOnnx=true`, estimated <10 GB) GenAI text models.
+  - `ToolCallingLifecycleTests` — same lifecycle for all practical tool-calling models, with JSON
+    tool-call structure validation.
+  - `VisionLifecycleTests` — same lifecycle for native-ONNX vision models (Fara1.5-9B).
+  - `NonNativeOnnxReachabilityTests` — HF API reachability for all `HasNativeOnnx=false` models;
+    full lifecycle via `MODEL_PATH_*` env var if the user provides a local ONNX path.
+- **Test results reporting**: after each integration test run, a markdown report is written to
+  `docs/tests/YYYY-MM-DD-HH-run-results.md` (UTC hour). If two runs happen in the same hour,
+  the file is overwritten (only the latest run per hour is kept).
+- **Comprehensive KnownModels property tests** (`KnownModelsAllPropertiesTests`): 481 data-driven
+  tests covering all 35 models across every property (id, display name, repo, type, template, tier,
+  HasNativeOnnx, SupportsToolCalling).
 
 ### Docs
 - Evaluated `thinkingmachines/Inkling` (975B MoE, multimodal text/image/audio) for local support and documented it as 🔴 **Not Viable**: MoE routing is unsupported by the ONNX Runtime GenAI builder, multimodal I/O has no text-generation export path, and weights run to ~490 GB+ even at INT4 (data-center only).
 - Added a full Inkling blocker analysis to `docs/blocked-models.md` (Quick Summary, detail subsection, and Future Outlook) and a not-viable note linking to it from `docs/supported-models.md`.
+- Added `docs/tests/README.md` explaining the integration test lifecycle, how to run with `RUN_INTEGRATION_TESTS=true`, and how non-native ONNX models can be tested with `MODEL_PATH_*` env vars.
 
 ---
 

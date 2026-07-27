@@ -23,6 +23,11 @@
   <ItemGroup>
     <ProjectReference Include="..\..\ElBruno.LocalLLMs\ElBruno.LocalLLMs.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="TestFixtures\**\*">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
   <Target Name="CopyOnnxRuntimeForGenAiWindows" AfterTargets="Build"
           Condition="'$(OS)' == 'Windows_NT' and '$(PkgMicrosoft_ML_OnnxRuntime)' != ''">
     <PropertyGroup>

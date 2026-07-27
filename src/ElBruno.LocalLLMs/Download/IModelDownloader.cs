@@ -20,4 +20,13 @@ public interface IModelDownloader
     /// Gets the default cache directory for model storage.
     /// </summary>
     string GetCacheDirectory();
+
+    /// <summary>
+    /// Removes all cached files for the specified model.
+    /// No-op if the model is not cached.
+    /// </summary>
+    Task DeleteModelAsync(
+        ModelDefinition model,
+        string? cacheDirectory = null,
+        CancellationToken cancellationToken = default);
 }

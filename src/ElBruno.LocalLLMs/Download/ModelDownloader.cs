@@ -248,4 +248,20 @@ internal sealed class ModelDownloader : IModelDownloader
 
         return ex.InnerException is not null && IsTransientNetworkFailure(ex.InnerException);
     }
+
+    /// <inheritdoc />
+    public Task DeleteModelAsync(
+        ModelDefinition model,
+        string? cacheDirectory = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        var cacheDir = cacheDirectory ?? _defaultCacheDirectory;
+        var modelDir = Path.Combine(cacheDir, SanitizeModelId(model.Id));
+
+        if (Directory.Exists(modelDir))
+            Directory.Delete(modelDir, recursive: true);
+
+        return Task.CompletedTask;
+    }
 }

@@ -10,10 +10,14 @@ namespace ElBruno.LocalLLMs;
 /// Local VLM chat client for vision-language models using ONNX Runtime GenAI.
 /// Implements IChatClient for integration with Microsoft.Extensions.AI.
 /// Use <see cref="VisionChatOptions"/> to supply image paths per call.
+/// Set <see cref="LocalLLMsOptions.EnsureModelDownloaded"/> to <see langword="true"/> to auto-download
+/// the model on first use (requires <see cref="ModelDefinition.HasNativeOnnx"/> to be <see langword="true"/>),
+/// or set <see cref="LocalLLMsOptions.ModelPath"/> to use a local directory directly.
 /// </summary>
 public sealed class LocalVisionChatClient : IChatClient, IAsyncDisposable
 {
     private readonly LocalLLMsOptions _options;
+    private readonly IModelDownloader _downloader;
     private readonly IVisionGenerationModelFactory _modelFactory;
     private readonly IChatTemplateFormatter _formatter;
     private readonly ILogger _logger;
@@ -27,8 +31,8 @@ public sealed class LocalVisionChatClient : IChatClient, IAsyncDisposable
 
     /// <summary>
     /// Creates a LocalVisionChatClient with the specified options.
-    /// Model path must be set via <see cref="LocalLLMsOptions.ModelPath"/> — VLMs require
-    /// community ONNX conversion (see docs/onnx-conversion-fara.md).
+    /// Set <see cref="LocalLLMsOptions.EnsureModelDownloaded"/> to auto-download, or
+    /// <see cref="LocalLLMsOptions.ModelPath"/> to use a local directory directly.
     /// </summary>
     public LocalVisionChatClient(LocalLLMsOptions options)
         : this(options, loggerFactory: null)
@@ -39,17 +43,19 @@ public sealed class LocalVisionChatClient : IChatClient, IAsyncDisposable
     /// Creates a LocalVisionChatClient with the specified options and logger factory.
     /// </summary>
     public LocalVisionChatClient(LocalLLMsOptions options, ILoggerFactory? loggerFactory)
-        : this(options, new OnnxVisionModelFactory(), loggerFactory)
+        : this(options, new OnnxVisionModelFactory(), new ModelDownloader(), loggerFactory)
     {
     }
 
     internal LocalVisionChatClient(
         LocalLLMsOptions options,
         IVisionGenerationModelFactory modelFactory,
+        IModelDownloader? downloader = null,
         ILoggerFactory? loggerFactory = null)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _modelFactory = modelFactory ?? throw new ArgumentNullException(nameof(modelFactory));
+        _downloader = downloader ?? new ModelDownloader();
         _formatter = ChatTemplateFactory.Create(options.Model.ChatTemplate);
         _logger = loggerFactory?.CreateLogger<LocalVisionChatClient>() ?? NullLogger<LocalVisionChatClient>.Instance;
 
@@ -57,6 +63,35 @@ public sealed class LocalVisionChatClient : IChatClient, IAsyncDisposable
             providerName: "elbruno-local-llms-vision",
             providerUri: new Uri("https://github.com/elbruno/ElBruno.LocalLLMs"),
             defaultModelId: options.Model.Id);
+    }
+
+    // --- Async Factory ---
+
+    /// <summary>
+    /// Async factory — preferred in async contexts to avoid sync-over-async during model download.
+    /// Initializes the model (downloading if needed) before returning.
+    /// </summary>
+    public static async Task<LocalVisionChatClient> CreateAsync(
+        LocalLLMsOptions options,
+        IProgress<ModelDownloadProgress>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        var client = new LocalVisionChatClient(options);
+        await client.EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
+        return client;
+    }
+
+    /// <summary>
+    /// Removes all cached files for the specified model from the local cache.
+    /// No-op if the model is not currently cached.
+    /// </summary>
+    public static Task DeleteModelFromCacheAsync(
+        ModelDefinition model,
+        string? cacheDirectory = null,
+        CancellationToken cancellationToken = default)
+    {
+        return new ModelDownloader().DeleteModelAsync(model, cacheDirectory, cancellationToken);
     }
 
     // --- IChatClient ---
@@ -200,11 +235,25 @@ public sealed class LocalVisionChatClient : IChatClient, IAsyncDisposable
         {
             if (_model is not null) return;
 
-            _resolvedModelPath = _options.ModelPath
-                ?? throw new InvalidOperationException(
-                    $"VLM '{_options.Model.Id}' requires a local model path. " +
-                    "Set LocalLLMsOptions.ModelPath to the ONNX conversion output directory. " +
-                    "See docs/onnx-conversion-fara.md for conversion instructions.");
+            if (_options.ModelPath is not null)
+            {
+                _resolvedModelPath = _options.ModelPath;
+            }
+            else if (_options.EnsureModelDownloaded)
+            {
+                _resolvedModelPath = await _downloader.EnsureModelAsync(
+                    _options.Model,
+                    _options.CacheDirectory,
+                    progress: null,
+                    cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                throw new InvalidOperationException(
+                    $"VLM '{_options.Model.Id}' requires either a local model path (set LocalLLMsOptions.ModelPath) " +
+                    "or auto-download enabled (set EnsureModelDownloaded = true, requires HasNativeOnnx = true). " +
+                    "See docs/onnx-conversion-fara.md for details.");
+            }
 
             _model = _modelFactory.Create(
                 _resolvedModelPath,
