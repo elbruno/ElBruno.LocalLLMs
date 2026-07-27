@@ -276,6 +276,42 @@ public class ModelDownloadTests : IAsyncDisposable
     }
 
     // ──────────────────────────────────────────────
+    // All elbruno/* ONNX repos are publicly reachable
+    // ──────────────────────────────────────────────
+
+    /// <summary>
+    /// Verifies every elbruno/* HuggingFace repo referenced by a KnownModel is publicly reachable.
+    /// Runs once per model; skipped unless RUN_INTEGRATION_TESTS=true.
+    /// </summary>
+    [SkippableTheory]
+    [MemberData(nameof(ElbrunoOnnxRepos))]
+    public async Task ElbrunoOnnxRepo_IsPubliclyReachable(string modelId, string repoId)
+    {
+        SkipIfNotEnabled();
+
+        using var http = new HttpClient();
+        http.Timeout = TimeSpan.FromSeconds(15);
+        http.DefaultRequestHeaders.Add("User-Agent", "ElBruno.LocalLLMs.Tests/1.0");
+
+        var url = $"https://huggingface.co/api/models/{repoId}";
+        var response = await http.GetAsync(url);
+
+        Assert.True(response.IsSuccessStatusCode,
+            $"Model '{modelId}' repo '{repoId}' is not publicly accessible at {url} — got {(int)response.StatusCode}");
+    }
+
+    public static TheoryData<string, string> ElbrunoOnnxRepos()
+    {
+        var data = new TheoryData<string, string>();
+        foreach (var model in KnownModels.All
+            .Where(m => m.HasNativeOnnx && m.HuggingFaceRepoId.StartsWith("elbruno/", StringComparison.OrdinalIgnoreCase)))
+        {
+            data.Add(model.Id, model.HuggingFaceRepoId);
+        }
+        return data;
+    }
+
+    // ──────────────────────────────────────────────
     // Helpers
     // ──────────────────────────────────────────────
 
