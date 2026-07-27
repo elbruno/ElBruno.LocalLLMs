@@ -15,12 +15,16 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 
 ## What's New
 
-- 📦 **Transitive native runtime fix** (`v0.20.1`) — Added `buildTransitive` packaging so `onnxruntime-genai.dll` is copied for downstream consumers that reference `ElBruno.LocalLLMs` transitively (Issue #24).
-- 🤖 **Qwen3 & MagenticBrain support** (`v0.20.0`) — New `ChatTemplateFormat.Qwen3` formatter and `KnownModels.MagenticBrain` / `KnownModels.Qwen3_14BInstruct` for agentic multi-agent orchestration loops.
+- 🗑️ **`DeleteModelFromCacheAsync`** — Remove any cached model with a single call. Available on both `LocalChatClient` and `LocalVisionChatClient`.
+- 🤖 **MagenticBrain + Fara1.5-9B native ONNX** — Both models auto-download via `EnsureModelDownloaded = true`. No manual ONNX conversion needed. Hosted at `elbruno/MagenticBrain-onnx` and `elbruno/Fara1.5-9B-onnx`.
+- 👁️ **`LocalVisionChatClient` auto-download** — Vision models with `HasNativeOnnx=true` now download automatically, just like text models.
+- 🧪 **E2E lifecycle tests for all 35 models** — 3-phase lifecycle (download → cache hit → delete) with automated markdown reports written to `docs/tests/` after each run.
+- 📦 **Transitive native runtime fix** (`v0.20.1`) — `buildTransitive` packaging so `onnxruntime-genai.dll` is copied for downstream consumers (Issue #24).
+- 🤖 **Qwen3 & MagenticBrain support** (`v0.20.0`) — New `ChatTemplateFormat.Qwen3` formatter and `KnownModels.Qwen3_14BInstruct` for agentic multi-agent orchestration loops.
 - 👁️ **Fara 1.5-9B vision-language model** (`v0.20.0`) — Run Microsoft's Fara VLM locally via the new `LocalVisionChatClient`, `IVisionGenerationModel`, and `VisionChatOptions` with image paths.
-- 🌐 **[ElBruno.MagenticUI](https://github.com/elbruno/ElBruno.MagenticUI) reference app** — Full Blazor Server multi-agent app (FileSurfer, WebFetcher, Coder, UserProxy) powered by this library. Drop-in .NET port of [microsoft/magentic-ui](https://github.com/microsoft/magentic-ui) with human-in-the-loop support.
+- 🌐 **[ElBruno.MagenticUI](https://github.com/elbruno/ElBruno.MagenticUI) reference app** — Full Blazor Server multi-agent app (FileSurfer, WebFetcher, Coder, UserProxy) powered by this library.
 - 📡 **OpenTelemetry diagnostics** (`v0.19.0`) — Generation lifecycle activities and metrics (`gen_ai.client.*`) via `ActivitySource` + `Meter` both named `ElBruno.LocalLLMs`.
-- ✅ **Gemma 4 family active** — `E2B`, `E4B`, `12B Unified`, `26B-A4B`, `31B` all supported via conversion workflows.
+- ✅ **Gemma 4 family active** — `E2B`, `E4B`, `12B Unified`, `26B-A4B`, `31B` all supported.
 - ⬆️ **ONNX Runtime GenAI `0.14.1`** — upgraded across library, tests, samples, and benchmarks.
 
 ## Features
@@ -248,6 +252,27 @@ var options = new LocalLLMsOptions
 
 See [docs/observability.md](docs/observability.md) for the lifecycle event contract, metric names, and Aspire wiring notes, and [docs/cancellation.md](docs/cancellation.md) for voice barge-in cancellation behavior.
 
+## Cache Management
+
+Free disk space by removing a downloaded model from the local cache:
+
+```csharp
+// Remove a model from the cache (no-op if not cached)
+await LocalChatClient.DeleteModelFromCacheAsync(KnownModels.Phi35MiniInstruct);
+
+// Or use a custom cache directory
+await LocalChatClient.DeleteModelFromCacheAsync(
+    KnownModels.Phi35MiniInstruct,
+    cacheDirectory: @"D:\my-models");
+
+// Same API for vision models
+await LocalVisionChatClient.DeleteModelFromCacheAsync(KnownModels.Fara15_9B);
+```
+
+The default cache directory is `%LOCALAPPDATA%/ElBruno/LocalLLMs/models` (Windows) or `~/.local/share/ElBruno/LocalLLMs/models` (Linux/macOS).
+
+> **Note:** Cache management features (delete, list, size) are planned to move to the [ElBruno.HuggingFace.Downloader](https://www.nuget.org/packages/ElBruno.HuggingFace.Downloader) library ([tracking issue](https://github.com/elbruno/ElBruno.HuggingFace.Downloader/issues/20)). When that library exposes a programmatic API for these operations, `DeleteModelFromCacheAsync` in this library will delegate to it, and the LocalLLMs-specific implementation will be removed.
+
 ## Troubleshooting
 
 **GPU not working?** Use `ExecutionProvider.Cpu` explicitly. See [GPU Setup Validation](docs/troubleshooting-guide.md#gpu-setup-validation).
@@ -283,7 +308,7 @@ For detailed troubleshooting, see [docs/troubleshooting-guide.md](docs/troublesh
 | 🟢 Small | Gemma-2-2B-IT | 2B | ✅ Native | `gemma-2-2b-it` |
 | 🟢 Small | Gemma-4-E4B-IT | 8B (4B active) | 🔄 Convert | `gemma-4-e4b-it` |
 | 🟡 Medium | Qwen2.5-7B-Instruct | 7B | ✅ Native | `qwen2.5-7b-instruct` |
-| 🟡 Medium | Qwen2.5-Coder-7B-Instruct | 7B | 🔄 Convert | `qwen2.5-coder-7b-instruct` |
+| 🟡 Medium | Qwen2.5-Coder-7B-Instruct | 7B | ✅ Native | `qwen2.5-coder-7b-instruct` |
 | 🟡 Medium | Llama-3.1-8B-Instruct | 8B | ✅ Native | `llama-3.1-8b-instruct` |
 | 🟡 Medium | Mistral-7B-Instruct-v0.3 | 7B | ✅ Native | `mistral-7b-instruct-v0.3` |
 | 🟡 Medium | Gemma-2-9B-IT | 9B | ✅ Native | `gemma-2-9b-it` |
@@ -299,21 +324,15 @@ For detailed troubleshooting, see [docs/troubleshooting-guide.md](docs/troublesh
 | 🔴 Large | Command-R (35B) | 35B | 🔄 Convert | `command-r-35b` |
 | 🔴 Large | Gemma-4-26B-A4B-IT | 25.2B (3.8B active) | 🔄 Convert | `gemma-4-26b-a4b-it` |
 | 🔴 Large | Gemma-4-31B-IT | 30.7B | 🔄 Convert | `gemma-4-31b-it` |
-| 🟣 Next-Gen | Qwen3-8B | 8B | 🔄 Convert | `qwen3-8b` |
-| 🟣 Next-Gen | Qwen3-14B-Instruct | 14.77B | ✅ ONNX | `qwen3-14b-instruct` |
-| 🟣 Next-Gen | Qwen3-32B | 32B | 🔄 Convert | `qwen3-32b` |
-| 🟣 Next-Gen | Gemma-3-12B-IT | 12B | 🔄 Convert | `gemma-3-12b-it` |
-| 🟣 Next-Gen | Llama-4-Scout | ~17B (MoE) | 🔄 Convert | `llama-4-scout` |
-| 🟣 Next-Gen | Llama-4-Maverick | ~17B (MoE) | 🔄 Convert | `llama-4-maverick` |
-| 🟣 Next-Gen | DeepSeek-V3 | 671B (MoE) | 🔄 Convert | `deepseek-v3` |
-| 🤖 Agentic | MagenticBrain | ~14.77B | ✅ ONNX¹ | `magentic-brain` |
-| 👁️ VLM | Fara 1.5-9B | ~9.4B | 🔄 Convert² | `fara-1.5-9b` |
+| 🟣 Next-Gen | Qwen3-14B-Instruct | 14.77B | ✅ Native | `qwen3-14b-instruct` |
+| 🤖 Agentic | MagenticBrain | ~14.77B | ✅ Native | `magentic-brain` |
+| 👁️ VLM | Fara 1.5-9B | ~9.4B | ✅ Native | `fara-1.5-9b` |
 
 > **🔄 Convert** = Use the conversion scripts in `scripts/` to export ONNX locally before running the model.
 >
-> **¹ MagenticBrain ONNX:** No official ONNX yet. Use `onnx-community/Qwen3-14B-ONNX` as drop-in until Microsoft publishes a native conversion.
+> **¹ MagenticBrain ONNX:** Native ONNX hosted at `elbruno/MagenticBrain-onnx` (INT4 quantized). Auto-downloads when `EnsureModelDownloaded=true`.
 >
-> **² Fara 1.5-9B ONNX:** Convert via ORT-GenAI model builder (`--model_type qwen_vl`). Use `LocalVisionChatClient` (not `LocalChatClient`). See [ONNX Conversion — Fara](docs/onnx-conversion-fara.md).
+> **² Fara 1.5-9B ONNX:** Native ONNX hosted at `elbruno/Fara1.5-9B-onnx` (INT4 quantized via ORT-GenAI model builder). Use `LocalVisionChatClient` (not `LocalChatClient`). Auto-downloads when `EnsureModelDownloaded=true`. See [ONNX Conversion — Fara](docs/onnx-conversion-fara.md).
 
 ### Fine-Tuned Models
 
@@ -364,6 +383,14 @@ dotnet build ElBruno.LocalLLMs.slnx
 dotnet test ElBruno.LocalLLMs.slnx --framework net8.0
 ```
 
+**Run integration tests** (downloads real models — requires internet):
+
+```bash
+RUN_INTEGRATION_TESTS=true dotnet test ElBruno.LocalLLMs.slnx --framework net8.0
+```
+
+Integration tests validate the full lifecycle (download → infer → cache hit → delete) for all 35 supported models. See [docs/tests/README.md](docs/tests/README.md) for details.
+
 ## Documentation
 
 - [Getting Started](docs/getting-started.md) — installation, first steps, configuration
@@ -379,6 +406,7 @@ dotnet test ElBruno.LocalLLMs.slnx --framework net8.0
 - [ONNX Conversion — Fara VLM](docs/onnx-conversion-fara.md) — converting Fara 1.5-9B vision-language model
 - [Publishing](docs/publishing.md) — NuGet package publishing with OIDC
 - [Contributing](docs/CONTRIBUTING.md) — how to contribute
+- [Integration Test Reports](docs/tests/README.md) — how to run E2E lifecycle tests and interpret per-run markdown reports
 - [Changelog](docs/CHANGELOG.md) — version history
 
 ## 🤝 Contributing

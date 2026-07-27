@@ -40,6 +40,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Evaluated `thinkingmachines/Inkling` (975B MoE, multimodal text/image/audio) for local support and documented it as 🔴 **Not Viable**: MoE routing is unsupported by the ONNX Runtime GenAI builder, multimodal I/O has no text-generation export path, and weights run to ~490 GB+ even at INT4 (data-center only).
 - Added a full Inkling blocker analysis to `docs/blocked-models.md` (Quick Summary, detail subsection, and Future Outlook) and a not-viable note linking to it from `docs/supported-models.md`.
 - Added `docs/tests/README.md` explaining the integration test lifecycle, how to run with `RUN_INTEGRATION_TESTS=true`, and how non-native ONNX models can be tested with `MODEL_PATH_*` env vars.
+- Updated `README.md`: Cache Management section, `docs/tests/README.md` in documentation links, corrected model table (MagenticBrain + Fara now ✅ Native; Qwen2.5-Coder-7B now ✅ Native), removed placeholder Next-Gen rows.
+
+### Planned / Tracking
+- **Cache management → `ElBruno.HuggingFace.Downloader`** ([issue #20](https://github.com/elbruno/ElBruno.HuggingFace.Downloader/issues/20)):
+  When `ElBruno.HuggingFace.Downloader` exposes a programmatic API for `DeleteCachedFilesAsync`,
+  `ListCachedRepos`, and `GetCachedSize`, the following should be removed from this library:
+  - `DeleteModelAsync` from `IModelDownloader` and `ModelDownloader`
+  - `DeleteModelFromCacheAsync` from `LocalChatClient` and `LocalVisionChatClient`
+  
+  Callers should instead use the downloader directly for cache management. Unit tests in
+  `ModelDownloaderCacheTests.cs` and integration tests should be updated to test the delegation path.
 
 ---
 
