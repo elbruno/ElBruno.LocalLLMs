@@ -176,11 +176,11 @@ if ($shouldSkipBuild) {
 else {
     $buildStart = Get-Date
     Write-Step 'Building solution...'
-    Write-Info "dotnet build $solutionFile --framework $Framework -p:TargetFrameworks=$Framework"
+    Write-Info "dotnet build $solutionFile"
     Write-Host ''
 
     try {
-        & dotnet build $solutionFile --framework $Framework -p:TargetFrameworks=$Framework
+        & dotnet build $solutionFile
         if ($LASTEXITCODE -ne 0) {
             throw "dotnet build exited with code $LASTEXITCODE"
         }
