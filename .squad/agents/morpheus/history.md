@@ -1,6 +1,124 @@
+
+## Latest: Phase 3A — magentic-ui .NET Port — Implementation Complete (2026-07-23)
 
-## Latest: BitNet Architecture Compatibility Analysis (2026-04-07)
-## Latest: BitNet Extension Package Architecture Design (2026-04-17)
+**2026-07-23T16:38:** Phase 3A complete. Switch delivered scaffold (0 errors), Trinity delivered 15-file `MagenticUIServer.Agents` library (0 errors, 2 turns), Tank delivered 40 tests (all passing). Decision 35 merged to `.squad/decisions.md`. Session logged to `.squad/log/2026-07-23T16-38-30-magentic-ui-phase3a.md`.
+
+**Phase 3A delivery:**
+- `MagenticUIServer` — ASP.NET Core 8.0 host with SignalR hub, SPA, CORS
+- `MagenticUIServer.Agents` — 4 models, 4 tools, 4 agents, 1 orchestrator (MEAI OmniAgent loop)
+- `MagenticUIServer.Agents.Tests` — 40 tests, all passing
+- React 19 minimal ClientApp with `@microsoft/signalr` and placeholder components
+
+**Pending Phase 3B:** UserProxy full HIL wiring; WSL2 coder; BrowserSurferAgent; SQLite persistence.  
+**Pending Phase 3C:** Full magentic-ui React fork; QEMU sandbox; Auth.
+
+---
+
+## Previous: Phase 3 — magentic-ui .NET Port Architecture (2026-07-23, amended A1)
+
+**2026-07-23:** Completed architecture decision record for Phase 3: .NET port of microsoft/magentic-ui. Delivered `.squad/decisions/inbox/morpheus-phase3-architecture.md` covering 10 numbered decisions across 3 new projects.
+
+**Amendment A1 (2026-07-23) — Dozer (ML Engineer) corrections:**  
+Three breaking corrections applied before finalisation:
+1. **SK MagenticOrchestrator dropped.** `Microsoft.SemanticKernel.Agents.Magentic` v1.78.0-preview requires `IChatCompletionService` (SK-native), not `IChatClient` (MEAI). No confirmed bridge in v1.78. Decision: use proven MEAI OmniAgent loop from `MagenticBrainAgent` — `AIFunctionFactory.Create`, `FunctionCallContent`, `FunctionResultContent`. No SK packages in Phase 3A.  
+2. **Hub protocol corrected to full Python taxonomy.** Frontend sends 8 message types (start, stop, ping, input_response, approval_response, continuation_response, pause, resume). Backend emits 15 frame types via `metadata.type` discriminator (text, tool_call, tool_result, input_request, approval_request, pause_notification, resume_notification, system, browser_screenshot, browser_action, file_event, orchestrator_plan, token_stream, final_answer, error). Human-in-the-loop maps to `TaskCompletionSource<string>`.  
+3. **MarkItDotNet API confirmed.** `ElBruno.MarkItDotNet` v0.9.1 stable. `services.AddMarkItDotNet()`, `await converter.ConvertAsync(path)`, `await MarkdownService.ConvertUrlAsync(url)`. Pinned to v0.9.1.
+
+**Key Decisions (post-amendment):**
+
+1. **Stay in current solution** — `src/samples/MagenticUIServer/` inside `ElBruno.LocalLLMs.slnx`. 3 new csproj.
+2. **No SK — pure MEAI orchestration.** `MagenticUIOrchestrator` is a custom coordinator on `IChatClient`. `AIFunctionFactory.Create()` for tools. Participants as `AgentParticipant` records.
+3. **React 19 fork + @microsoft/signalr, not Blazor.** `AgentHub` with 8 client methods + `frame` event emitting all 15 frame types.
+4. **Phase 3A topology:** MagenticBrain/Qwen3 orchestrator + FileSurfer + WebFetcher + UserProxy + CoderStub. QEMU deferred to Phase 3C; WSL2 in Phase 3B.
+5. **New risks added:** UserProxy TCS deadlock on disconnect (mitigated via CancellationToken), orchestrator participant selection unreliability (mitigated via `SelectParticipant` sentinel tool).
+
+**Status:** ADR written and amended. Gates Switch (scaffold), Trinity (implementation), Tank (tests).
+
+---
+
+## Previous: Phase 3 — magentic-ui .NET Port Architecture (2026-07-23, pre-amendment)
+
+**2026-07-23:** Completed architecture decision record for Phase 3: .NET port of microsoft/magentic-ui. Delivered `.squad/decisions/inbox/morpheus-phase3-architecture.md` covering 10 numbered decisions across 3 new projects.
+
+**Key Decisions:**
+
+1. **Stay in current solution** — `src/samples/MagenticUIServer/` inside `ElBruno.LocalLLMs.slnx`. Direct `<ProjectReference>` to `ElBruno.LocalLLMs`; no cross-repo coordination needed.
+
+2. **Three new projects** — `MagenticUIServer` (ASP.NET Core host), `MagenticUIServer.Agents` (orchestration library, separately testable), `MagenticUIServer.Agents.Tests` (xUnit). Agents library has no `Microsoft.AspNetCore.*` dependency.
+
+3. **SK MagenticOrchestrator** — `Microsoft.SemanticKernel.Agents.MagenticOne.MagenticOrchestrator` is the authoritative .NET MagenticOne port. `LocalChatClient` (MEAI `IChatClient`) bridges to SK via `AsChatCompletionService()`. Fallback: implement thin `LocalChatCompletionService` wrapper if bridge not available in SK 1.30.
+
+4. **React 19 fork + SignalR** — fork microsoft/magentic-ui React frontend, swap WebSocket for `@microsoft/signalr`. Hosted in `ClientApp/` under the ASP.NET Core project. Rejected Blazor.
+
+5. **Agent topology (3A)** — MagenticBrain/Qwen3 orchestrator + FileSurfer + WebFetcher + UserProxy + CoderAgentStub. QEMU sandbox deferred to Phase 3C; WSL2 bridge in Phase 3B.
+
+**Hub contract:** `AgentHub` at `/hubs/agent`; client methods `SubmitTask`/`CancelTask`; server events `AgentMessage`, `ToolEvent`, `TokenStream`, `TaskComplete`, `TaskError`.
+
+**Top risks:** SK package API shape (must spike before scaffold), IChatClient bridge availability, MarkItDotNet NuGet API, React fork license check.
+
+**Status:** ADR written, gates Switch (scaffold), Trinity (implementation), Tank (tests).
+
+---
+
+## Previous: Fara1.5-9B VLM Phase 2 — Implementation Complete (2026-07-23)
+
+**2026-07-23:** Phase 2 implementation complete. Trinity delivered 8 new files + 6 modified (0 errors). Tank delivered 37 tests (19 FaraFormatter + 4 OnnxModelType + 9 KnownModelsVision + 5 VisionChatOptions). All 50 Fara + Qwen3 tests passing. ADR merged to `.squad/decisions.md`. Session logged to `.squad/log/2026-07-23T13-48-59-fara-phase2.md`.
+
+---
+
+## Previous: Fara1.5-9B VLM Support — Phase 2 Architecture (2026-07-23, amended A1)
+
+**2026-07-23:** Completed architecture decision record for Phase 2 VLM support. Delivered `.squad/decisions/inbox/morpheus-fara-architecture.md` covering 14 numbered decisions.
+
+**Amendment A1 (2026-07-23) — Dozer (ML Engineer) correction:**  
+ORT-GenAI model builder has no `fara` build target. Correct flag: `--model_type qwen_vl`. Three-file output: `vision_encoder.onnx`, `embedding_injector.onnx`, `text_decoder.onnx`. `genai_config.json` will have `model.type = "qwen_vl"`. ORT-GenAI's `Model` class orchestrates the three-stage pipeline internally — `OnnxVisionModel` is not affected at the API level. KnownModels XML doc updated with exact builder command. Two new risks added to Risk Register.
+
+**Key Decisions:**
+
+1. **`IVisionGenerationModel : ITextGenerationModel`** — VLMs extend the text interface. VLM is a superset of text; the interface chain enforces this. Text-only fallback works through `GenerateWithImages(prompt, [], ...)`.
+
+2. **`OnnxVisionModel` — standalone sealed class** — wraps `Model + MultiModalProcessor` (not `Tokenizer`). `new Model(modelPath)` is all that's needed — ORT-GenAI handles `vision_encoder + embedding_injector + text_decoder` pipeline internally via `genai_config.json`. Provider selection logic copied as private statics.
+
+3. **`FaraFormatter` — no tool support, standalone sealed** — Fara is an action/vision model. Tool injection would waste context. Exposes `FormatMessagesWithImages(messages, hasImages)` internal method; `LocalVisionChatClient` accesses via cast. Vision tokens (`<|vision_start|><|image_pad|><|vision_end|>`) unchanged by A1 — standard Qwen VL tokens.
+
+4. **`ChatTemplateFormat.Fara` + `OnnxModelType.VisionGenAI`** — follows existing naming conventions. `VisionGenAI` signals `OnnxVisionModelFactory` dispatch vs `OnnxGenAIModelFactory`.
+
+5. **`LocalVisionChatClient` — new public class; `LocalChatClient` unchanged** — zero surgery on the existing text client. Images flow via `VisionChatOptions : ChatOptions` with `string[] ImagePaths`.
+
+6. **Stay in `ElBruno.LocalLLMs` package** — ORT-GenAI already ships `MultiModalProcessor`. No new NuGet dependency.
+
+7. **`KnownModels.Fara15_9B`** — `ModelTier.Medium`, `HasNativeOnnx = false`, `SupportsToolCalling = false`. HuggingFaceRepoId is the source PyTorch repo; user converts locally with `--model_type qwen_vl`.
+
+8. **Highest-risk items:** (a) `ProcessImages(prompt, null)` for text-only may throw — test before ship. (b) `genai_config.json` must have `model.type = "qwen_vl"` — constructor logs warning if not. (c) All three ONNX sub-model files must be present.
+
+**Status:** Architecture approved, Amendment A1 applied. Trinity is gated on this ADR.
+
+---
+
+## Previous: Qwen3 / MagenticBrain Phase 1 Architecture (2026-07-23)
+
+**2026-07-23:** Completed architecture decision record for Qwen3 and MagenticBrain Phase 1 support. Delivered `.squad/decisions/inbox/morpheus-qwen3-architecture.md` covering 11 numbered decisions.
+
+**Key Decisions:**
+
+1. **Standalone `Qwen3Formatter`** — `internal sealed class`, no inheritance from `QwenFormatter`. Consistent with all other formatters. Charter principle: composition over inheritance, always. `QwenFormatter` stays `sealed` and unchanged.
+
+2. **`ChatTemplateFormat.Qwen3`** — Follows existing naming convention (family/version, not variant). Not `Qwen3Instruct`.
+
+3. **`JsonToolCallParser` needs zero changes** — Already handles `<tool_call>...</tool_call>` tags (Strategy 1). Already generates `CallId` (so absent `id` field in Qwen3 JSON is fine). No `Qwen3ToolCallParser` needed.
+
+4. **`submit` tool is application-layer only** — Lives in the MagenticBrain sample's agent loop. No core library awareness of `submit`.
+
+5. **Two new Large-tier KnownModels** — `Qwen3_14BInstruct` (HasNativeOnnx=true, ModelSubPath set) and `MagenticBrain` (HasNativeOnnx=false, needs conversion).
+
+6. **Highest-risk item flagged** — Qwen3 uses role `tool` for FunctionResultContent messages, but MEAI uses `ChatRole.User`. Trinity must verify against the official Qwen3 tokenizer_config.json before implementing `FormatUserMessage`.
+
+**Status:** Architecture approved. ADR written. Ready for Trinity to implement.
+
+---
+
+## Previous: BitNet Architecture Compatibility Analysis (2026-04-07)
+## Previous: BitNet Extension Package Architecture Design (2026-04-17)
 
 **2026-04-17:** Completed full architecture design for `ElBruno.LocalLLMs.BitNet` extension package per Bruno's directive. Delivered 32KB architecture document (`.squad/decisions/inbox/morpheus-bitnet-architecture.md`) covering 5 decision areas.
 

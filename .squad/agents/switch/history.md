@@ -14,6 +14,23 @@
 
 **2026-03-27:** RAG tool routing plan approved (`docs/plan-rag-tool-routing.md`). New deliverables: benchmark project (Phase 1, Tank owner) and sample project (Phase 2, Trinity owner). Switch should update `.slnx` to include these projects and configure CI/CD for benchmark runs if needed.
 
+## 2026-07-23: Phase 3A — MagenticUIServer Scaffold
+
+**2026-07-23T16:38:** Scaffolded three new projects for Phase 3A magentic-ui .NET port inside `ElBruno.LocalLLMs.slnx`.
+
+**SK spike result:** `Microsoft.SemanticKernel.Agents.MagenticOne` does NOT exist as a NuGet package. `Microsoft.SemanticKernel.Agents.Magentic` v1.78.0-preview found but requires `IChatCompletionService` (incompatible with `IChatClient`). **Path B adopted per Morpheus Amendment A1** — custom MEAI OmniAgent loop.
+
+**Projects created:**
+- `src/samples/MagenticUIServer/MagenticUIServer/` — ASP.NET Core 8.0 host; `Program.cs`, `Hubs/AgentHub.cs` (8 method stubs), `Services/AgentSessionService.cs`
+- `src/samples/MagenticUIServer/MagenticUIServer.Agents/` — class library; all model/tool/agent/orchestrator stubs
+- `src/samples/MagenticUIServer/MagenticUIServer.Agents.Tests/` — xUnit, net8.0; empty test stubs for Tank
+
+**React ClientApp:** Vite + React 19 + TypeScript scaffold; `@microsoft/signalr ^8.0.0` installed; `hub/agentHubClient.ts` stub; placeholder components (`TaskInput`, `AgentFeed`, `ToolEventLog`, `SessionSidebar`).
+
+**All three projects added to `ElBruno.LocalLLMs.slnx` with solution folder grouping.**
+
+**Build result: 0 errors.**
+
 ## Learnings
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->

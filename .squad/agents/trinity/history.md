@@ -59,6 +59,30 @@ ElBruno.LocalLLMs.BitNet/
 
 **2026-03-27:** RAG tool routing plan approved (`docs/plan-rag-tool-routing.md`). Trinity is owner for **Phase 2** (ToolSelectionService sample implementation) and **Phase 3** (optimization & GPU tuning). Phase 2 deliverable: `samples/ToolRoutingWithSlm/ToolSelectionService.cs` with graceful fallback chain. Phase 3: latency optimization, cross-encoder alternative, GPU testing.
 
+## 2026-07-23: Phase 3A — MagenticUIServer.Agents Implementation
+
+**2026-07-23T16:38:** Implemented `MagenticUIServer.Agents` library and full ASP.NET Core host wiring for Phase 3A. Delivered 15 files in 2 turns, 0 errors.
+
+**Files delivered:**
+
+| Category | Files |
+|---|---|
+| Models | `AgentMessage.cs`, `AgentSession.cs`, `TaskRequest.cs`, `CodeExecutionResult.cs` |
+| Tools | `FileSurferTool.cs`, `WebFetchTool.cs`, `CodeExecutorTool.cs` (stub), `MarkItDownTool.cs` |
+| Agents | `FileSurferAgent.cs`, `WebFetcherAgent.cs`, `UserProxyAgent.cs`, `CoderAgentStub.cs` |
+| Orchestrator | `MagenticUIOrchestrator.cs` — MEAI OmniAgent loop with participant routing |
+| Project | `MagenticUIServer.Agents.csproj` — MEAI only, no SK packages |
+| Host | `AgentHub.cs` (8 methods), `AgentSessionService.cs`, `Program.cs` |
+| React | `hub/agentHubClient.ts`, `TaskInput.tsx`, `AgentFeed.tsx`, `ToolEventLog.tsx`, `SessionSidebar.tsx`, `InputRequestModal.tsx` |
+
+**Key implementation decisions:**
+- `MagenticUIOrchestrator`: round-based loop; orchestrator LLM selects participant per round; `SelectParticipant` sentinel tool as fallback for unparseable directives
+- `FileSurferTool`: `Path.GetFullPath` sandbox + `FileInfo.LinkTarget` symlink escape check; `UnauthorizedAccessException` thrown for escapes
+- `WebFetchTool`: 50,000 char `MaxContentLength` cap; HTML→Markdown via `MarkItDownTool.ConvertUrlAsync` (avoids double-fetch)
+- `CodeExecutorTool`: stub only — `{ Success=false, Output="[STUB]..." }` + `ILogger.LogWarning`; no `Process.Start`
+- `UserProxyAgent`: `TaskCompletionSource<string>` per session; `AgentHub.SendInputResponse` resolves it; `CancellationToken` prevents deadlock
+- SK 1.78.0 stable referenced in csproj — MEAI packages only (SK not used, may be removed if not transitively needed)
+
 ## Learnings
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->

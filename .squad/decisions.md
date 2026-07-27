@@ -2,6 +2,88 @@
 
 ## Active Decisions
 
+### Decision 35: Phase 3A — magentic-ui .NET Port Architecture
+
+**Date:** 2026-07-23  
+**Author:** Morpheus (Lead Architect), amended by Dozer (ML Engineer)  
+**Status:** Active — scaffolded (Switch), implemented (Trinity), tested (Tank)  
+**Full ADR:** `.squad/decisions/inbox/morpheus-phase3-architecture.md`  
+**Research brief:** `.squad/decisions/inbox/dozer-phase3-research.md`
+
+**Context:** Phase 3 ports `microsoft/magentic-ui` (Python FastAPI + WebSocket + AutoGen) to .NET (ASP.NET Core + SignalR + MEAI). Amendment A1 (Dozer) applied before finalisation: SK `Agents.Magentic` v1.78.0-preview dropped — requires `IChatCompletionService`, not `IChatClient`; custom MEAI OmniAgent loop adopted instead.
+
+**Amendment A1 (Dozer, 2026-07-23T16:44):** Three breaking corrections:
+1. `Microsoft.SemanticKernel.Agents.Magentic` v1.78.0-preview requires `IChatCompletionService` (SK-native) — no confirmed bridge to `IChatClient` (MEAI) in v1.78. **Decision: drop SK entirely.** Use proven OmniAgent loop from `MagenticBrainAgent`.
+2. Python hub protocol corrected: 8 inbound message types; 15 outbound `metadata.type` discriminator values. Decision 7 rewritten with full taxonomy.
+3. `ElBruno.MarkItDotNet` v0.9.1 stable (2026-07-22); API confirmed: `services.AddMarkItDotNet()`, `await converter.ConvertAsync(path)`, `await MarkdownService.ConvertUrlAsync(url)`.
+
+**Key Decisions (10):**
+
+1. **Stay in `ElBruno.LocalLLMs.slnx`** — 3 new projects under `src/samples/MagenticUIServer/`. Direct `<ProjectReference>` to `ElBruno.LocalLLMs`; no cross-repo overhead.
+2. **Three new csproj** — `MagenticUIServer` (ASP.NET Core host), `MagenticUIServer.Agents` (orchestration library), `MagenticUIServer.Agents.Tests` (xUnit). Agents library has no `Microsoft.AspNetCore.*` dependency — fully testable in isolation.
+3. **Separate orchestration library** — `MagenticUIServer.Agents` decoupled from web host; Tank can test all tools and orchestrator without SignalR.
+4. **No SK — pure MEAI orchestration** — `MagenticUIOrchestrator` built on `IChatClient.GetResponseAsync` + `AIFunctionFactory.Create()`. Same OmniAgent loop pattern as `MagenticBrainAgent`. Zero preview-package risk.
+5. **Agent topology (Phase 3A)** — MagenticBrain/Qwen3 as orchestrator via `LocalChatClient`; FileSurfer, WebFetcher, UserProxy, CoderStub as MEAI participants. `AgentParticipant` is a record (Name, SystemPrompt, Tools).
+6. **React 19 minimal SPA + `@microsoft/signalr`** — Full magentic-ui React fork deferred to Phase 3C; minimal ClientApp with placeholder components for 3A. Blazor rejected.
+7. **Hub contract — full Python protocol preserved** — `AgentHub` at `/hubs/agent`; 8 client→server methods mirroring Python WS types; 15 frame types via `metadata.type` discriminator; human-in-the-loop via `TaskCompletionSource<string>`.
+8. **Session model** — Session ID = SignalR `ConnectionId`; `ConcurrentDictionary<string, AgentSession>` in singleton `AgentSessionService`; `OnDisconnectedAsync` cancels and disposes.
+9. **QEMU sandbox deferred** — `CodeExecutorTool.ExecuteAsync()` returns `{ Success=false, Output="[STUB]..." }` with `ILogger.LogWarning`. No `Process.Start`. Phase 3B = WSL2 bridge; Phase 3C = QEMU isolation.
+10. **Phase 3A delivery boundary** — Backend responds to task via SignalR, runs MEAI OmniAgent loop (FileSurfer + WebFetcher + UserProxy), streams all 15 frame types to frontend, frontend displays final answer. 40 tests green.
+
+**Implementation Results:**
+- Switch: 3 projects scaffolded, React ClientApp created, all added to solution, 0 build errors. SK spike confirmed `Agents.MagenticOne` does not exist; `Agents.Magentic` is preview-only → Path B adopted.
+- Trinity: 15 files in `MagenticUIServer.Agents` (4 models, 4 tools, 4 agents, 1 orchestrator, 1 csproj), 0 errors (2 turns). Full hub + service wiring in `MagenticUIServer`. React `agentHubClient.ts` and all 5 components.
+- Tank: 40 tests (FileSurferToolTests 14, WebFetchToolTests 9, CodeExecutorToolTests 6, AgentMessageTests 10) — all 40 passing.
+
+**Highest-risk items (Risk Register):**
+- UserProxy `TaskCompletionSource<string>` deadlock on disconnect — mitigated via `CancellationToken` linked to session CTS
+- Orchestrator participant selection unreliability (LLM may not always emit a valid participant name) — mitigated via `SelectParticipant` sentinel tool fallback
+- `ElBruno.MarkItDotNet` v0.9.1 URL fetch may fail on SSRF-blocked URLs — `WebFetchTool` catches `HttpRequestException` and emits error frame
+
+**Pending — Phase 3B:** UserProxy full HIL wiring; WSL2 coder; BrowserSurferAgent (Playwright); SQLite session persistence.  
+**Pending — Phase 3C:** Full magentic-ui React fork; QEMU sandbox; Auth.
+
+---
+
+### Decision 34: Phase 2 VLM Support — Fara1.5-9B Architecture
+
+**Date:** 2026-07-23  
+**Author:** Morpheus (Lead Architect), amended by Dozer (ML Engineer)  
+**Status:** Active — implemented (Trinity), tested (Tank)  
+**Full ADR:** `.squad/decisions/inbox/morpheus-fara-architecture.md`
+
+**Context:** Fara1.5-9B is a Microsoft VLM based on Qwen3.5-9B-VL. It accepts images and text as joint input and can emit coordinate-based action output (`<action>click(x,y)</action>`). ORT-GenAI exposes VLMs through `MultiModalProcessor` instead of `Tokenizer` — driving all design decisions.
+
+**Amendment A1 (Dozer, 2026-07-23):** ORT-GenAI model builder has no `fara` build target. Correct conversion flag: `--model_type qwen_vl`. Three-file output: `vision_encoder.onnx`, `embedding_injector.onnx`, `text_decoder.onnx`. `genai_config.json` will have `model.type = "qwen_vl"`. ORT-GenAI's `Model` class orchestrates the three-stage pipeline internally — `OnnxVisionModel` is not affected at the API level.
+
+**Key Decisions (14):**
+
+1. **`IVisionGenerationModel : ITextGenerationModel`** — VLMs extend the text interface. VLM is a superset of text; text-only fallback works via `GenerateWithImages(prompt, [], ...)`.
+2. **`OnnxVisionModel` — standalone sealed class** — wraps `Model + MultiModalProcessor`. `new Model(modelPath)` is identical to text models; ORT-GenAI handles the three-stage pipeline via `genai_config.json`.
+3. **Image input type: `string[]`** — matches `Images.Load(string[])` ORT-GenAI API directly; zero-copy.
+4. **`FaraFormatter` — no tool support, standalone sealed** — Fara is an action/vision model. Vision tokens via `FormatMessagesWithImages(messages, hasImages)` internal method accessed by cast from `LocalVisionChatClient`.
+5. **`ChatTemplateFormat.Fara`** — follows existing family/version naming convention (not `FaraVLM`).
+6. **`OnnxModelType.VisionGenAI`** — signals `OnnxVisionModelFactory` dispatch vs `OnnxGenAIModelFactory`.
+7. **`LocalVisionChatClient` — new public class; `LocalChatClient` unchanged** — zero surgery on existing text client. Images flow via `VisionChatOptions : ChatOptions` with `string[] ImagePaths`.
+8. **`VisionChatOptions : ChatOptions`** — `ImagePaths` is per-request data, not model config.
+9. **`LocalLLMsOptions` unchanged** — images are call-site concern.
+10. **Stay in `ElBruno.LocalLLMs` package** — ORT-GenAI already includes `MultiModalProcessor`; no new NuGet dependency.
+11. **`KnownModels.Fara15_9B`** — `ModelTier.Medium`, `HasNativeOnnx=false`, `SupportsToolCalling=false`. Source: `microsoft/Fara1.5-9B` (PyTorch, convert with `--model_type qwen_vl`).
+12. **Provider selection logic** — duplicated as private statics in `OnnxVisionModel` (same pattern as `OnnxGenAIModel`). Extract to `ExecutionProviderHelpers` in Phase 3 if needed.
+13. **`IVisionGenerationModelFactory` + `OnnxVisionModelFactory`** — co-located in `Execution/IVisionGenerationModel.cs`, mirroring the text model pattern.
+14. **`FaraVisionAgent` sample** — in `src/samples/FaraVisionAgent/`.
+
+**Implementation Results:**
+- Trinity: 8 new files, 6 modified, 0 errors
+- Tank: 37 tests (FaraFormatterTests 19, OnnxModelTypeTests 4, KnownModelsVisionTests 9, VisionChatOptionsTests 5) — all 50 Fara + Qwen3 tests passing
+
+**Highest-risk items (Risk Register):**
+- `ProcessImages(prompt, null)` for text-only may throw — test before ship
+- `genai_config.json model.type` must be `"qwen_vl"` — constructor logs warning if not
+- All three ONNX sub-model files must be present in the conversion output directory
+
+---
+
 ### Decision 1: Single Core Package (Not Per-Model)
 
 **Date:** 2026-03-17  

@@ -1,6 +1,65 @@
 # Dozer — History
 
-## Latest: BitNet ONNX Conversion Analysis (2026-04-16)
+## Latest: Phase 3A — magentic-ui .NET Port — Complete (2026-07-23)
+
+**2026-07-23T16:38:** Phase 3A complete. Dozer's Phase 3 research brief (Amendment A1) was applied before scaffold. Switch confirmed SK spike finding: `Agents.MagenticOne` does not exist; `Agents.Magentic` preview-only. Path B (MEAI OmniAgent loop) adopted. All three projects built (0 errors); 40 Tank tests passing.
+
+---
+
+## Previous: Phase 3 .NET magentic-ui Port Research (2026-07-23)
+
+**2026-07-23:** Completed pre-Phase-3 research across three areas for the .NET magentic-ui port.
+
+**SK MagenticOrchestration:**
+- Package: `Microsoft.SemanticKernel.Agents.Magentic` — preview-only, latest `1.78.0-preview`
+- Class: `MagenticOrchestration(StandardMagenticManager manager, params Agent[] agents)` — string shorthand + generic form
+- Runtime: event-driven actor model via `InProcessRuntime`; invoke with `orchestration.InvokeAsync(task, runtime)`
+- **Blocker:** `IChatClient` (MEAI) not accepted directly — must use SK `IChatCompletionService` and `Agent` types
+- **Blocker:** Manager LLM must support JSON structured output (`SupportsResponseFormat() == true`)
+
+**magentic-ui WebSocket Protocol:**
+- Endpoint: `ws://{host}/runs/{run_id}`
+- 8 inbound message types: `start`, `stop`, `ping`, `input_response`, `approval_response`, `continuation_response`, `pause`, `resume`
+- 15 outbound `metadata.type` values: `text`, `reasoning`, `tool_call`, `tool_result`, `code_to_execute`, `input_request`, `system`, `browser_address`, `browser_screenshot`, `agent_state`, `final_answer`, `file`, `error`, `compaction_start`, `compaction_end`
+- `agent_state` frames are transient (not persisted)
+- `input_request` pauses agent on asyncio queue — SignalR equivalent: `TaskCompletionSource<string>`
+
+**ElBruno.MarkItDotNet:**
+- Package: `ElBruno.MarkItDotNet` v0.9.1 (2026-07-22) — stable, actively maintained
+- Main API: `MarkdownConverter` façade with `ConvertAsync(path)` and `ConvertAsync(stream, ext)` async methods
+- URL conversion: `MarkdownService.ConvertUrlAsync(url)` — fetches page and strips to clean Markdown
+- Full DI support: `services.AddMarkItDotNet()`
+
+**Output:** `.squad/decisions/inbox/dozer-phase3-research.md`
+
+---
+
+## Previous: Fara1.5-9B Phase 2 — Implementation Complete (2026-07-23)
+
+**2026-07-23:** Phase 2 VLM stack implemented and tested. Trinity confirmed `--model_type qwen_vl` finding from Amendment A1 is incorporated in `OnnxVisionModel` (constructor validates `genai_config.json model.type = "qwen_vl"` and logs warning if unexpected). `KnownModels.Fara15_9B` XML doc updated with exact builder command. All 50 Fara + Qwen3 tests passing. `docs/onnx-conversion-fara.md` shipped as the user-facing guide.
+
+---
+
+## Previous: Fara1.5-9B ONNX Conversion Research (2026-07-23)
+
+**2026-07-23:** Researched and documented the ONNX conversion path for `microsoft/Fara1.5-9B` — a 9B VLM computer use agent fine-tuned from Qwen3.5-9B.
+
+**Key Findings:**
+- No official Microsoft ONNX release exists for Fara1.5-9B (confirmed July 2026)
+- ORT-GenAI model builder does NOT have a registered `fara` architecture type as of v0.14.x — only `Qwen` is listed
+- Best conversion path: use the `onnx-community/Qwen3-4B-VL-ONNX` community builder (validated for Qwen3-VL, inferred for Fara via architectural equivalence)
+- Builder produces three ONNX components: `qwen3vl-vision.onnx`, `qwen3vl-embedding.onnx`, `model.onnx`
+- Community GGUF fallback available at `prithivMLmods/Fara1.5-9B-GGUF` (Q4_K_M = 5.63 GB)
+- Context length must be capped at 32,768 tokens for ONNX (native 262K cannot be used)
+- DirectML or CUDA strongly recommended for 9B-scale inference
+
+**Output:** `docs/onnx-conversion-fara.md` — practical copy-paste-ready guide with Quick Start, step-by-step conversion, validation, ElBruno.LocalLLMs integration, GGUF fallback, and troubleshooting table.
+
+**Status:** Research complete. Guide written. No conversion was run (requires ~60 GB disk + 32 GB RAM).
+
+---
+
+## Previous: BitNet ONNX Conversion Analysis (2026-04-16)
 
 **2026-04-16:** Completed ONNX conversion feasibility analysis for Microsoft BitNet b1.58 (1.58-bit ternary quantization LLM framework).
 

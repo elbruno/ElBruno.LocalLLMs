@@ -190,3 +190,23 @@ Conducted comprehensive security audit of Switch's `.github/workflows/monitor-ge
 - Coordinator fixes: e85743f (security + version bump)
 
 **Recommendation:** All fixes merged. Workflow ready for production.
+
+## 2026-07-23: Phase 3A — MagenticUIServer.Agents Tests
+
+**2026-07-23T16:38:** Delivered 40 unit tests for `MagenticUIServer.Agents` Phase 3A components. All 40 passing.
+
+**Test files (4):**
+
+| File | Tests | Focus |
+|------|-------|-------|
+| `FileSurferToolTests.cs` | 14 | Sandbox enforcement — path traversal blocking (`../`), absolute path outside `WorkingDirectory`, symlink escape via `FileInfo.LinkTarget`; ReadFile/WriteFile/ListDirectory happy paths; error cases |
+| `WebFetchToolTests.cs` | 9 | Content-length cap at 50k chars; HTML→Markdown routing through `MarkItDownTool`; non-200 response handling; mock `HttpMessageHandler` |
+| `CodeExecutorToolTests.cs` | 6 | Stub returns `{ Success=false }`; output contains `[STUB]` message; `ILogger.LogWarning` captured; no `Process.Start` invocation confirmed |
+| `AgentMessageTests.cs` | 10 | All 15 `metadata.type` discriminator values representable in `AgentMessage` model; record construction; equality |
+
+**Testing patterns used:**
+- `NSubstitute` for `IChatClient` and `ILogger<T>` mocking
+- Custom `HttpMessageHandler` mock for `WebFetchTool` HTTP isolation
+- `Path.GetTempPath()` + unique subdirectory for `FileSurferTool` sandbox tests (cleaned up in `Dispose`)
+- `Assert.Throws<UnauthorizedAccessException>` for sandbox violation tests
+- `Assert.DoesNotContain("Process.Start", ...)` pattern for stub safety validation (source code reflection test)
