@@ -237,7 +237,7 @@ internal sealed class ModelDownloader : IModelDownloader
     }
 
     private static string SanitizeModelId(string modelId) =>
-        modelId.Replace('/', '-').Replace('\\', '-');
+        DefaultPathHelper.SanitizeModelName(modelId);
 
     private static bool IsTransientNetworkFailure(Exception ex)
     {
@@ -257,11 +257,23 @@ internal sealed class ModelDownloader : IModelDownloader
     {
         ArgumentNullException.ThrowIfNull(model);
         var cacheDir = cacheDirectory ?? _defaultCacheDirectory;
+        return _downloader.DeleteCachedFilesAsync(model.Id, cacheDir, cancellationToken);
+    }
+
+    /// <summary>
+    /// Lists all cached model directories under the given cache root.
+    /// </summary>
+    internal IReadOnlyList<CachedRepoInfo> ListCachedModels(string? cacheDirectory = null)
+        => _downloader.ListCachedRepos(cacheDirectory ?? _defaultCacheDirectory);
+
+    /// <summary>
+    /// Returns the total cached size in bytes for the given model (0 if not cached).
+    /// </summary>
+    internal long GetModelCacheSize(ModelDefinition model, string? cacheDirectory = null)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        var cacheDir = cacheDirectory ?? _defaultCacheDirectory;
         var modelDir = Path.Combine(cacheDir, SanitizeModelId(model.Id));
-
-        if (Directory.Exists(modelDir))
-            Directory.Delete(modelDir, recursive: true);
-
-        return Task.CompletedTask;
+        return _downloader.GetCachedSize(modelDir);
     }
 }

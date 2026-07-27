@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`DeleteModelFromCacheAsync`**: new public static method on both `LocalChatClient` and `LocalVisionChatClient`.
   Removes all locally cached files for a model. No-op if the model is not cached.
   Also added `DeleteModelAsync` to `IModelDownloader` / `ModelDownloader` for direct downloader access.
+- **`ListCachedModels(cacheDirectory?)`**: new public static method on both `LocalChatClient` and `LocalVisionChatClient`.
+  Returns `IReadOnlyList<CachedRepoInfo>` with one entry per cached model directory, including
+  `TotalSizeBytes` and `LastModified`. Delegates to `HuggingFaceDownloader.ListCachedRepos`.
+- **`GetModelCacheSize(model, cacheDirectory?)`**: new public static method on both clients.
+  Returns total cached bytes for one model (0 if not cached). Delegates to `HuggingFaceDownloader.GetCachedSize`.
 - **`LocalVisionChatClient` auto-download**: VLMs with `HasNativeOnnx = true` (e.g. Fara1.5-9B) now
   auto-download when `EnsureModelDownloaded = true`, matching the behavior of `LocalChatClient`.
   A `CreateAsync` static factory was added for consistency.
@@ -29,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `VisionLifecycleTests` — same lifecycle for native-ONNX vision models (Fara1.5-9B).
   - `NonNativeOnnxReachabilityTests` — HF API reachability for all `HasNativeOnnx=false` models;
     full lifecycle via `MODEL_PATH_*` env var if the user provides a local ONNX path.
+  - Phases 1 and 3 now also assert `GetModelCacheSize` and `ListCachedModels` to verify end-to-end delegation.
 - **Test results reporting**: after each integration test run, a markdown report is written to
   `docs/tests/YYYY-MM-DD-HH-run-results.md` (UTC hour). If two runs happen in the same hour,
   the file is overwritten (only the latest run per hour is kept).
@@ -36,21 +42,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tests covering all 35 models across every property (id, display name, repo, type, template, tier,
   HasNativeOnnx, SupportsToolCalling).
 
+### Changed
+- **`ElBruno.HuggingFace.Downloader` bumped from `0.6.0` to `1.4.4`** — unlocks programmatic cache management
+  APIs (`DeleteCachedFilesAsync`, `ListCachedRepos`, `GetCachedSize`, `IsCached`) as implemented in
+  [HuggingFace.Downloader issue #20](https://github.com/elbruno/ElBruno.HuggingFace.Downloader/issues/20).
+- **`ModelDownloader.DeleteModelAsync`** now delegates to `HuggingFaceDownloader.DeleteCachedFilesAsync(model.Id, cacheDir)`
+  instead of calling `Directory.Delete` directly.
+- **`SanitizeModelId`** private helper replaced with `DefaultPathHelper.SanitizeModelName` from
+  `ElBruno.HuggingFace.Downloader` for consistent path sanitization.
+- **`Microsoft.Extensions.Logging.Abstractions`** bumped from `9.0.0` to `10.0.5` to satisfy the
+  transitive dependency from `ElBruno.HuggingFace.Downloader 1.4.4`.
+- **`Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions`** bumped from `9.0.0` to `10.0.5`.
+- **`ElBruno.LocalLLMs.BitNet`**: `Microsoft.Extensions.Logging.Abstractions` bumped to `10.0.5`.
+
 ### Docs
 - Evaluated `thinkingmachines/Inkling` (975B MoE, multimodal text/image/audio) for local support and documented it as 🔴 **Not Viable**: MoE routing is unsupported by the ONNX Runtime GenAI builder, multimodal I/O has no text-generation export path, and weights run to ~490 GB+ even at INT4 (data-center only).
 - Added a full Inkling blocker analysis to `docs/blocked-models.md` (Quick Summary, detail subsection, and Future Outlook) and a not-viable note linking to it from `docs/supported-models.md`.
 - Added `docs/tests/README.md` explaining the integration test lifecycle, how to run with `RUN_INTEGRATION_TESTS=true`, and how non-native ONNX models can be tested with `MODEL_PATH_*` env vars.
 - Updated `README.md`: Cache Management section, `docs/tests/README.md` in documentation links, corrected model table (MagenticBrain + Fara now ✅ Native; Qwen2.5-Coder-7B now ✅ Native), removed placeholder Next-Gen rows.
-
-### Planned / Tracking
-- **Cache management → `ElBruno.HuggingFace.Downloader`** ([issue #20](https://github.com/elbruno/ElBruno.HuggingFace.Downloader/issues/20)):
-  When `ElBruno.HuggingFace.Downloader` exposes a programmatic API for `DeleteCachedFilesAsync`,
-  `ListCachedRepos`, and `GetCachedSize`, the following should be removed from this library:
-  - `DeleteModelAsync` from `IModelDownloader` and `ModelDownloader`
-  - `DeleteModelFromCacheAsync` from `LocalChatClient` and `LocalVisionChatClient`
-  
-  Callers should instead use the downloader directly for cache management. Unit tests in
-  `ModelDownloaderCacheTests.cs` and integration tests should be updated to test the delegation path.
+- `README.md` Cache Management section updated with `ListCachedModels` and `GetModelCacheSize` examples.
 
 ---
 

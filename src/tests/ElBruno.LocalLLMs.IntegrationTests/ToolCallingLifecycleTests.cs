@@ -57,6 +57,13 @@ public class ToolCallingLifecycleTests
 
                 Assert.False(string.IsNullOrWhiteSpace(response.Text), "Phase A: response must not be empty");
                 AssertToolCallStructure(response.Text!, model.Id, "Phase A");
+
+                // Verify cache is populated after first download
+                var sizeAfterDownload = LocalChatClient.GetModelCacheSize(model, cacheDir);
+                Assert.True(sizeAfterDownload > 0, $"Phase A: cache size should be > 0, got {sizeAfterDownload}");
+                var listAfterDownload = LocalChatClient.ListCachedModels(cacheDir);
+                Assert.Contains(listAfterDownload, r => r.LocalDirectory.EndsWith(model.Id, StringComparison.OrdinalIgnoreCase));
+
                 phaseA = ResultStatus.Pass;
             }
             catch (Exception ex)
@@ -102,9 +109,12 @@ public class ToolCallingLifecycleTests
             {
                 await LocalChatClient.DeleteModelFromCacheAsync(model, cacheDir);
 
-                var sanitizedId = model.Id.Replace('/', '-').Replace('\\', '-');
-                var modelDir = Path.Combine(cacheDir, sanitizedId);
+                var modelDir = Path.Combine(cacheDir, model.Id);
                 Assert.False(Directory.Exists(modelDir), $"Phase C: model directory should be deleted: {modelDir}");
+                var sizeAfterDelete = LocalChatClient.GetModelCacheSize(model, cacheDir);
+                Assert.Equal(0, sizeAfterDelete);
+                var listAfterDelete = LocalChatClient.ListCachedModels(cacheDir);
+                Assert.DoesNotContain(listAfterDelete, r => r.LocalDirectory.EndsWith(model.Id, StringComparison.OrdinalIgnoreCase));
 
                 phaseC = ResultStatus.Pass;
             }

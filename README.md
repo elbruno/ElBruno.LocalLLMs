@@ -15,10 +15,11 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 
 ## What's New
 
-- 🗑️ **`DeleteModelFromCacheAsync`** — Remove any cached model with a single call. Available on both `LocalChatClient` and `LocalVisionChatClient`.
+- 📋 **`ListCachedModels()` + `GetModelCacheSize(model)`** — new cache inspection APIs on both `LocalChatClient` and `LocalVisionChatClient`. List all cached model directories with sizes, or get the byte count for a specific model. Delegates to `ElBruno.HuggingFace.Downloader 1.4.4`.
+- 🗑️ **`DeleteModelFromCacheAsync`** — now delegates to `HuggingFaceDownloader.DeleteCachedFilesAsync` (was a direct `Directory.Delete`). Available on both `LocalChatClient` and `LocalVisionChatClient`.
 - 🤖 **MagenticBrain + Fara1.5-9B native ONNX** — Both models auto-download via `EnsureModelDownloaded = true`. No manual ONNX conversion needed. Hosted at `elbruno/MagenticBrain-onnx` and `elbruno/Fara1.5-9B-onnx`.
 - 👁️ **`LocalVisionChatClient` auto-download** — Vision models with `HasNativeOnnx=true` now download automatically, just like text models.
-- 🧪 **E2E lifecycle tests for all 35 models** — 3-phase lifecycle (download → cache hit → delete) with automated markdown reports written to `docs/tests/` after each run.
+- 🧪 **E2E lifecycle tests for all 35 models** — 3-phase lifecycle (download → cache hit → delete) with automated markdown reports written to `docs/tests/` after each run. Phases 1 and 3 also assert cache size and list membership.
 - 📦 **Transitive native runtime fix** (`v0.20.1`) — `buildTransitive` packaging so `onnxruntime-genai.dll` is copied for downstream consumers (Issue #24).
 - 🤖 **Qwen3 & MagenticBrain support** (`v0.20.0`) — New `ChatTemplateFormat.Qwen3` formatter and `KnownModels.Qwen3_14BInstruct` for agentic multi-agent orchestration loops.
 - 👁️ **Fara 1.5-9B vision-language model** (`v0.20.0`) — Run Microsoft's Fara VLM locally via the new `LocalVisionChatClient`, `IVisionGenerationModel`, and `VisionChatOptions` with image paths.
@@ -254,7 +255,7 @@ See [docs/observability.md](docs/observability.md) for the lifecycle event contr
 
 ## Cache Management
 
-Free disk space by removing a downloaded model from the local cache:
+Inspect and manage the local model cache programmatically:
 
 ```csharp
 // Remove a model from the cache (no-op if not cached)
@@ -265,13 +266,23 @@ await LocalChatClient.DeleteModelFromCacheAsync(
     KnownModels.Phi35MiniInstruct,
     cacheDirectory: @"D:\my-models");
 
-// Same API for vision models
+// Get cached size in bytes for one model (0 if not downloaded)
+long bytes = LocalChatClient.GetModelCacheSize(KnownModels.Phi35MiniInstruct);
+Console.WriteLine($"Cached: {bytes / 1024 / 1024:N0} MB");
+
+// List all cached models with size and last-modified date
+var cached = LocalChatClient.ListCachedModels();
+foreach (var repo in cached)
+    Console.WriteLine($"{repo.LocalDirectory}  {repo.TotalSizeBytes / 1024 / 1024:N0} MB  {repo.LastModified:yyyy-MM-dd}");
+
+// Same APIs available on LocalVisionChatClient for vision models
 await LocalVisionChatClient.DeleteModelFromCacheAsync(KnownModels.Fara15_9B);
+long visionBytes = LocalVisionChatClient.GetModelCacheSize(KnownModels.Fara15_9B);
 ```
 
 The default cache directory is `%LOCALAPPDATA%/ElBruno/LocalLLMs/models` (Windows) or `~/.local/share/ElBruno/LocalLLMs/models` (Linux/macOS).
 
-> **Note:** Cache management features (delete, list, size) are planned to move to the [ElBruno.HuggingFace.Downloader](https://www.nuget.org/packages/ElBruno.HuggingFace.Downloader) library ([tracking issue](https://github.com/elbruno/ElBruno.HuggingFace.Downloader/issues/20)). When that library exposes a programmatic API for these operations, `DeleteModelFromCacheAsync` in this library will delegate to it, and the LocalLLMs-specific implementation will be removed.
+These operations delegate to [ElBruno.HuggingFace.Downloader](https://www.nuget.org/packages/ElBruno.HuggingFace.Downloader) which provides the underlying `DeleteCachedFilesAsync`, `GetCachedSize`, and `ListCachedRepos` implementation.
 
 ## Troubleshooting
 

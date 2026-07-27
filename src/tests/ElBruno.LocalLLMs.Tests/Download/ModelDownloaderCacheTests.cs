@@ -223,4 +223,156 @@ public class ModelDownloaderCacheTests
             // Best-effort cleanup in tests.
         }
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // ListCachedModels tests
+    // ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void ListCachedModels_EmptyRoot_ReturnsEmpty()
+    {
+        var cacheRoot = CreateTempModelDir();
+        try
+        {
+            var downloader = new ModelDownloader();
+            var list = downloader.ListCachedModels(cacheRoot);
+            Assert.Empty(list);
+        }
+        finally
+        {
+            TryDelete(cacheRoot);
+        }
+    }
+
+    [Fact]
+    public void ListCachedModels_TwoCachedModels_ReturnsBoth()
+    {
+        var cacheRoot = CreateTempModelDir();
+        try
+        {
+            var modelA = KnownModels.Qwen25_05BInstruct;
+            var modelB = KnownModels.Qwen25_15BInstruct;
+
+            var dirA = Path.Combine(cacheRoot, modelA.Id);
+            var dirB = Path.Combine(cacheRoot, modelB.Id);
+            Directory.CreateDirectory(dirA);
+            Directory.CreateDirectory(dirB);
+            File.WriteAllText(Path.Combine(dirA, "genai_config.json"), "{}");
+            File.WriteAllText(Path.Combine(dirB, "genai_config.json"), "{}");
+
+            var downloader = new ModelDownloader();
+            var list = downloader.ListCachedModels(cacheRoot);
+
+            Assert.Equal(2, list.Count);
+            Assert.Contains(list, r => r.LocalDirectory.EndsWith(modelA.Id, StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(list, r => r.LocalDirectory.EndsWith(modelB.Id, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            TryDelete(cacheRoot);
+        }
+    }
+
+    [Fact]
+    public void ListCachedModels_ViaLocalChatClient_ReturnsList()
+    {
+        var cacheRoot = CreateTempModelDir();
+        try
+        {
+            var model = KnownModels.Phi35MiniInstruct;
+            var modelDir = Path.Combine(cacheRoot, model.Id);
+            Directory.CreateDirectory(modelDir);
+            File.WriteAllText(Path.Combine(modelDir, "genai_config.json"), "{}");
+
+            var list = LocalChatClient.ListCachedModels(cacheRoot);
+            Assert.Single(list);
+        }
+        finally
+        {
+            TryDelete(cacheRoot);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // GetModelCacheSize tests
+    // ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void GetModelCacheSize_NotCached_ReturnsZero()
+    {
+        var cacheRoot = CreateTempModelDir();
+        try
+        {
+            var model = KnownModels.Qwen25_05BInstruct;
+            var downloader = new ModelDownloader();
+            var size = downloader.GetModelCacheSize(model, cacheRoot);
+            Assert.Equal(0, size);
+        }
+        finally
+        {
+            TryDelete(cacheRoot);
+        }
+    }
+
+    [Fact]
+    public void GetModelCacheSize_WithFile_ReturnsPositiveSize()
+    {
+        var cacheRoot = CreateTempModelDir();
+        try
+        {
+            var model = KnownModels.Qwen25_05BInstruct;
+            var modelDir = Path.Combine(cacheRoot, model.Id);
+            Directory.CreateDirectory(modelDir);
+            var content = new byte[1024];
+            File.WriteAllBytes(Path.Combine(modelDir, "model.onnx"), content);
+
+            var downloader = new ModelDownloader();
+            var size = downloader.GetModelCacheSize(model, cacheRoot);
+            Assert.Equal(1024, size);
+        }
+        finally
+        {
+            TryDelete(cacheRoot);
+        }
+    }
+
+    [Fact]
+    public void GetModelCacheSize_ViaLocalChatClient_ReturnsSize()
+    {
+        var cacheRoot = CreateTempModelDir();
+        try
+        {
+            var model = KnownModels.Phi35MiniInstruct;
+            var modelDir = Path.Combine(cacheRoot, model.Id);
+            Directory.CreateDirectory(modelDir);
+            File.WriteAllText(Path.Combine(modelDir, "genai_config.json"), "{\"key\":\"value\"}");
+
+            var size = LocalChatClient.GetModelCacheSize(model, cacheRoot);
+            Assert.True(size > 0, $"Expected cache size > 0, got {size}");
+        }
+        finally
+        {
+            TryDelete(cacheRoot);
+        }
+    }
+
+    [Fact]
+    public void GetModelCacheSize_ViaLocalVisionChatClient_ReturnsSize()
+    {
+        var cacheRoot = CreateTempModelDir();
+        try
+        {
+            var model = KnownModels.Fara15_9B;
+            var modelDir = Path.Combine(cacheRoot, model.Id);
+            Directory.CreateDirectory(modelDir);
+            File.WriteAllText(Path.Combine(modelDir, "genai_config.json"), "{\"key\":\"value\"}");
+
+            var size = LocalVisionChatClient.GetModelCacheSize(model, cacheRoot);
+            Assert.True(size > 0, $"Expected cache size > 0, got {size}");
+        }
+        finally
+        {
+            TryDelete(cacheRoot);
+        }
+    }
 }

@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using ElBruno.HuggingFace;
 using ElBruno.LocalLLMs.Internal;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
@@ -93,6 +94,20 @@ public sealed class LocalVisionChatClient : IChatClient, IAsyncDisposable
     {
         return new ModelDownloader().DeleteModelAsync(model, cacheDirectory, cancellationToken);
     }
+
+    /// <summary>
+    /// Lists all cached model directories under the local cache root.
+    /// Returns one entry per cached model with total size in bytes and last-modified timestamp.
+    /// </summary>
+    public static IReadOnlyList<CachedRepoInfo> ListCachedModels(string? cacheDirectory = null)
+        => new ModelDownloader().ListCachedModels(cacheDirectory);
+
+    /// <summary>
+    /// Returns the total cached size in bytes for the specified model.
+    /// Returns 0 if the model is not currently cached.
+    /// </summary>
+    public static long GetModelCacheSize(ModelDefinition model, string? cacheDirectory = null)
+        => new ModelDownloader().GetModelCacheSize(model, cacheDirectory);
 
     // --- IChatClient ---
 
