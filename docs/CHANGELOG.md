@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Issue #25**: Native ONNX INT4 conversions for `KnownModels.MagenticBrain` and `KnownModels.Fara15_9B`.
+  - Both models now have `HasNativeOnnx = true` — set `EnsureModelDownloaded = true` to auto-download.
+  - `elbruno/MagenticBrain-onnx`: 14B Qwen3 fine-tune, ~11 GB INT4 (CPU).
+  - `elbruno/Fara1.5-9B-onnx`: 9B qwen3_5 fine-tune, ~5 GB INT4; context capped at 32K for ONNX static allocation compatibility.
+  - Conversion scripts added: `scripts/convert_magentic_brain.py` and `scripts/convert_fara.py`.
+
 ### Docs
 - Evaluated `thinkingmachines/Inkling` (975B MoE, multimodal text/image/audio) for local support and documented it as 🔴 **Not Viable**: MoE routing is unsupported by the ONNX Runtime GenAI builder, multimodal I/O has no text-generation export path, and weights run to ~490 GB+ even at INT4 (data-center only).
 - Added a full Inkling blocker analysis to `docs/blocked-models.md` (Quick Summary, detail subsection, and Future Outlook) and a not-viable note linking to it from `docs/supported-models.md`.

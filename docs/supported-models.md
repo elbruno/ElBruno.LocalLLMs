@@ -51,12 +51,14 @@ These models are purpose-built for multi-agent orchestration, tool calling, and 
 
 | Model | Params | HuggingFace ID | ONNX Status | Chat Template | Tool Calling | Recommended RAM | Notes |
 |-------|--------|----------------|-------------|--------------|---|---|---|
-| **MagenticBrain** | ~14.77B | microsoft/MagenticBrain | 🔄 Convert¹ | **Qwen3** | ✅ | 16–24 GB | Use `onnx-community/Qwen3-14B-ONNX`; requires `enable_thinking=False` |
-| **Fara1.5-9B** | ~9.4B | microsoft/Fara1.5-9B | 🔄 Convert² | **Fara** | — | 12–16 GB | VLM; image + text; coordinate action output; use `LocalVisionChatClient` |
+| **MagenticBrain** | ~14.77B | elbruno/MagenticBrain-onnx | ✅ Native | **Qwen3** | ✅ | 16–24 GB | INT4, ~11 GB; set `EnsureModelDownloaded = true` |
+| **Fara1.5-9B** | ~9.4B | elbruno/Fara1.5-9B-onnx | ✅ Native | **Fara** | — | 12–16 GB | INT4, ~5 GB; multimodal CUA; context capped at 32K |
 
-> **¹ MagenticBrain ONNX:** No official ONNX for `microsoft/MagenticBrain` yet. Use `onnx-community/Qwen3-14B-ONNX` (official Qwen3-14B ONNX, INT4) as a drop-in equivalent until Microsoft publishes a native conversion.
+> **Auto-download:** Both models now have native ONNX INT4 conversions published to HuggingFace. Set `EnsureModelDownloaded = true` to download automatically on first use — no manual conversion required.
 >
-> **² Fara1.5-9B ONNX:** No official ONNX. Convert via ORT-GenAI model builder (`--model_type qwen_vl`). See [`docs/onnx-conversion-fara.md`](onnx-conversion-fara.md) for the full guide. Output: `vision_encoder.onnx` + `embedding_injector.onnx` + `text_decoder.onnx`.
+> **MagenticBrain** is a fine-tune of Qwen3-14B for agentic tasks. Converted from `microsoft/MagenticBrain` using ORT-GenAI built-in builder (INT4 CPU, ~11 GB).
+>
+> **Fara1.5-9B** is a computer-use agent fine-tuned from Qwen3.5-9B. Converted from `microsoft/Fara1.5-9B` (INT4 CPU, ~5 GB; context_length patched 262K→32K for ONNX static allocation compatibility).
 >
 > **Recommended sampling:** `temperature=0.7, top_p=0.8, presence_penalty=1.0` — greedy decoding causes infinite loops.
 >
