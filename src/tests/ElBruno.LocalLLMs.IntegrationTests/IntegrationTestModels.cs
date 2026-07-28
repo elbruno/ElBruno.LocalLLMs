@@ -37,9 +37,9 @@ public static class IntegrationTestModels
     public static readonly HashSet<string> KnownExportIssueModelIds = new(StringComparer.OrdinalIgnoreCase)
     {
         // Fara1.5-9B: re-added after targeted 2026-07-28 retest still failed at Model(modelPath)
-        // load time. Current HF export is a single-file qwen3_5 package, but ORT-GenAI VLM
-        // loading expects a qwen_vl three-stage export (vision_encoder + embedding_injector +
-        // text_decoder). See GitHub issue #35.
+        // load time. Verified blocker: ORT-GenAI 0.14.1 maps Fara's Qwen3_5 architecture to the
+        // decoder-only Qwen35TextModel export path, so the published artifact is incomplete for
+        // LocalVisionChatClient. See GitHub issue #35.
         KnownModels.Fara15_9B.Id,
     };
 
@@ -87,9 +87,9 @@ public static class IntegrationTestModels
     /// <summary>
     /// All <see cref="OnnxModelType.VisionGenAI"/> models with <see cref="ModelDefinition.HasNativeOnnx"/> = true,
     /// excluding models with known export issues (<see cref="KnownExportIssueModelIds"/>).
-    /// Currently Fara1.5-9B remains excluded because the published HF package is still the wrong
-    /// export shape for ORT-GenAI VLM loading: it needs a <c>qwen_vl</c> three-file pipeline,
-    /// not the current single-file <c>qwen3_5</c> package.
+    /// Currently Fara1.5-9B remains excluded because the installed ORT-GenAI builder exports only
+    /// the decoder/text path for its <c>Qwen3_5ForConditionalGeneration</c> architecture, which is
+    /// not sufficient for end-to-end <see cref="LocalVisionChatClient"/> loading.
     /// </summary>
     public static TheoryData<ModelDefinition> NativeOnnxVisionModels { get; } = Build(
         KnownModels.All

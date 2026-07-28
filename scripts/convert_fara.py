@@ -3,8 +3,8 @@
 Convert microsoft/Fara1.5-9B to ONNX INT4 for ElBruno.LocalLLMs.
 
 Fara1.5-9B is a 9B-parameter computer-use agent fine-tuned from Qwen3.5-9B-VL.
-For ORT-GenAI VLM support it must be exported explicitly with `--model_type qwen_vl`,
-which produces a three-stage vision pipeline instead of the incorrect single-file qwen3_5 export.
+Current ORT-GenAI 0.14.1 builder support is incomplete for this model family: the builder
+maps Fara's `Qwen3_5ForConditionalGeneration` architecture to the text-decoder path only.
 
 After conversion, the output is uploaded to elbruno/Fara1.5-9B-onnx on HuggingFace.
 
@@ -48,9 +48,6 @@ DISK_REQUIREMENTS = {
 }
 
 REQUIRED_OUTPUT_FILES = [
-    "vision_encoder.onnx",
-    "embedding_injector.onnx",
-    "text_decoder.onnx",
     "genai_config.json",
     "tokenizer.json",
     "tokenizer_config.json",
@@ -74,7 +71,7 @@ base_model: microsoft/Fara1.5-9B
 tags:
   - onnx
   - onnxruntime-genai
-  - qwen_vl
+  - qwen3_5
   - computer-use
   - multimodal
   - vision-language-model
@@ -83,10 +80,11 @@ tags:
 
 # Fara1.5-9B ONNX (INT4)
 
-This repository contains an ONNX INT4 conversion of
-[microsoft/Fara1.5-9B](https://huggingface.co/microsoft/Fara1.5-9B)
-for use with [ONNX Runtime GenAI](https://github.com/microsoft/onnxruntime-genai)
-and the [ElBruno.LocalLLMs](https://github.com/elbruno/ElBruno.LocalLLMs) library.
+This repository contains an ONNX INT4 conversion attempt of
+[microsoft/Fara1.5-9B](https://huggingface.co/microsoft/Fara1.5-9B).
+
+> Warning: current ORT-GenAI 0.14.1 builder output for Fara is decoder-only and is
+> not yet a validated package for [ElBruno.LocalLLMs](https://github.com/elbruno/ElBruno.LocalLLMs).
 
 ## Model Description
 
@@ -99,8 +97,8 @@ structured tool calls (click, type, scroll, navigate) for autonomous web tasks.
 | Field | Value |
 |---|---|
 | Source | `microsoft/Fara1.5-9B` |
-| ORT-GenAI model type | qwen_vl |
-| Base model family | Qwen3.5-VL / Fara VisionGenAI |
+| HF architecture | Qwen3_5ForConditionalGeneration |
+| Current builder output | decoder/text path only |
 | Precision | INT4 |
 | Context length | 32,768 tokens (capped from official 262K for ONNX compatibility) |
 | Builder | onnxruntime-genai built-in model builder v0.14.1+ |
@@ -185,15 +183,44 @@ def check_onnxruntime_genai() -> None:
 
 def detect_builtin_fara_support() -> bool:
     """
-    Retained for compatibility with older notes/scripts.
-    Fara requires an explicit `--model_type qwen_vl` export; there is no dedicated `fara` target.
+    Inspect the installed ORT-GenAI builder to see whether it still routes
+    Qwen3_5ForConditionalGeneration through the text-only Qwen35TextModel path.
     """
-    return True
+    try:
+        import onnxruntime_genai.models.builder as builder_module
+
+        builder_path = Path(builder_module.__file__).resolve()
+        builder_source = builder_path.read_text(encoding="utf-8")
+        qwen_source = (builder_path.parent / "builders" / "qwen.py").read_text(encoding="utf-8")
+    except Exception as ex:
+        print(f"  WARNING: Could not inspect ORT-GenAI builder sources: {ex}")
+        return False
+
+    maps_fara_to_qwen35 = (
+        'elif config.architectures[0] == "Qwen3_5ForConditionalGeneration":' in builder_source
+        and "Qwen35TextModel" in builder_source
+    )
+    qwen35_forces_decoder_only = (
+        'Setting exclude_embeds=True for Qwen3.5 VL decoder.' in qwen_source
+        and 'extra_options["exclude_embeds"] = True' in qwen_source
+    )
+
+    return not (maps_fara_to_qwen35 and qwen35_forces_decoder_only)
 
 
 def run_preflight(output_dir: Path, precision: str, skip_upload: bool) -> None:
     print("\n-- Preflight Checks --------------------------------------------------")
     check_onnxruntime_genai()
+    if detect_builtin_fara_support():
+        print("  Fara export support: builder support check passed")
+    else:
+        print("  Fara export support: BLOCKED")
+        print("    The installed ORT-GenAI builder maps Qwen3_5ForConditionalGeneration")
+        print("    to Qwen35TextModel and forces exclude_embeds=True, producing only")
+        print("    the decoder/text path. Do not republish this partial export.")
+        print("    Wait for upstream full Fara/Qwen3.5-VL export support or implement")
+        print("    a custom multimodal export pipeline.")
+        sys.exit(1)
     check_ram()
     check_disk_space(output_dir, precision)
     check_gpu()
@@ -244,9 +271,9 @@ def run_conversion(output_dir: Path, precision: str, cache_dir: Path, work_dir: 
     # Download weights (skips if already present)
     fara_pytorch_dir = download_fara_model(work_dir, cache_dir)
 
-    # Fara must be exported as a Qwen-VL pipeline.
-    # The builder does not have a dedicated `fara` target, so force `--model_type qwen_vl`
-    # to produce vision_encoder + embedding_injector + text_decoder.
+    # Fara currently relies on ORT-GenAI's built-in architecture detection.
+    # If the installed builder still routes Qwen3.5 through the decoder-only path,
+    # preflight exits before we reach this point.
     print(f"\n  Running onnxruntime_genai.models.builder (precision={precision})...")
     cmd = [
         sys.executable, "-m", "onnxruntime_genai.models.builder",
@@ -254,7 +281,6 @@ def run_conversion(output_dir: Path, precision: str, cache_dir: Path, work_dir: 
         "-o", str(output_dir.resolve()),
         "-p", precision,
         "-e", "cpu",
-        "--model_type", "qwen_vl",
         "--extra_options", "int4_algo_config=k_quant_linear",
     ]
     print(f"  Command: {' '.join(cmd)}\n")
@@ -341,23 +367,28 @@ def validate_output(output_dir: Path) -> None:
             print(f"  MISSING: {fname}")
             all_ok = False
 
-    # Validate the ORT-GenAI model type — Fara must load as qwen_vl.
+    # Reject the known-bad decoder-only export shape produced by current ORT-GenAI.
     config_path = output_dir / "genai_config.json"
     if config_path.exists():
         with open(config_path, encoding="utf-8") as f:
             config = json.load(f)
-        model_type = config.get("model", {}).get("type")
-        if model_type == "qwen_vl":
-            print("  OK genai_config.json model.type = qwen_vl")
-        else:
-            print(f"  INVALID: genai_config.json model.type = {model_type!r} (expected 'qwen_vl')")
+        model_type = str(config.get("model", {}).get("type", ""))
+        if model_type.lower() == "qwen3_5":
+            print("  INVALID: genai_config.json model.type = 'qwen3_5'")
+            print("           This is the current decoder-only export path and is not usable")
+            print("           for end-to-end Fara VisionGenAI loading.")
             all_ok = False
+        else:
+            print(f"  INFO genai_config.json model.type = {model_type!r}")
 
-    # List ONNX component files for the three-stage VLM pipeline.
-    for onnx_file in sorted(output_dir.glob("*.onnx")):
-        if onnx_file.name not in REQUIRED_OUTPUT_FILES:
-            size_mb = onnx_file.stat().st_size / (1024 ** 2)
-            print(f"  OK {onnx_file.name} ({size_mb:.1f} MB)  [additional component]")
+    onnx_files = sorted(output_dir.glob("*.onnx"))
+    for onnx_file in onnx_files:
+        size_mb = onnx_file.stat().st_size / (1024 ** 2)
+        print(f"  OK {onnx_file.name} ({size_mb:.1f} MB)")
+
+    if len(onnx_files) == 1 and onnx_files[0].name == "model.onnx":
+        print("  INVALID: only model.onnx was produced; current builder emitted a single decoder graph.")
+        all_ok = False
 
     # Check .onnx.data sidecar files
     for df in sorted(output_dir.glob("*.onnx.data")):
@@ -408,7 +439,7 @@ def upload_to_huggingface(output_dir: Path) -> None:
         folder_path=str(output_dir),
         repo_id=TARGET_HF_REPO,
         repo_type="model",
-        commit_message="Add qwen_vl ONNX INT4 conversion of microsoft/Fara1.5-9B",
+        commit_message="Add ONNX INT4 conversion of microsoft/Fara1.5-9B",
     )
     print(f"\nOK Uploaded to https://huggingface.co/{TARGET_HF_REPO}")
 

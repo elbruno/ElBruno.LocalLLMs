@@ -24,20 +24,20 @@ The exception occurs in `new Model(modelPath)` inside `OnnxVisionModel`, before 
 The current Hugging Face package is still the wrong ORT-GenAI export shape.
 
 - Current repo shape: single-file `qwen3_5` export (`model.onnx` + `model.onnx.data`)
-- Required repo shape: `qwen_vl` three-stage VLM export
-  - `vision_encoder.onnx`
-  - `embedding_injector.onnx`
-  - `text_decoder.onnx`
-- `genai_config.json` must report `model.type = "qwen_vl"`
+- Verified builder behavior in ORT-GenAI 0.14.1:
+  - `builder.py` maps `Qwen3_5ForConditionalGeneration` to `Qwen35TextModel`
+  - `Qwen35TextModel` forces `exclude_embeds=True` by default
+  - the builder therefore emits only the decoder/text path for Fara
+- Result: the published ONNX artifact is incomplete for `LocalVisionChatClient`
 
-This matches the repository ADR notes in `.squad/decisions.md` and `OnnxVisionModel`'s own warning path.
+This moved the diagnosis from "missing processor files" to a confirmed upstream builder limitation.
 
 ## Action Taken
 
 - Re-added `KnownModels.Fara15_9B` to `KnownExportIssueModelIds`
-- Updated `scripts/convert_fara.py` to force `--model_type qwen_vl`
-- Updated Fara docs/comments to reflect the real republish requirement
+- Updated `scripts/convert_fara.py` to detect and block the known decoder-only builder path
+- Updated Fara docs/comments to reflect the confirmed ORT-GenAI limitation
 
 ## Next Step
 
-Regenerate `elbruno/Fara1.5-9B-onnx` with the corrected `qwen_vl` export, upload the new artifact set, and rerun the focused Fara lifecycle test.
+Wait for upstream ORT-GenAI support for a full Fara/Qwen3.5-VL export, or implement a custom multimodal export pipeline, then regenerate the Hugging Face artifact and rerun the focused Fara lifecycle test.

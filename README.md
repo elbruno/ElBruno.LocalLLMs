@@ -17,7 +17,7 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 
 - 📋 **`ListCachedModels()` + `GetModelCacheSize(model)`** — new cache inspection APIs on both `LocalChatClient` and `LocalVisionChatClient`. List all cached model directories with sizes, or get the byte count for a specific model. Delegates to `ElBruno.HuggingFace.Downloader 1.4.4`.
 - 🗑️ **`DeleteModelFromCacheAsync`** — now delegates to `HuggingFaceDownloader.DeleteCachedFilesAsync` (was a direct `Directory.Delete`). Available on both `LocalChatClient` and `LocalVisionChatClient`.
-- 🤖 **MagenticBrain native ONNX + Fara re-export in progress** — MagenticBrain auto-downloads via `EnsureModelDownloaded = true`. Fara's published repo exists, but the ONNX package still needs a `qwen_vl` re-export before end-to-end auto-download is reliable.
+- 🤖 **MagenticBrain native ONNX + Fara export blocker documented** — MagenticBrain auto-downloads via `EnsureModelDownloaded = true`. Fara's published repo exists, but ORT-GenAI 0.14.1 currently exports only the decoder path for Fara, so end-to-end auto-download is still blocked.
 - 👁️ **`LocalVisionChatClient` auto-download** — Vision models with `HasNativeOnnx=true` now download automatically, just like text models.
 - 🧪 **E2E lifecycle tests for all 35 models** — 3-phase lifecycle (download → cache hit → delete) with automated markdown reports written to `docs/tests/` after each run. Phases 1 and 3 also assert cache size and list membership.
 - 📦 **Transitive native runtime fix** (`v0.20.1`) — `buildTransitive` packaging so `onnxruntime-genai.dll` is copied for downstream consumers (Issue #24).
@@ -343,7 +343,7 @@ For detailed troubleshooting, see [docs/troubleshooting-guide.md](docs/troublesh
 >
 > **¹ MagenticBrain ONNX:** Native ONNX hosted at `elbruno/MagenticBrain-onnx` (INT4 quantized). Auto-downloads when `EnsureModelDownloaded=true`.
 >
-> **² Fara 1.5-9B ONNX:** `elbruno/Fara1.5-9B-onnx` currently needs a fresh `qwen_vl` re-export (`vision_encoder` + `embedding_injector` + `text_decoder`). Use `LocalVisionChatClient` (not `LocalChatClient`). Track progress in issue #35 and see [ONNX Conversion — Fara](docs/onnx-conversion-fara.md).
+> **² Fara 1.5-9B ONNX:** `elbruno/Fara1.5-9B-onnx` is still blocked by current ORT-GenAI builder support. The installed 0.14.1 builder maps Fara's `Qwen3_5ForConditionalGeneration` architecture to the decoder-only export path, which is not enough for `LocalVisionChatClient`. Track progress in issue #35 and see [ONNX Conversion — Fara](docs/onnx-conversion-fara.md).
 
 ### Fine-Tuned Models
 

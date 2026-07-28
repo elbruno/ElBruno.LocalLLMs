@@ -3,9 +3,9 @@ namespace ElBruno.LocalLLMs.Tests.Models;
 /// <summary>
 /// Tests that <see cref="KnownModels.Fara15_9B"/> is correctly defined
 /// as a VisionGenAI model with the Fara chat template.
-/// Note: Fara1.5-9B requires <see cref="LocalVisionChatClient"/> and a proper
-/// <c>qwen_vl</c> ONNX export (vision_encoder + embedding_injector + text_decoder).
-/// See issue #35 for the current republish / validation work.
+/// Note: Fara1.5-9B requires <see cref="LocalVisionChatClient"/>. The model definition stays
+/// VisionGenAI, but the current ORT-GenAI builder exports only the decoder path for Fara.
+/// See issue #35 for the current export-support / validation work.
 /// </summary>
 [Trait("Category", "Fara")]
 public class KnownModelsVisionTests
