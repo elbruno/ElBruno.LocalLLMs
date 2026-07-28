@@ -12,8 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Issue #25**: Native ONNX work for `KnownModels.MagenticBrain` and `KnownModels.Fara15_9B`.
   - `elbruno/MagenticBrain-onnx`: 14B Qwen3 fine-tune, ~11 GB INT4 (CPU), validated for auto-download.
-  - `elbruno/Fara1.5-9B-onnx`: published repo exists, but targeted retesting plus direct builder inspection showed ORT-GenAI 0.14.1 currently exports only the decoder path for Fara, so end-to-end support is still blocked upstream.
-  - Conversion scripts added: `scripts/convert_magentic_brain.py` and `scripts/convert_fara.py`.
+  - `elbruno/Fara1.5-9B-onnx`: full multimodal package published and validated for text + image inference with `LocalVisionChatClient`.
+  - Conversion scripts added: `scripts/convert_magentic_brain.py`, `scripts/convert_fara.py`, and `scripts/convert_fara_multimodal.py`.
 - **`DeleteModelFromCacheAsync`**: new public static method on both `LocalChatClient` and `LocalVisionChatClient`.
   Removes all locally cached files for a model. No-op if the model is not cached.
   Also added `DeleteModelAsync` to `IModelDownloader` / `ModelDownloader` for direct downloader access.
@@ -23,15 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`GetModelCacheSize(model, cacheDirectory?)`**: new public static method on both clients.
   Returns total cached bytes for one model (0 if not cached). Delegates to `HuggingFaceDownloader.GetCachedSize`.
 - **`LocalVisionChatClient` auto-download**: VLMs with `HasNativeOnnx = true` can auto-download when
-  `EnsureModelDownloaded = true`, matching the behavior of `LocalChatClient`. Fara's client-side
-  support is in place, but the published HF artifact is still blocked by the current ORT-GenAI builder's decoder-only Fara export.
+  `EnsureModelDownloaded = true`, matching the behavior of `LocalChatClient`. Fara now uses the published multimodal HF artifact end-to-end.
   A `CreateAsync` static factory was added for consistency.
 - **E2E lifecycle integration tests** covering all 35 supported models:
   - `ModelLifecycleTests` — 3-phase lifecycle (fresh download → cache hit → delete) for all
     practical (`HasNativeOnnx=true`, estimated <10 GB) GenAI text models.
   - `ToolCallingLifecycleTests` — same lifecycle for all practical tool-calling models, with JSON
     tool-call structure validation.
-  - `VisionLifecycleTests` — same lifecycle for native-ONNX vision models; Fara remains temporarily excluded while the current ORT-GenAI builder still emits only the decoder path for it.
+  - `VisionLifecycleTests` — same lifecycle for native-ONNX vision models, including Fara's published multimodal package.
   - `NonNativeOnnxReachabilityTests` — HF API reachability for all `HasNativeOnnx=false` models;
     full lifecycle via `MODEL_PATH_*` env var if the user provides a local ONNX path.
   - Phases 1 and 3 now also assert `GetModelCacheSize` and `ListCachedModels` to verify end-to-end delegation.
@@ -68,9 +67,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`VisionLifecycleTests` empty-data xUnit error**: when all vision models are excluded from
   lifecycle tests (via `KnownExportIssueModelIds`), `NativeOnnxVisionModels` now returns a null
   sentinel entry so xUnit doesn't fail with "0 parameter values provided".
-- **`KnownExportIssueModelIds`** keeps `Fara1.5-9B` excluded from vision lifecycle tests because a
-  2026-07-28 retest still failed in `Model(modelPath)`, and direct inspection of ORT-GenAI 0.14.1
-  confirmed that the current builder exports only the decoder path for Fara.
+- **Integration runtime compatibility for Fara**: `ElBruno.LocalLLMs.IntegrationTests` now pins
+  `Microsoft.ML.OnnxRuntime` to `1.28.0` so Fara's `model.onnx` loads with required custom ops
+  (fixes `CausalConvWithState` load failures in vision lifecycle runs).
 
 ### Docs
 - Evaluated `thinkingmachines/Inkling` (975B MoE, multimodal text/image/audio) for local support and documented it as 🔴 **Not Viable**: MoE routing is unsupported by the ONNX Runtime GenAI builder, multimodal I/O has no text-generation export path, and weights run to ~490 GB+ even at INT4 (data-center only).

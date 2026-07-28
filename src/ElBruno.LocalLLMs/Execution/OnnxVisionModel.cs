@@ -109,11 +109,13 @@ internal sealed class OnnxVisionModel : IVisionGenerationModel
         _processor = new MultiModalProcessor(_model);
         Metadata = GenAIConfigParser.TryParse(modelPath, optionsMaxSequenceLength);
 
-        if (Metadata?.ModelName is not null && Metadata.ModelName != "qwen_vl")
+        if (Metadata?.ModelName is not null &&
+            Metadata.ModelName != "qwen_vl" &&
+            Metadata.ModelName != "qwen3_vl")
         {
             _logger.LogWarning(
-                "OnnxVisionModel: genai_config.json reports model.type='{ModelType}' but expected 'qwen_vl'. " +
-                "FaraFormatter vision tokens are tuned for Qwen-VL. Output quality may degrade.",
+                "OnnxVisionModel: genai_config.json reports model.type='{ModelType}' but expected 'qwen_vl' or 'qwen3_vl'. " +
+                "Vision token processing is tuned for Qwen-VL. Output quality may degrade.",
                 Metadata.ModelName);
         }
     }

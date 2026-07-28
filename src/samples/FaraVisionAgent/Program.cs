@@ -1,19 +1,19 @@
 // FaraVisionAgent — demo of Fara1.5-9B agentic model via LocalVisionChatClient.
 //
 // Fara1.5-9B is a VisionGenAI (VLM) model derived from Qwen3.5-VL.
-// IMPORTANT: The current elbruno/Fara1.5-9B-onnx package is still blocked by ORT-GenAI builder
-// support. The targeted 2026-07-28 retest still failed in Model(modelPath) because the builder
-// exports only the decoder path for Fara's Qwen3.5-VL architecture.
-// Track progress on GitHub issue #35.
+// The published elbruno/Fara1.5-9B-onnx package now includes the full multimodal export.
+// Use scripts/convert_fara_multimodal.py if you want to rebuild or validate the package locally.
 //
 // Usage:
-//   dotnet run                              (auto-download from elbruno/Fara1.5-9B-onnx)
-//   dotnet run -- --model-path ./fara-onnx
+//   dotnet run                                                  (auto-download from elbruno/Fara1.5-9B-onnx)
+//   dotnet run -- --model-path ./fara-onnx                      (text-only smoke test)
+//   dotnet run -- --model-path ./fara-onnx --image-path image.png (vision test)
 
 using ElBruno.LocalLLMs;
 using Microsoft.Extensions.AI;
 
 var modelPath = GetArg(args, "--model-path");
+var imagePath = GetArg(args, "--image-path");
 
 var options = new LocalLLMsOptions
 {
@@ -21,6 +21,7 @@ var options = new LocalLLMsOptions
     EnsureModelDownloaded = true,
     MaxSequenceLength = 4096,
     Temperature = 0.1f,
+    ExecutionProvider = ExecutionProvider.Cpu,
 };
 
 if (!string.IsNullOrWhiteSpace(modelPath))
@@ -32,10 +33,33 @@ if (!string.IsNullOrWhiteSpace(modelPath))
 else
 {
     Console.WriteLine("Loading Fara1.5-9B (auto-download from elbruno/Fara1.5-9B-onnx)...");
-    Console.WriteLine("NOTE: If loading fails, run scripts/convert_fara_multimodal.py to build the complete multimodal package locally.");
+    Console.WriteLine("NOTE: Use scripts/convert_fara_multimodal.py if you want to rebuild or validate the package locally.");
 }
 
 await using var client = new LocalVisionChatClient(options);
+
+if (!string.IsNullOrWhiteSpace(imagePath))
+{
+    Console.WriteLine("\n─── Vision Query ───────────────────────────────────────────────────");
+    Console.WriteLine($"Image: {imagePath}");
+
+    var visionOptions = new VisionChatOptions
+    {
+        ImagePaths = [imagePath],
+        MaxOutputTokens = 64
+    };
+
+    Console.Write("Fara: ");
+    await foreach (var token in client.GetStreamingResponseAsync(
+        [new ChatMessage(ChatRole.User, "Describe the image in one sentence.")],
+        visionOptions))
+    {
+        Console.Write(token.Text);
+    }
+    Console.WriteLine();
+
+    return 0;
+}
 
 // ── Query 1: Agentic action planning ────────────────────────────────────────
 Console.WriteLine("\n─── Query 1: Agentic action ────────────────────────────────────────");

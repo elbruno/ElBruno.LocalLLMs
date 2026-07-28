@@ -1,20 +1,24 @@
 # ONNX Conversion Guide — microsoft/Fara1.5-9B
 
-> **Updated July 2026:** The currently published [`elbruno/Fara1.5-9B-onnx`](https://huggingface.co/elbruno/Fara1.5-9B-onnx) package is still blocked by upstream ORT-GenAI builder support. A targeted 2026-07-28 lifecycle retest still failed in `Model(modelPath)`, and direct inspection of ORT-GenAI 0.14.1 showed that the builder maps Fara's `Qwen3_5ForConditionalGeneration` architecture to the decoder-only `Qwen35TextModel` path.
+> **Updated July 2026:** [`elbruno/Fara1.5-9B-onnx`](https://huggingface.co/elbruno/Fara1.5-9B-onnx) now includes the validated multimodal package for `LocalVisionChatClient`.
 >
-> In other words: **do not republish the current builder output as a working Fara VLM package**. It is incomplete for `LocalVisionChatClient`.
+> The built-in ORT-GenAI builder is still decoder-only for Fara's `Qwen3_5ForConditionalGeneration` architecture, but `scripts/convert_fara_multimodal.py` fills the missing vision + embedding pieces, patches `genai_config.json` to `model.type = "qwen3_vl"`, writes an ORT-compatible `processor_config.json`, and has been validated locally for text + image inference before upload.
 
 ---
 
 ## Current Status
 
-- `KnownModels.Fara15_9B` remains modeled as **VisionGenAI** and must use `LocalVisionChatClient`.
-- The current Hugging Face repo has the processor files, but the builder still emits only the decoder/text path.
-- Verified ORT-GenAI 0.14.1 behavior:
-  - `builder.py` routes `Qwen3_5ForConditionalGeneration` to `Qwen35TextModel`
-  - `Qwen35TextModel` sets `exclude_embeds=True` by default
-  - the produced package is therefore incomplete for `LocalVisionChatClient`
-- Until upstream support changes or a custom export pipeline exists, end-to-end auto-download should be considered **blocked**.
+- `KnownModels.Fara15_9B` remains modeled as **VisionGenAI** and uses `LocalVisionChatClient`.
+- The published Hugging Face repo now contains the full multimodal package:
+  - `qwen3vl-vision.onnx`
+  - `qwen3vl-embedding.onnx`
+  - patched `genai_config.json` with `model.type = "qwen3_vl"`
+  - ORT-compatible `processor_config.json`
+- Verified locally on 2026-07-28:
+  - the custom export script preserves `image_grid_thw` in `qwen3vl-vision.onnx`
+  - the sample app succeeds for text inference and real image inference
+  - the validated package was uploaded back to `elbruno/Fara1.5-9B-onnx`
+- The upstream ORT-GenAI builder is still decoder-only for Fara, so rebuilding the package still requires the custom export script.
 
 ---
 
@@ -134,7 +138,7 @@ The multimodal script:
 3. Exports `qwen3vl-vision.onnx` from `model.model.visual` using `torch.onnx.export`
 4. Exports `qwen3vl-embedding.onnx` from `model.model.language_model.embed_tokens`
 5. Patches `genai_config.json` → `model.type = "qwen3_vl"` with vision/embedding sections
-6. Creates `vision_processor.json` for ORT-GenAI's image preprocessing pipeline
+6. Creates ORT-compatible `processor_config.json` for the image preprocessing pipeline
 7. Validates all six required files are present
 8. Uploads the complete package to `elbruno/Fara1.5-9B-onnx`
 

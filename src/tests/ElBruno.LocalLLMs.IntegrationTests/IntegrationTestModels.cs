@@ -36,12 +36,6 @@ public static class IntegrationTestModels
     /// </summary>
     public static readonly HashSet<string> KnownExportIssueModelIds = new(StringComparer.OrdinalIgnoreCase)
     {
-        // Fara1.5-9B: still excluded pending full multimodal export.
-        // Current repo needs qwen3vl-vision.onnx, qwen3vl-embedding.onnx, and
-        // genai_config.json patched to model.type=qwen3_vl.
-        // Use scripts/convert_fara_multimodal.py to produce the complete package.
-        // See GitHub issue #35.
-        KnownModels.Fara15_9B.Id,
     };
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -88,9 +82,8 @@ public static class IntegrationTestModels
     /// <summary>
     /// All <see cref="OnnxModelType.VisionGenAI"/> models with <see cref="ModelDefinition.HasNativeOnnx"/> = true,
     /// excluding models with known export issues (<see cref="KnownExportIssueModelIds"/>).
-    /// Currently Fara1.5-9B remains excluded because the installed ORT-GenAI builder exports only
-    /// the decoder/text path for its <c>Qwen3_5ForConditionalGeneration</c> architecture, which is
-    /// not sufficient for end-to-end <see cref="LocalVisionChatClient"/> loading.
+    /// Fara1.5-9B is currently validated through the published multimodal package and participates
+    /// in the same download → cache hit → delete lifecycle as the other native ONNX models.
     /// </summary>
     public static TheoryData<ModelDefinition> NativeOnnxVisionModels { get; } = Build(
         KnownModels.All

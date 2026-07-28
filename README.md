@@ -17,7 +17,7 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 
 - 📋 **`ListCachedModels()` + `GetModelCacheSize(model)`** — new cache inspection APIs on both `LocalChatClient` and `LocalVisionChatClient`. List all cached model directories with sizes, or get the byte count for a specific model. Delegates to `ElBruno.HuggingFace.Downloader 1.4.4`.
 - 🗑️ **`DeleteModelFromCacheAsync`** — now delegates to `HuggingFaceDownloader.DeleteCachedFilesAsync` (was a direct `Directory.Delete`). Available on both `LocalChatClient` and `LocalVisionChatClient`.
-- 🤖 **MagenticBrain native ONNX + Fara export blocker documented** — MagenticBrain auto-downloads via `EnsureModelDownloaded = true`. Fara's published repo exists, but ORT-GenAI 0.14.1 currently exports only the decoder path for Fara, so end-to-end auto-download is still blocked.
+- 🤖 **MagenticBrain + Fara native ONNX ready** — Both published ONNX repos now auto-download via `EnsureModelDownloaded = true`. Fara uses the validated multimodal package produced by `scripts/convert_fara_multimodal.py`.
 - 👁️ **`LocalVisionChatClient` auto-download** — Vision models with `HasNativeOnnx=true` now download automatically, just like text models.
 - 🧪 **E2E lifecycle tests for all 35 models** — 3-phase lifecycle (download → cache hit → delete) with automated markdown reports written to `docs/tests/` after each run. Phases 1 and 3 also assert cache size and list membership.
 - 📦 **Transitive native runtime fix** (`v0.20.1`) — `buildTransitive` packaging so `onnxruntime-genai.dll` is copied for downstream consumers (Issue #24).
@@ -337,13 +337,13 @@ For detailed troubleshooting, see [docs/troubleshooting-guide.md](docs/troublesh
 | 🔴 Large | Gemma-4-31B-IT | 30.7B | 🔄 Convert | `gemma-4-31b-it` |
 | 🟣 Next-Gen | Qwen3-14B-Instruct | 14.77B | ✅ Native | `qwen3-14b-instruct` |
 | 🤖 Agentic | MagenticBrain | ~14.77B | ✅ Native | `magentic-brain` |
-| 👁️ VLM | Fara 1.5-9B | ~9.4B | ⚠️ Re-export pending | `fara-1.5-9b` |
+| 👁️ VLM | Fara 1.5-9B | ~9.4B | ✅ Native | `fara-1.5-9b` |
 
 > **🔄 Convert** = Use the conversion scripts in `scripts/` to export ONNX locally before running the model.
 >
 > **¹ MagenticBrain ONNX:** Native ONNX hosted at `elbruno/MagenticBrain-onnx` (INT4 quantized). Auto-downloads when `EnsureModelDownloaded=true`.
 >
-> **² Fara 1.5-9B ONNX:** `elbruno/Fara1.5-9B-onnx` is still blocked by current ORT-GenAI builder support. The installed 0.14.1 builder maps Fara's `Qwen3_5ForConditionalGeneration` architecture to the decoder-only export path, which is not enough for `LocalVisionChatClient`. Track progress in issue #35 and see [ONNX Conversion — Fara](docs/onnx-conversion-fara.md).
+> **² Fara 1.5-9B ONNX:** `elbruno/Fara1.5-9B-onnx` now includes the validated multimodal package (`qwen3vl-vision.onnx`, `qwen3vl-embedding.onnx`, patched `genai_config.json`, and ORT-compatible `processor_config.json`). See [ONNX Conversion — Fara](docs/onnx-conversion-fara.md).
 
 ### Fine-Tuned Models
 
