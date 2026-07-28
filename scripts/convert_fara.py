@@ -52,6 +52,15 @@ REQUIRED_OUTPUT_FILES = [
     "genai_config.json",
     "tokenizer.json",
     "tokenizer_config.json",
+    "processor_config.json",
+]
+
+# Processor files to copy from the source PyTorch repo to the ONNX output.
+# MultiModalProcessor in ORT-GenAI requires these to process vision inputs.
+PROCESSOR_FILES = [
+    "processor_config.json",
+    "preprocessor_config.json",
+    "video_preprocessor_config.json",
 ]
 
 MODEL_CARD = """\
@@ -64,6 +73,7 @@ tags:
   - qwen3_5
   - computer-use
   - multimodal
+  - vision-language-model
   - text-generation
 ---
 
@@ -85,7 +95,7 @@ structured tool calls (click, type, scroll, navigate) for autonomous web tasks.
 | Field | Value |
 |---|---|
 | Source | `microsoft/Fara1.5-9B` |
-| Architecture | qwen3_5 (Qwen3.5-9B based) |
+| Architecture | qwen3_5 / Qwen3VL (VisionGenAI) |
 | Precision | INT4 |
 | Context length | 32,768 tokens (capped from official 262K for ONNX compatibility) |
 | Builder | onnxruntime-genai built-in model builder v0.14.1+ |
@@ -93,7 +103,8 @@ structured tool calls (click, type, scroll, navigate) for autonomous web tasks.
 ## Usage with ElBruno.LocalLLMs
 
 ```csharp
-using var client = await LocalChatClient.CreateAsync(new LocalLLMsOptions
+// Fara1.5-9B is a VisionGenAI model — use LocalVisionChatClient
+await using var client = new LocalVisionChatClient(new LocalLLMsOptions
 {
     Model = KnownModels.Fara15_9B,
     EnsureModelDownloaded = true   // downloads automatically on first run
@@ -247,6 +258,25 @@ def run_conversion(output_dir: Path, precision: str, cache_dir: Path, work_dir: 
         sys.exit(result.returncode)
 
     print("\n  Conversion completed.")
+
+    # Copy processor files from source so MultiModalProcessor can initialize.
+    # ORT-GenAI's MultiModalProcessor requires processor_config.json to preprocess
+    # images/video for Qwen3VL-style VLMs (Fara uses Qwen3VLProcessor).
+    copy_processor_files(fara_pytorch_dir, output_dir)
+
+
+def copy_processor_files(source_dir: Path, output_dir: Path) -> None:
+    """Copy processor config files from PyTorch source to ONNX output directory."""
+    print("\n-- Copying Processor Files -------------------------------------------")
+    for fname in PROCESSOR_FILES:
+        src = source_dir / fname
+        dst = output_dir / fname
+        if src.exists():
+            shutil.copy2(src, dst)
+            print(f"  Copied {fname}")
+        else:
+            print(f"  SKIP {fname} (not in source)")
+
 
 
 # -- Context Length Patch --

@@ -36,9 +36,10 @@ public static class IntegrationTestModels
     /// </summary>
     public static readonly HashSet<string> KnownExportIssueModelIds = new(StringComparer.OrdinalIgnoreCase)
     {
-        // Fara1.5-9B: ONNX export uses inputs_embeds (no input_ids) and is missing processor_config.json.
-        // VisionGenAI path fails (MultiModalProcessor can't init); GenAI/text path also fails (no input_ids).
-        // Excluded until ONNX is re-exported with processor_config.json. See GitHub issue #35.
+        // Fara1.5-9B: processor_config.json was missing from elbruno/Fara1.5-9B-onnx (now added).
+        // VisionGenAI path needs validation — remove this entry after a successful VisionLifecycleTest run.
+        // GenAI/text path will never work (ONNX uses inputs_embeds not input_ids — correct for VLMs).
+        // See GitHub issue #35 for history.
         KnownModels.Fara15_9B.Id,
     };
 
