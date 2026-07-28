@@ -268,7 +268,7 @@ public class KnownModelsTests
         Assert.Equal("gemma-4-e2b-it", model.Id);
         Assert.Equal("Gemma-4-E2B-IT", model.DisplayName);
         Assert.Equal(ChatTemplateFormat.Gemma, model.ChatTemplate);
-        Assert.False(model.HasNativeOnnx);
+        Assert.True(model.HasNativeOnnx);
         Assert.True(model.SupportsToolCalling);
         Assert.False(string.IsNullOrWhiteSpace(model.HuggingFaceRepoId));
     }

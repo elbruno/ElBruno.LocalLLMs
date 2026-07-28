@@ -209,9 +209,9 @@ public class KnownModelsAllPropertiesTests
             HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Gemma4E2BIT,
-            "gemma-4-e2b-it", "google/gemma-4-E2B-it",
+            "gemma-4-e2b-it", "elbruno/Gemma-4-E2B-IT-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Gemma, ModelTier.Tiny,
-            HasNativeOnnx: false, ToolCalling: true, VisionCapable: false),
+            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
 
         new(KnownModels.StableLM2_16BChat,
             "stablelm-2-1.6b-chat", "stabilityai/stablelm-2-zephyr-1_6b",
