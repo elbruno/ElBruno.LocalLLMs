@@ -239,6 +239,57 @@ The capital of France is Paris.
 
 ---
 
+## FaraVisionAgent — Vision + Text with Fara1.5-9B
+
+**What it demonstrates:** End-to-end usage of `KnownModels.Fara15_9B` with `LocalVisionChatClient`, including image prompts and optional local model-path overrides.
+
+**Run it:**
+
+```bash
+dotnet run --project src/samples/FaraVisionAgent
+```
+
+With an image:
+
+```bash
+dotnet run --project src/samples/FaraVisionAgent -- --image-path C:\images\screen.png
+```
+
+**Key code:**
+
+```csharp
+var options = new LocalLLMsOptions
+{
+    Model = KnownModels.Fara15_9B,
+    EnsureModelDownloaded = true,
+    ExecutionProvider = ExecutionProvider.Cpu
+};
+
+await using var client = new LocalVisionChatClient(options);
+
+var response = await client.GetResponseAsync(
+[
+    new ChatMessage(ChatRole.User, "Describe the image in one sentence.")
+],
+new VisionChatOptions
+{
+    ImagePaths = [@"C:\images\screen.png"],
+    MaxOutputTokens = 64
+});
+```
+
+**What happens:**
+
+1. The first run downloads `elbruno/Fara1.5-9B-onnx` into local cache.
+2. The client loads the multimodal ONNX artifacts (`model`, `vision`, `embedding`).
+3. The model processes image + text and returns a generated response.
+
+See sample source:
+
+- [`src/samples/FaraVisionAgent/Program.cs`](../src/samples/FaraVisionAgent/Program.cs)
+
+---
+
 ## Next Steps
 
 - 📖 [Getting Started](getting-started.md) — full setup guide with GPU configuration

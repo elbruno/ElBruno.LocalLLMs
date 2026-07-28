@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Fara architecture flow">
+  <rect width="1280" height="720" fill="#f8fafc"/>
+
+  <text x="64" y="70" fill="#0f172a" font-family="Segoe UI, Arial, sans-serif" font-size="40" font-weight="700">Fara End-to-End Architecture (.NET)</text>
+
+  <rect x="70" y="140" width="220" height="120" rx="12" fill="#e2e8f0" stroke="#94a3b8" stroke-width="2"/>
+  <text x="110" y="190" fill="#1e293b" font-size="24" font-family="Segoe UI, Arial, sans-serif" font-weight="600">User</text>
+  <text x="88" y="225" fill="#334155" font-size="18" font-family="Segoe UI, Arial, sans-serif">text + image prompt</text>
+
+  <rect x="360" y="120" width="300" height="160" rx="12" fill="#dbeafe" stroke="#60a5fa" stroke-width="2"/>
+  <text x="395" y="180" fill="#1e3a8a" font-size="24" font-family="Segoe UI, Arial, sans-serif" font-weight="700">LocalVisionChatClient</text>
+  <text x="430" y="215" fill="#1d4ed8" font-size="18" font-family="Segoe UI, Arial, sans-serif">ElBruno.LocalLLMs</text>
+
+  <rect x="750" y="120" width="300" height="160" rx="12" fill="#ffedd5" stroke="#fb923c" stroke-width="2"/>
+  <text x="805" y="180" fill="#9a3412" font-size="24" font-family="Segoe UI, Arial, sans-serif" font-weight="700">ONNX Runtime</text>
+  <text x="845" y="215" fill="#c2410c" font-size="18" font-family="Segoe UI, Arial, sans-serif">GenAI</text>
+
+  <rect x="360" y="380" width="300" height="220" rx="12" fill="#ecfeff" stroke="#22d3ee" stroke-width="2"/>
+  <text x="410" y="435" fill="#164e63" font-size="24" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Fara ONNX Repo</text>
+  <text x="405" y="470" fill="#155e75" font-size="18" font-family="Segoe UI, Arial, sans-serif">model.onnx + data</text>
+  <text x="405" y="500" fill="#155e75" font-size="18" font-family="Segoe UI, Arial, sans-serif">qwen3vl-vision.onnx</text>
+  <text x="405" y="530" fill="#155e75" font-size="18" font-family="Segoe UI, Arial, sans-serif">qwen3vl-embedding.onnx</text>
+  <text x="405" y="560" fill="#155e75" font-size="18" font-family="Segoe UI, Arial, sans-serif">genai + processor config</text>
+
+  <rect x="750" y="410" width="300" height="140" rx="12" fill="#dcfce7" stroke="#4ade80" stroke-width="2"/>
+  <text x="840" y="470" fill="#14532d" font-size="24" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Model Cache</text>
+  <text x="830" y="505" fill="#166534" font-size="18" font-family="Segoe UI, Arial, sans-serif">download once, reuse</text>
+
+  <line x1="290" y1="200" x2="360" y2="200" stroke="#475569" stroke-width="5"/>
+  <polygon points="360,200 344,190 344,210" fill="#475569"/>
+
+  <line x1="660" y1="200" x2="750" y2="200" stroke="#475569" stroke-width="5"/>
+  <polygon points="750,200 734,190 734,210" fill="#475569"/>
+
+  <line x1="510" y1="280" x2="510" y2="380" stroke="#0891b2" stroke-width="5"/>
+  <polygon points="510,380 500,364 520,364" fill="#0891b2"/>
+
+  <line x1="900" y1="280" x2="900" y2="410" stroke="#16a34a" stroke-width="5"/>
+  <polygon points="900,410 890,394 910,394" fill="#16a34a"/>
+
+  <line x1="660" y1="510" x2="750" y2="480" stroke="#0ea5e9" stroke-width="5"/>
+  <polygon points="750,480 731,476 738,494" fill="#0ea5e9"/>
+
+  <line x1="900" y1="550" x2="900" y2="620" stroke="#475569" stroke-width="5"/>
+  <polygon points="900,620 890,604 910,604" fill="#475569"/>
+  <text x="790" y="665" fill="#0f172a" font-size="22" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Response back to app/UI</text>
+</svg>

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Fara C# local AI hero">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1020"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#fb923c"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1280" height="720" fill="url(#bg)"/>
+
+  <rect x="70" y="110" width="620" height="420" rx="24" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <rect x="95" y="145" width="570" height="330" rx="12" fill="#0f172a" stroke="#1f2937" stroke-width="2"/>
+  <text x="120" y="195" fill="#f8fafc" font-family="Consolas, monospace" font-size="28">var options = new LocalLLMsOptions</text>
+  <text x="120" y="235" fill="#cbd5e1" font-family="Consolas, monospace" font-size="24">{</text>
+  <text x="150" y="275" fill="#cbd5e1" font-family="Consolas, monospace" font-size="24">Model = KnownModels.Fara15_9B,</text>
+  <text x="150" y="315" fill="#cbd5e1" font-family="Consolas, monospace" font-size="24">EnsureModelDownloaded = true</text>
+  <text x="120" y="355" fill="#cbd5e1" font-family="Consolas, monospace" font-size="24">};</text>
+  <text x="120" y="420" fill="#60a5fa" font-family="Consolas, monospace" font-size="24">await using var client = new LocalVisionChatClient(options);</text>
+
+  <circle cx="885" cy="220" r="95" fill="#0f172a" stroke="#fb923c" stroke-width="4"/>
+  <text x="850" y="210" fill="#fb923c" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">Fara</text>
+  <text x="812" y="245" fill="#e2e8f0" font-family="Segoe UI, Arial, sans-serif" font-size="22">1.5-9B</text>
+
+  <rect x="780" y="360" width="210" height="120" rx="14" fill="#0f172a" stroke="#38bdf8" stroke-width="3"/>
+  <text x="820" y="420" fill="#bae6fd" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">ONNX</text>
+
+  <rect x="1040" y="360" width="170" height="120" rx="14" fill="#0f172a" stroke="#22c55e" stroke-width="3"/>
+  <text x="1068" y="410" fill="#bbf7d0" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700">HF Cache</text>
+  <text x="1088" y="438" fill="#86efac" font-family="Segoe UI, Arial, sans-serif" font-size="18">local</text>
+
+  <path d="M980 420 L1040 420" stroke="url(#accent)" stroke-width="8" stroke-linecap="round"/>
+  <polygon points="1040,420 1024,410 1024,430" fill="#fb923c"/>
+
+  <text x="74" y="640" fill="#f8fafc" font-family="Segoe UI, Arial, sans-serif" font-size="54" font-weight="700">Fara support is now end-to-end in C#</text>
+</svg>

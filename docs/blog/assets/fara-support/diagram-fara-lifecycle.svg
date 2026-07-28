@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Fara lifecycle test flow">
+  <rect width="1280" height="720" fill="#f1f5f9"/>
+  <text x="70" y="80" fill="#0f172a" font-family="Segoe UI, Arial, sans-serif" font-size="40" font-weight="700">Fara Validation Lifecycle</text>
+
+  <rect x="70" y="180" width="250" height="220" rx="16" fill="#dbeafe" stroke="#60a5fa" stroke-width="3"/>
+  <circle cx="195" cy="245" r="30" fill="#3b82f6"/>
+  <text x="184" y="254" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">1</text>
+  <text x="118" y="300" fill="#1e3a8a" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">Download</text>
+  <text x="108" y="340" fill="#1d4ed8" font-family="Segoe UI, Arial, sans-serif" font-size="18">EnsureModelDownloaded</text>
+
+  <rect x="370" y="180" width="250" height="220" rx="16" fill="#ffedd5" stroke="#fb923c" stroke-width="3"/>
+  <circle cx="495" cy="245" r="30" fill="#f97316"/>
+  <text x="484" y="254" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">2</text>
+  <text x="430" y="300" fill="#9a3412" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">Inference</text>
+  <text x="420" y="340" fill="#c2410c" font-family="Segoe UI, Arial, sans-serif" font-size="18">Vision prompt response</text>
+
+  <rect x="670" y="180" width="250" height="220" rx="16" fill="#dcfce7" stroke="#4ade80" stroke-width="3"/>
+  <circle cx="795" cy="245" r="30" fill="#22c55e"/>
+  <text x="784" y="254" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">3</text>
+  <text x="735" y="300" fill="#166534" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">Cache Hit</text>
+  <text x="710" y="340" fill="#15803d" font-family="Segoe UI, Arial, sans-serif" font-size="18">No re-download on run 2</text>
+
+  <rect x="970" y="180" width="250" height="220" rx="16" fill="#fee2e2" stroke="#f87171" stroke-width="3"/>
+  <circle cx="1095" cy="245" r="30" fill="#ef4444"/>
+  <text x="1084" y="254" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">4</text>
+  <text x="1030" y="300" fill="#991b1b" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">Delete</text>
+  <text x="1008" y="340" fill="#b91c1c" font-family="Segoe UI, Arial, sans-serif" font-size="18">Cache cleanup validated</text>
+
+  <line x1="320" y1="290" x2="370" y2="290" stroke="#475569" stroke-width="6"/>
+  <polygon points="370,290 354,280 354,300" fill="#475569"/>
+  <line x1="620" y1="290" x2="670" y2="290" stroke="#475569" stroke-width="6"/>
+  <polygon points="670,290 654,280 654,300" fill="#475569"/>
+  <line x1="920" y1="290" x2="970" y2="290" stroke="#475569" stroke-width="6"/>
+  <polygon points="970,290 954,280 954,300" fill="#475569"/>
+
+  <rect x="230" y="500" width="820" height="130" rx="14" fill="#0f172a"/>
+  <text x="270" y="558" fill="#e2e8f0" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">Result: PASS (Fara lifecycle end-to-end)</text>
+  <text x="270" y="600" fill="#cbd5e1" font-family="Segoe UI, Arial, sans-serif" font-size="22">download -> inference -> cache hit -> delete</text>
+</svg>

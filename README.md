@@ -415,6 +415,8 @@ Integration tests validate the full lifecycle (download → infer → cache hit 
 - [Fine-Tuning Guide](docs/fine-tuning-guide.md) — using and training fine-tuned models
 - [ONNX Conversion](docs/onnx-conversion.md) — converting HuggingFace models to ONNX format
 - [ONNX Conversion — Fara VLM](docs/onnx-conversion-fara.md) — converting Fara 1.5-9B vision-language model
+- [Blog: Fara End-to-End Support](docs/blog/blog-fara-support.md) — TL;DR, motivation, and C# usage for Fara 1.5-9B
+- [Blog Companion: Fara Assets](docs/blog/blog-fara-support-assets.md) — suggested titles/tags and image prompts
 - [Publishing](docs/publishing.md) — NuGet package publishing with OIDC
 - [Contributing](docs/CONTRIBUTING.md) — how to contribute
 - [Integration Test Reports](docs/tests/README.md) — how to run E2E lifecycle tests and interpret per-run markdown reports
