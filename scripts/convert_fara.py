@@ -1,10 +1,22 @@
 #!/usr/bin/env python3
 """
-Convert microsoft/Fara1.5-9B to ONNX INT4 for ElBruno.LocalLLMs.
+Convert microsoft/Fara1.5-9B to a decoder-only ONNX INT4 package (text path only).
+
+NOTE: This script only exports the text decoder using onnxruntime-genai's built-in
+builder. For the full VisionGenAI (multimodal) package required by LocalVisionChatClient,
+use convert_fara_multimodal.py instead, which also exports the vision encoder and
+embedding injector needed to wire the three-file OGA package.
 
 Fara1.5-9B is a 9B-parameter computer-use agent fine-tuned from Qwen3.5-9B-VL.
-Current ORT-GenAI 0.14.1 builder support is incomplete for this model family: the builder
-maps Fara's `Qwen3_5ForConditionalGeneration` architecture to the text-decoder path only.
+ORT-GenAI 0.14.1 builder maps Fara's `Qwen3_5ForConditionalGeneration` to the
+text-decoder path only (Qwen35TextModel, exclude_embeds=True).
+
+This script:
+- Detects the known decoder-only blocker and exits before producing a bad export
+- Is kept here for reference / debugging the text decoder component
+
+For a complete multimodal Fara export, use:
+    python scripts/convert_fara_multimodal.py --skip-upload
 
 After conversion, the output is uploaded to elbruno/Fara1.5-9B-onnx on HuggingFace.
 

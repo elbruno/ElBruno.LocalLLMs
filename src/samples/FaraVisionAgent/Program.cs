@@ -31,8 +31,8 @@ if (!string.IsNullOrWhiteSpace(modelPath))
 }
 else
 {
-    Console.WriteLine("Loading Fara1.5-9B (published ONNX still blocked pending full ORT-GenAI VLM export support)...");
-    Console.WriteLine("NOTE: Loading will fail until issue #35 is resolved (export fix needed).");
+    Console.WriteLine("Loading Fara1.5-9B (auto-download from elbruno/Fara1.5-9B-onnx)...");
+    Console.WriteLine("NOTE: If loading fails, run scripts/convert_fara_multimodal.py to build the complete multimodal package locally.");
 }
 
 await using var client = new LocalVisionChatClient(options);

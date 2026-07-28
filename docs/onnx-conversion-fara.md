@@ -72,6 +72,26 @@ Fara1.5-9B is a multimodal computer use agent (CUA) trained by Microsoft Researc
 
 ---
 
+## The New Path: Multimodal Export Script
+
+The ORT-GenAI built-in builder can only produce the **text decoder** for Fara. For a complete multimodal package (the three ONNX files needed by `LocalVisionChatClient`), use `scripts/convert_fara_multimodal.py`:
+
+```
+qwen3vl-vision.onnx      — Fara's vision encoder (FP32, exported with torch.onnx.export)
+qwen3vl-embedding.onnx   — token embedding + vision token injection (FP32)
+model.onnx               — text decoder (INT4, from existing ORT-GenAI builder output)
+```
+
+With this complete package and `genai_config.json` updated to `model.type = "qwen3_vl"`, the ORT-GenAI runtime's `qwen3_vl` pipeline handles Fara as a proper VLM.
+
+### Why this works
+
+Fara's `Qwen3_5Model` module has:
+- `model.visual` — a compatible Qwen3VL-style vision transformer
+- `model.language_model.embed_tokens` — the same embedding structure
+
+The multimodal script uses `torch.onnx.export` directly on these modules (same approach as the `onnx-community/Qwen3-4B-VL-ONNX` community export) to bypass the ORT builder limitation.
+
 ## Building Your Own Conversion (Optional)
 
 Use the provided script to inspect the current blocker or to retry once upstream ORT-GenAI support changes. In its current form, the script refuses to republish the known incomplete export.
@@ -92,7 +112,33 @@ Use the provided script to inspect the current blocker or to retry once upstream
 pip install -r scripts/requirements.txt
 ```
 
-### Run the Conversion Script
+### Multimodal Export Script (Recommended)
+
+```bash
+# Download Fara PyTorch weights and export all three ONNX components:
+python scripts/convert_fara_multimodal.py
+
+# Skip upload (test locally first):
+python scripts/convert_fara_multimodal.py --skip-upload
+
+# Reuse existing model.onnx decoder from a local decoder-only export:
+python scripts/convert_fara_multimodal.py \
+  --reuse-decoder ./fara-decoder-only \
+  --onnx-dir ./fara-onnx-multimodal \
+  --skip-upload
+```
+
+The multimodal script:
+1. Downloads `microsoft/Fara1.5-9B` to `./cache_dir/fara-work/fara-pytorch/` (skipped if already present)
+2. Loads the full PyTorch model (~18 GB RAM required)
+3. Exports `qwen3vl-vision.onnx` from `model.model.visual` using `torch.onnx.export`
+4. Exports `qwen3vl-embedding.onnx` from `model.model.language_model.embed_tokens`
+5. Patches `genai_config.json` → `model.type = "qwen3_vl"` with vision/embedding sections
+6. Creates `vision_processor.json` for ORT-GenAI's image preprocessing pipeline
+7. Validates all six required files are present
+8. Uploads the complete package to `elbruno/Fara1.5-9B-onnx`
+
+### Text-Decoder-Only Script (Debugging Reference)
 
 ```bash
 # INT4 (default, ~5 GB output)

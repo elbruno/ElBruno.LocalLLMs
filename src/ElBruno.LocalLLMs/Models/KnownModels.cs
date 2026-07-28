@@ -495,8 +495,10 @@ public static class KnownModels
 
     /// <summary>
     /// Fara1.5-9B — Microsoft computer-use agent fine-tuned from Qwen3.5-9B-VL.
-    /// Published ONNX target is elbruno/Fara1.5-9B-onnx, but current ORT-GenAI 0.14.1 builder
-    /// support is incomplete: it exports the decoder-only path for Fara's Qwen3.5-VL architecture.
+    /// Published ONNX target is elbruno/Fara1.5-9B-onnx.
+    /// The current repo still needs the multimodal export: qwen3vl-vision.onnx,
+    /// qwen3vl-embedding.onnx, and genai_config.json patched to model.type=qwen3_vl.
+    /// Use scripts/convert_fara_multimodal.py to produce the complete package.
     /// Uses the VisionGenAI path with <see cref="LocalVisionChatClient"/>.
     /// Track export validation / republish progress in GitHub issue #35.
     /// </summary>

@@ -36,10 +36,11 @@ public static class IntegrationTestModels
     /// </summary>
     public static readonly HashSet<string> KnownExportIssueModelIds = new(StringComparer.OrdinalIgnoreCase)
     {
-        // Fara1.5-9B: re-added after targeted 2026-07-28 retest still failed at Model(modelPath)
-        // load time. Verified blocker: ORT-GenAI 0.14.1 maps Fara's Qwen3_5 architecture to the
-        // decoder-only Qwen35TextModel export path, so the published artifact is incomplete for
-        // LocalVisionChatClient. See GitHub issue #35.
+        // Fara1.5-9B: still excluded pending full multimodal export.
+        // Current repo needs qwen3vl-vision.onnx, qwen3vl-embedding.onnx, and
+        // genai_config.json patched to model.type=qwen3_vl.
+        // Use scripts/convert_fara_multimodal.py to produce the complete package.
+        // See GitHub issue #35.
         KnownModels.Fara15_9B.Id,
     };
 
