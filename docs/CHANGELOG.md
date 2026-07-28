@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.20.3] - 2026-07-28
+
 ### Added
 - **Issue #25 — `ModelDefinition.IsVisionCapable`**: new computed property (`ModelType == OnnxModelType.VisionGenAI`).
   Consumer apps can now branch on `model.IsVisionCapable` without hardcoding enum comparisons to detect VLMs like Fara.
