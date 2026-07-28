@@ -3,9 +3,9 @@ namespace ElBruno.LocalLLMs.Tests.Models;
 /// <summary>
 /// Tests that <see cref="KnownModels.Fara15_9B"/> is correctly defined
 /// as a VisionGenAI model with the Fara chat template.
-/// Note: Fara1.5-9B uses the qwen3_5 VLM architecture — it requires
-/// <see cref="LocalVisionChatClient"/> and a properly exported ONNX that includes
-/// processor_config.json. See issue #35 for current export issues.
+/// Note: Fara1.5-9B requires <see cref="LocalVisionChatClient"/> and a proper
+/// <c>qwen_vl</c> ONNX export (vision_encoder + embedding_injector + text_decoder).
+/// See issue #35 for the current republish / validation work.
 /// </summary>
 [Trait("Category", "Fara")]
 public class KnownModelsVisionTests

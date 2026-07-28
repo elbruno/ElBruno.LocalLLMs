@@ -52,13 +52,13 @@ These models are purpose-built for multi-agent orchestration, tool calling, and 
 | Model | Params | HuggingFace ID | ONNX Status | Chat Template | Tool Calling | Recommended RAM | Notes |
 |-------|--------|----------------|-------------|--------------|---|---|---|
 | **MagenticBrain** | ~14.77B | elbruno/MagenticBrain-onnx | ✅ Native | **Qwen3** | ✅ | 16–24 GB | INT4, ~11 GB; set `EnsureModelDownloaded = true` |
-| **Fara1.5-9B** | ~9.4B | elbruno/Fara1.5-9B-onnx | ✅ Native | **Fara** | — | 12–16 GB | INT4, ~5 GB; multimodal CUA; context capped at 32K |
+| **Fara1.5-9B** | ~9.4B | elbruno/Fara1.5-9B-onnx | ⚠️ Re-export pending | **Fara** | — | 12–16 GB | Published repo exists, but the package still needs a qwen_vl re-export |
 
-> **Auto-download:** Both models now have native ONNX INT4 conversions published to HuggingFace. Set `EnsureModelDownloaded = true` to download automatically on first use — no manual conversion required.
+> **Auto-download:** MagenticBrain is ready today. Fara's published repo still needs a corrected `qwen_vl` export before auto-download can be considered validated end-to-end.
 >
 > **MagenticBrain** is a fine-tune of Qwen3-14B for agentic tasks. Converted from `microsoft/MagenticBrain` using ORT-GenAI built-in builder (INT4 CPU, ~11 GB).
 >
-> **Fara1.5-9B** is a computer-use agent fine-tuned from Qwen3.5-9B. Converted from `microsoft/Fara1.5-9B` (INT4 CPU, ~5 GB; context_length patched 262K→32K for ONNX static allocation compatibility).
+> **Fara1.5-9B** is a computer-use agent fine-tuned from Qwen3.5-9B-VL. The current Hugging Face package must be regenerated as a three-file `qwen_vl` pipeline (`vision_encoder.onnx`, `embedding_injector.onnx`, `text_decoder.onnx`) before lifecycle tests can pass.
 >
 > **Recommended sampling:** `temperature=0.7, top_p=0.8, presence_penalty=1.0` — greedy decoding causes infinite loops.
 >

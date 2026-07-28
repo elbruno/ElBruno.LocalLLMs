@@ -1,41 +1,33 @@
 # ONNX Conversion Guide — microsoft/Fara1.5-9B
 
-> **Updated July 2026:** Fara1.5-9B now has a native ONNX INT4 conversion published at [`elbruno/Fara1.5-9B-onnx`](https://huggingface.co/elbruno/Fara1.5-9B-onnx). Set `EnsureModelDownloaded = true` in `LocalLLMsOptions` to auto-download — **no manual conversion required**.
+> **Updated July 2026:** The currently published [`elbruno/Fara1.5-9B-onnx`](https://huggingface.co/elbruno/Fara1.5-9B-onnx) package still needs a fresh `qwen_vl` re-export. A targeted 2026-07-28 lifecycle retest still failed in `Model(modelPath)` because the repo contains the wrong single-file export shape.
 >
-> The rest of this document is kept for reference in case you want to build your own conversion (e.g., different quantization level or custom output directory).
+> Use this guide to regenerate the package correctly as a three-stage `qwen_vl` VLM export (`vision_encoder.onnx`, `embedding_injector.onnx`, `text_decoder.onnx`) before republishing.
 
 ---
 
-## Quick Start (Auto-Download — Recommended)
+## Current Status
 
-```csharp
-using ElBruno.LocalLLMs;
-
-var options = new LocalLLMsOptions
-{
-    Model = KnownModels.Fara15_9B,
-    EnsureModelDownloaded = true,   // downloads ~5 GB on first run from elbruno/Fara1.5-9B-onnx
-    MaxSequenceLength = 4096,
-    Temperature = 0.1f,
-};
-
-await using var client = new LocalVisionChatClient(options);
-```
-
-The library downloads from `elbruno/Fara1.5-9B-onnx` and caches locally. Subsequent runs use the cached copy.
+- `KnownModels.Fara15_9B` remains modeled as **VisionGenAI** and must use `LocalVisionChatClient`.
+- The current Hugging Face repo has the processor files, but it still uses the wrong export layout.
+- The next valid package must have `genai_config.json` with `model.type = "qwen_vl"` and the three core ONNX files:
+  - `vision_encoder.onnx`
+  - `embedding_injector.onnx`
+  - `text_decoder.onnx`
+- Until that republish lands, end-to-end auto-download should be considered **not yet validated**.
 
 ---
 
-## Conversion Details (Published Build)
+## Conversion Details (Required Correct Build)
 
 | Field | Value |
 |---|---|
 | **Source model** | `microsoft/Fara1.5-9B` |
 | **ONNX repo** | `elbruno/Fara1.5-9B-onnx` |
-| **Architecture** | `qwen3_5` (`Qwen3_5ForConditionalGeneration`) |
+| **ORT-GenAI model type** | `qwen_vl` |
 | **Parameters** | 9 billion |
 | **Precision** | INT4 (k-quant, `k_quant` algorithm) |
-| **Output size** | ~4.7 GB (`model.onnx` + `model.onnx.data`) |
+| **Output layout** | three-stage VLM package (`vision_encoder`, `embedding_injector`, `text_decoder`) |
 | **Context length** | 32,768 tokens (capped from official 262K — see note below) |
 | **Builder** | `python -m onnxruntime_genai.models.builder` v0.14.1 |
 | **License** | MIT (inherited from source model) |
@@ -48,11 +40,16 @@ Fara's official context is 262,144 tokens. ONNX Runtime GenAI requires `context_
 
 ```
 fara-onnx-int4/
-├── model.onnx              # ONNX graph (pointer file)
-├── model.onnx.data         # INT4 quantized weights (~4.7 GB)
-├── genai_config.json       # ORT-GenAI runtime config (context_length = 32768)
-├── tokenizer.json          # Qwen3.5 tokenizer (~19 MB)
+├── vision_encoder.onnx          # image encoder stage
+├── embedding_injector.onnx      # bridges visual embeddings into decoder space
+├── text_decoder.onnx            # text generation stage
+├── *.onnx.data                  # quantized weight sidecars as emitted by the builder
+├── genai_config.json            # ORT-GenAI runtime config (model.type = qwen_vl)
+├── tokenizer.json
 ├── tokenizer_config.json
+├── processor_config.json
+├── preprocessor_config.json
+├── video_preprocessor_config.json
 ├── config.json
 └── chat_template.jinja
 ```
@@ -65,7 +62,7 @@ fara-onnx-int4/
 |---|---|
 | **HuggingFace ID** | `microsoft/Fara1.5-9B` |
 | **Parameters** | 9 billion |
-| **Base architecture** | `qwen3_5` (Qwen3.5-9B fine-tune) |
+| **Base architecture** | Qwen3.5-VL / Fara multimodal fine-tune |
 | **Task** | Computer use agent — browser automation via pixel-grounded actions |
 | **License** | MIT |
 | **Official ONNX** | Not published by Microsoft |
@@ -110,9 +107,10 @@ python scripts/convert_fara.py --output-dir ./my-fara-onnx --skip-upload
 
 The script:
 1. Downloads `microsoft/Fara1.5-9B` to `./cache_dir/fara-work/fara-pytorch/` (skipped if already present)
-2. Runs `python -m onnxruntime_genai.models.builder -i <local-path> -p int4 -e cpu`
-3. Patches `genai_config.json` context_length to 32,768
-4. Validates output
+2. Runs `python -m onnxruntime_genai.models.builder -i <local-path> -p int4 -e cpu --model_type qwen_vl`
+3. Copies processor config files from the source model into the ONNX output
+4. Patches `genai_config.json` context_length to 32,768
+5. Validates that `model.type = qwen_vl` and all three ONNX stages are present
 
 Conversion takes 5–30 minutes depending on CPU.
 
@@ -127,7 +125,8 @@ python -m onnxruntime_genai.models.builder \
   -i ./fara-pytorch \
   -o ./fara-onnx-int4 \
   -p int4 \
-  -e cpu
+  -e cpu \
+  --model_type qwen_vl
 
 # Patch context length in genai_config.json (set context_length and max_length to 32768)
 ```

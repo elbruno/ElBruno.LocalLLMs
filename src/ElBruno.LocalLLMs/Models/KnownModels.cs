@@ -494,10 +494,11 @@ public static class KnownModels
     // ────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Fara1.5-9B — Microsoft computer-use agent fine-tuned from Qwen3.5-9B.
-    /// ONNX INT4 available at elbruno/Fara1.5-9B-onnx (context capped at 32K for ORT-GenAI compatibility).
-    /// Uses the GenAI (text) path — the qwen3_5 architecture is text-only in ORT-GenAI 0.14.1.
-    /// Set EnsureModelDownloaded = true to auto-download on first use.
+    /// Fara1.5-9B — Microsoft computer-use agent fine-tuned from Qwen3.5-9B-VL.
+    /// Intended ONNX target is elbruno/Fara1.5-9B-onnx with a qwen_vl three-stage export
+    /// (vision_encoder + embedding_injector + text_decoder) and context capped at 32K.
+    /// Uses the VisionGenAI path with <see cref="LocalVisionChatClient"/>.
+    /// Track export validation / republish progress in GitHub issue #35.
     /// </summary>
     public static readonly ModelDefinition Fara15_9B = new()
     {

@@ -1,8 +1,9 @@
 // FaraVisionAgent — demo of Fara1.5-9B agentic model via LocalVisionChatClient.
 //
-// Fara1.5-9B is a VisionGenAI (VLM) model using the qwen3_5 architecture.
-// IMPORTANT: The current ONNX export at elbruno/Fara1.5-9B-onnx is missing processor_config.json
-// and uses inputs_embeds instead of input_ids. Loading will fail until the export is fixed.
+// Fara1.5-9B is a VisionGenAI (VLM) model derived from Qwen3.5-VL.
+// IMPORTANT: The current elbruno/Fara1.5-9B-onnx package still needs a qwen_vl re-export
+// (vision_encoder + embedding_injector + text_decoder). The targeted 2026-07-28 retest still
+// failed in Model(modelPath), so use this sample after issue #35's republish lands.
 // Track progress on GitHub issue #35.
 //
 // Usage:
@@ -30,7 +31,7 @@ if (!string.IsNullOrWhiteSpace(modelPath))
 }
 else
 {
-    Console.WriteLine("Loading Fara1.5-9B (auto-download from elbruno/Fara1.5-9B-onnx)...");
+    Console.WriteLine("Loading Fara1.5-9B (will use elbruno/Fara1.5-9B-onnx once the qwen_vl republish is complete)...");
     Console.WriteLine("NOTE: Loading will fail until issue #35 is resolved (export fix needed).");
 }
 

@@ -36,10 +36,10 @@ public static class IntegrationTestModels
     /// </summary>
     public static readonly HashSet<string> KnownExportIssueModelIds = new(StringComparer.OrdinalIgnoreCase)
     {
-        // Fara1.5-9B: processor_config.json was missing from elbruno/Fara1.5-9B-onnx (now added).
-        // VisionGenAI path needs validation — remove this entry after a successful VisionLifecycleTest run.
-        // GenAI/text path will never work (ONNX uses inputs_embeds not input_ids — correct for VLMs).
-        // See GitHub issue #35 for history.
+        // Fara1.5-9B: re-added after targeted 2026-07-28 retest still failed at Model(modelPath)
+        // load time. Current HF export is a single-file qwen3_5 package, but ORT-GenAI VLM
+        // loading expects a qwen_vl three-stage export (vision_encoder + embedding_injector +
+        // text_decoder). See GitHub issue #35.
         KnownModels.Fara15_9B.Id,
     };
 
@@ -87,9 +87,9 @@ public static class IntegrationTestModels
     /// <summary>
     /// All <see cref="OnnxModelType.VisionGenAI"/> models with <see cref="ModelDefinition.HasNativeOnnx"/> = true,
     /// excluding models with known export issues (<see cref="KnownExportIssueModelIds"/>).
-    /// Currently Fara1.5-9B is excluded because its qwen3_5 architecture uses <c>inputs_embeds</c>
-    /// input only (no <c>input_ids</c>) and has no processor_config.json, which prevents loading
-    /// via OnnxVisionModel in ORT-GenAI 0.14.1.
+    /// Currently Fara1.5-9B remains excluded because the published HF package is still the wrong
+    /// export shape for ORT-GenAI VLM loading: it needs a <c>qwen_vl</c> three-file pipeline,
+    /// not the current single-file <c>qwen3_5</c> package.
     /// </summary>
     public static TheoryData<ModelDefinition> NativeOnnxVisionModels { get; } = Build(
         KnownModels.All

@@ -10,10 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Issue #25**: Native ONNX INT4 conversions for `KnownModels.MagenticBrain` and `KnownModels.Fara15_9B`.
-  - Both models now have `HasNativeOnnx = true` — set `EnsureModelDownloaded = true` to auto-download.
-  - `elbruno/MagenticBrain-onnx`: 14B Qwen3 fine-tune, ~11 GB INT4 (CPU).
-  - `elbruno/Fara1.5-9B-onnx`: 9B qwen3_5 fine-tune, ~5 GB INT4; context capped at 32K for ONNX static allocation compatibility.
+- **Issue #25**: Native ONNX work for `KnownModels.MagenticBrain` and `KnownModels.Fara15_9B`.
+  - `elbruno/MagenticBrain-onnx`: 14B Qwen3 fine-tune, ~11 GB INT4 (CPU), validated for auto-download.
+  - `elbruno/Fara1.5-9B-onnx`: published repo exists, but targeted retesting showed the current single-file `qwen3_5` package still needs a `qwen_vl` three-stage re-export before end-to-end support is reliable.
   - Conversion scripts added: `scripts/convert_magentic_brain.py` and `scripts/convert_fara.py`.
 - **`DeleteModelFromCacheAsync`**: new public static method on both `LocalChatClient` and `LocalVisionChatClient`.
   Removes all locally cached files for a model. No-op if the model is not cached.
@@ -23,15 +22,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `TotalSizeBytes` and `LastModified`. Delegates to `HuggingFaceDownloader.ListCachedRepos`.
 - **`GetModelCacheSize(model, cacheDirectory?)`**: new public static method on both clients.
   Returns total cached bytes for one model (0 if not cached). Delegates to `HuggingFaceDownloader.GetCachedSize`.
-- **`LocalVisionChatClient` auto-download**: VLMs with `HasNativeOnnx = true` (e.g. Fara1.5-9B) now
-  auto-download when `EnsureModelDownloaded = true`, matching the behavior of `LocalChatClient`.
+- **`LocalVisionChatClient` auto-download**: VLMs with `HasNativeOnnx = true` can auto-download when
+  `EnsureModelDownloaded = true`, matching the behavior of `LocalChatClient`. Fara's client-side
+  support is in place, but the published HF artifact still needs the corrected `qwen_vl` republish.
   A `CreateAsync` static factory was added for consistency.
 - **E2E lifecycle integration tests** covering all 35 supported models:
   - `ModelLifecycleTests` — 3-phase lifecycle (fresh download → cache hit → delete) for all
     practical (`HasNativeOnnx=true`, estimated <10 GB) GenAI text models.
   - `ToolCallingLifecycleTests` — same lifecycle for all practical tool-calling models, with JSON
     tool-call structure validation.
-  - `VisionLifecycleTests` — same lifecycle for native-ONNX vision models (Fara1.5-9B).
+  - `VisionLifecycleTests` — same lifecycle for native-ONNX vision models; Fara remains temporarily excluded until its corrected `qwen_vl` artifact is republished.
   - `NonNativeOnnxReachabilityTests` — HF API reachability for all `HasNativeOnnx=false` models;
     full lifecycle via `MODEL_PATH_*` env var if the user provides a local ONNX path.
   - Phases 1 and 3 now also assert `GetModelCacheSize` and `ListCachedModels` to verify end-to-end delegation.
@@ -68,9 +68,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`VisionLifecycleTests` empty-data xUnit error**: when all vision models are excluded from
   lifecycle tests (via `KnownExportIssueModelIds`), `NativeOnnxVisionModels` now returns a null
   sentinel entry so xUnit doesn't fail with "0 parameter values provided".
-- **`KnownExportIssueModelIds`** set added to `IntegrationTestModels`: `Fara1.5-9B` excluded from
-  vision lifecycle tests until the model export is corrected (`qwen3_5` architecture requires
-  `inputs_embeds` input with a separate vision processor — no `processor_config.json` uploaded).
+- **`KnownExportIssueModelIds`** keeps `Fara1.5-9B` excluded from vision lifecycle tests until the
+  published ONNX is regenerated as a `qwen_vl` three-stage VLM package. A 2026-07-28 targeted retest
+  still failed in `Model(modelPath)` even after adding processor config files.
 
 ### Docs
 - Evaluated `thinkingmachines/Inkling` (975B MoE, multimodal text/image/audio) for local support and documented it as 🔴 **Not Viable**: MoE routing is unsupported by the ONNX Runtime GenAI builder, multimodal I/O has no text-generation export path, and weights run to ~490 GB+ even at INT4 (data-center only).

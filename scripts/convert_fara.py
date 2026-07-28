@@ -2,9 +2,9 @@
 """
 Convert microsoft/Fara1.5-9B to ONNX INT4 for ElBruno.LocalLLMs.
 
-Fara1.5-9B is a 9B-parameter computer-use agent fine-tuned from Qwen3.5-9B.
-Its config.json declares model_type="qwen3_5", which onnxruntime-genai v0.14.1+
-handles natively via its built-in model builder (auto-detected from config.json).
+Fara1.5-9B is a 9B-parameter computer-use agent fine-tuned from Qwen3.5-9B-VL.
+For ORT-GenAI VLM support it must be exported explicitly with `--model_type qwen_vl`,
+which produces a three-stage vision pipeline instead of the incorrect single-file qwen3_5 export.
 
 After conversion, the output is uploaded to elbruno/Fara1.5-9B-onnx on HuggingFace.
 
@@ -48,11 +48,15 @@ DISK_REQUIREMENTS = {
 }
 
 REQUIRED_OUTPUT_FILES = [
-    "model.onnx",
+    "vision_encoder.onnx",
+    "embedding_injector.onnx",
+    "text_decoder.onnx",
     "genai_config.json",
     "tokenizer.json",
     "tokenizer_config.json",
     "processor_config.json",
+    "preprocessor_config.json",
+    "video_preprocessor_config.json",
 ]
 
 # Processor files to copy from the source PyTorch repo to the ONNX output.
@@ -70,7 +74,7 @@ base_model: microsoft/Fara1.5-9B
 tags:
   - onnx
   - onnxruntime-genai
-  - qwen3_5
+  - qwen_vl
   - computer-use
   - multimodal
   - vision-language-model
@@ -95,7 +99,8 @@ structured tool calls (click, type, scroll, navigate) for autonomous web tasks.
 | Field | Value |
 |---|---|
 | Source | `microsoft/Fara1.5-9B` |
-| Architecture | qwen3_5 / Qwen3VL (VisionGenAI) |
+| ORT-GenAI model type | qwen_vl |
+| Base model family | Qwen3.5-VL / Fara VisionGenAI |
 | Precision | INT4 |
 | Context length | 32,768 tokens (capped from official 262K for ONNX compatibility) |
 | Builder | onnxruntime-genai built-in model builder v0.14.1+ |
@@ -180,8 +185,8 @@ def check_onnxruntime_genai() -> None:
 
 def detect_builtin_fara_support() -> bool:
     """
-    Returns True always — Fara uses qwen3_5 architecture which onnxruntime-genai
-    v0.14.1+ handles natively via auto-detection from config.json.
+    Retained for compatibility with older notes/scripts.
+    Fara requires an explicit `--model_type qwen_vl` export; there is no dedicated `fara` target.
     """
     return True
 
@@ -239,9 +244,9 @@ def run_conversion(output_dir: Path, precision: str, cache_dir: Path, work_dir: 
     # Download weights (skips if already present)
     fara_pytorch_dir = download_fara_model(work_dir, cache_dir)
 
-    # Use ORT-GenAI built-in builder with local input path (-i).
-    # Fara's config.json declares model_type="qwen3_5" which the builder
-    # auto-detects — no need to specify a model type flag.
+    # Fara must be exported as a Qwen-VL pipeline.
+    # The builder does not have a dedicated `fara` target, so force `--model_type qwen_vl`
+    # to produce vision_encoder + embedding_injector + text_decoder.
     print(f"\n  Running onnxruntime_genai.models.builder (precision={precision})...")
     cmd = [
         sys.executable, "-m", "onnxruntime_genai.models.builder",
@@ -249,6 +254,7 @@ def run_conversion(output_dir: Path, precision: str, cache_dir: Path, work_dir: 
         "-o", str(output_dir.resolve()),
         "-p", precision,
         "-e", "cpu",
+        "--model_type", "qwen_vl",
         "--extra_options", "int4_algo_config=k_quant_linear",
     ]
     print(f"  Command: {' '.join(cmd)}\n")
@@ -335,9 +341,21 @@ def validate_output(output_dir: Path) -> None:
             print(f"  MISSING: {fname}")
             all_ok = False
 
-    # List any additional ONNX files (e.g. vision/embedding encoders for VLMs)
+    # Validate the ORT-GenAI model type — Fara must load as qwen_vl.
+    config_path = output_dir / "genai_config.json"
+    if config_path.exists():
+        with open(config_path, encoding="utf-8") as f:
+            config = json.load(f)
+        model_type = config.get("model", {}).get("type")
+        if model_type == "qwen_vl":
+            print("  OK genai_config.json model.type = qwen_vl")
+        else:
+            print(f"  INVALID: genai_config.json model.type = {model_type!r} (expected 'qwen_vl')")
+            all_ok = False
+
+    # List ONNX component files for the three-stage VLM pipeline.
     for onnx_file in sorted(output_dir.glob("*.onnx")):
-        if onnx_file.name != "model.onnx":
+        if onnx_file.name not in REQUIRED_OUTPUT_FILES:
             size_mb = onnx_file.stat().st_size / (1024 ** 2)
             print(f"  OK {onnx_file.name} ({size_mb:.1f} MB)  [additional component]")
 
@@ -390,7 +408,7 @@ def upload_to_huggingface(output_dir: Path) -> None:
         folder_path=str(output_dir),
         repo_id=TARGET_HF_REPO,
         repo_type="model",
-        commit_message="Add ONNX INT4 conversion of microsoft/Fara1.5-9B",
+        commit_message="Add qwen_vl ONNX INT4 conversion of microsoft/Fara1.5-9B",
     )
     print(f"\nOK Uploaded to https://huggingface.co/{TARGET_HF_REPO}")
 
