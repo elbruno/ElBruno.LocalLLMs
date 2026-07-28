@@ -160,4 +160,120 @@ public class OptionsValidatorTests
 
         Assert.Null(exception);
     }
+
+    // ──────────────────────────────────────────────
+    // EnsureModelDownloaded + HasNativeOnnx
+    // ──────────────────────────────────────────────
+
+    [Fact]
+    public void Validate_EnsureDownload_NoNativeOnnx_NoModelPath_ThrowsInvalidOperation()
+    {
+        var options = new LocalLLMsOptions
+        {
+            EnsureModelDownloaded = true,
+            ModelPath = null,
+            Model = new ModelDefinition
+            {
+                Id = "no-onnx-model",
+                DisplayName = "No ONNX Model",
+                HuggingFaceRepoId = "someorg/no-onnx-model",
+                RequiredFiles = ["onnx/model.onnx"],
+                ModelType = OnnxModelType.GenAI,
+                ChatTemplate = ChatTemplateFormat.ChatML,
+                HasNativeOnnx = false
+            }
+        };
+
+        Assert.Throws<InvalidOperationException>(() => OptionsValidator.Validate(options));
+    }
+
+    [Fact]
+    public void Validate_EnsureDownload_NoNativeOnnx_NoModelPath_MessageIsActionable()
+    {
+        var options = new LocalLLMsOptions
+        {
+            EnsureModelDownloaded = true,
+            ModelPath = null,
+            Model = new ModelDefinition
+            {
+                Id = "no-onnx-model",
+                DisplayName = "No ONNX Model",
+                HuggingFaceRepoId = "someorg/no-onnx-model",
+                RequiredFiles = ["onnx/model.onnx"],
+                ModelType = OnnxModelType.GenAI,
+                ChatTemplate = ChatTemplateFormat.ChatML,
+                HasNativeOnnx = false
+            }
+        };
+
+        var ex = Assert.Throws<InvalidOperationException>(() => OptionsValidator.Validate(options));
+        Assert.Contains("No ONNX Model", ex.Message);
+        Assert.Contains("HasNativeOnnx=false", ex.Message);
+        Assert.Contains("ModelPath", ex.Message);
+    }
+
+    [Fact]
+    public void Validate_EnsureDownload_HasNativeOnnx_DoesNotThrow()
+    {
+        var options = new LocalLLMsOptions
+        {
+            EnsureModelDownloaded = true,
+            ModelPath = null,
+            Model = KnownModels.Phi35MiniInstruct
+        };
+
+        var exception = Record.Exception(() => OptionsValidator.Validate(options));
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void Validate_EnsureDownloadFalse_NoNativeOnnx_DoesNotThrow()
+    {
+        // User explicitly opted out of auto-download — no error even without native ONNX
+        var options = new LocalLLMsOptions
+        {
+            EnsureModelDownloaded = false,
+            ModelPath = null,
+            Model = new ModelDefinition
+            {
+                Id = "no-onnx-model",
+                DisplayName = "No ONNX Model",
+                HuggingFaceRepoId = "someorg/no-onnx-model",
+                RequiredFiles = ["onnx/model.onnx"],
+                ModelType = OnnxModelType.GenAI,
+                ChatTemplate = ChatTemplateFormat.ChatML,
+                HasNativeOnnx = false
+            }
+        };
+
+        var exception = Record.Exception(() => OptionsValidator.Validate(options));
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void Validate_EnsureDownload_NoNativeOnnx_WithModelPath_DoesNotThrow()
+    {
+        // ModelPath override: user supplies local ONNX dir — skip auto-download check
+        var options = new LocalLLMsOptions
+        {
+            EnsureModelDownloaded = true,
+            ModelPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            Model = new ModelDefinition
+            {
+                Id = "no-onnx-model",
+                DisplayName = "No ONNX Model",
+                HuggingFaceRepoId = "someorg/no-onnx-model",
+                RequiredFiles = ["onnx/model.onnx"],
+                ModelType = OnnxModelType.GenAI,
+                ChatTemplate = ChatTemplateFormat.ChatML,
+                HasNativeOnnx = false
+            }
+        };
+
+        var exception = Record.Exception(() => OptionsValidator.Validate(options));
+
+        Assert.Null(exception);
+    }
 }

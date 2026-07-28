@@ -54,4 +54,13 @@ public sealed record ModelDefinition
     /// Models that support tool calling can handle AITool/AIFunction in ChatOptions.
     /// </summary>
     public bool SupportsToolCalling { get; init; }
+
+    // ── Computed capability flags ──────────────────────────────────────────────
+
+    /// <summary>
+    /// Whether this model accepts image inputs (i.e. it is a vision-language model).
+    /// Vision-capable models must be used with <see cref="LocalVisionChatClient"/>.
+    /// Equivalent to <c>ModelType == OnnxModelType.VisionGenAI</c>.
+    /// </summary>
+    public bool IsVisionCapable => ModelType == OnnxModelType.VisionGenAI;
 }

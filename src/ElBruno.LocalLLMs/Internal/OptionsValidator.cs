@@ -20,5 +20,20 @@ internal static class OptionsValidator
 
         if (!string.IsNullOrEmpty(options.ModelPath) && !Directory.Exists(options.ModelPath))
             throw new DirectoryNotFoundException($"ModelPath '{options.ModelPath}' does not exist");
+
+        // Fail fast when auto-download is requested for a model with no published ONNX artifacts.
+        // This prevents silent failures and the confusing "auto-download enabled" UX that still
+        // requires manual ONNX conversion by the user.
+        if (options.EnsureModelDownloaded
+            && string.IsNullOrEmpty(options.ModelPath)
+            && !options.Model.HasNativeOnnx)
+        {
+            throw new InvalidOperationException(
+                $"Model '{options.Model.DisplayName}' ('{options.Model.HuggingFaceRepoId}') does not have " +
+                $"ONNX artifacts published for auto-download (HasNativeOnnx=false). Either:" + Environment.NewLine +
+                $"  - Set ModelPath to a local directory containing the model converted to ONNX, or" + Environment.NewLine +
+                $"  - Choose a model with HasNativeOnnx=true (see KnownModels for available models), or" + Environment.NewLine +
+                $"  - Set EnsureModelDownloaded=false and supply ModelPath explicitly.");
+        }
     }
 }

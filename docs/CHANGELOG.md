@@ -10,7 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Issue #25**: Native ONNX work for `KnownModels.MagenticBrain` and `KnownModels.Fara15_9B`.
+- **Issue #25 — `ModelDefinition.IsVisionCapable`**: new computed property (`ModelType == OnnxModelType.VisionGenAI`).
+  Consumer apps can now branch on `model.IsVisionCapable` without hardcoding enum comparisons to detect VLMs like Fara.
+- **Issue #25 — Fail-fast validator for non-downloadable models**: `OptionsValidator` now throws `InvalidOperationException`
+  when `EnsureModelDownloaded = true`, `ModelPath` is null/empty, and `model.HasNativeOnnx = false`.
+  The message names the model, its HuggingFace repo, and three remediation steps so users see an actionable error
+  at startup instead of a confusing "auto-download enabled" message that still requires manual ONNX conversion.
+- **`docs/auto-download.md`** *(new)*: documents the auto-download flow end-to-end — `HasNativeOnnx` semantics,
+  default cache path, fail-fast validation, vision model detection via `IsVisionCapable`, and first-run
+  examples for MagenticBrain and Fara showing zero manual steps required.
+
+### Changed
+- **`KnownModelsAllPropertiesTests`**: `ModelSpec` record gains a `VisionCapable` field; 35 spec rows updated
+  with correct values (`Fara15_9B = true`, all others `= false`). New `Model_HasExpectedVisionCapableFlag` theory added.
+
+
   - `elbruno/MagenticBrain-onnx`: 14B Qwen3 fine-tune, ~11 GB INT4 (CPU), validated for auto-download.
   - `elbruno/Fara1.5-9B-onnx`: full multimodal package published and validated for text + image inference with `LocalVisionChatClient`.
   - Conversion scripts added: `scripts/convert_magentic_brain.py`, `scripts/convert_fara.py`, and `scripts/convert_fara_multimodal.py`.

@@ -15,6 +15,9 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 
 ## What's New
 
+- 🔍 **`ModelDefinition.IsVisionCapable`** — new computed property. Consumer apps can now check `model.IsVisionCapable` instead of comparing `ModelType == OnnxModelType.VisionGenAI`. Fara1.5-9B returns `true`; all text models return `false`.
+- 🛑 **Fail-fast for non-downloadable models** — `OptionsValidator` now throws an `InvalidOperationException` with actionable text when `EnsureModelDownloaded = true` is paired with a model that has `HasNativeOnnx = false` and no `ModelPath`. Eliminates the confusing "auto-download enabled" UX that previously gave no guidance.
+- 📄 **[Auto-download guide](docs/auto-download.md)** — new doc covering the auto-download flow, cache path, vision model usage, and first-run examples for MagenticBrain and Fara.
 - 📋 **`ListCachedModels()` + `GetModelCacheSize(model)`** — new cache inspection APIs on both `LocalChatClient` and `LocalVisionChatClient`. List all cached model directories with sizes, or get the byte count for a specific model. Delegates to `ElBruno.HuggingFace.Downloader 1.4.4`.
 - 🗑️ **`DeleteModelFromCacheAsync`** — now delegates to `HuggingFaceDownloader.DeleteCachedFilesAsync` (was a direct `Directory.Delete`). Available on both `LocalChatClient` and `LocalVisionChatClient`.
 - 🤖 **MagenticBrain + Fara native ONNX ready** — Both published ONNX repos now auto-download via `EnsureModelDownloaded = true`. Fara uses the validated multimodal package produced by `scripts/convert_fara_multimodal.py`.

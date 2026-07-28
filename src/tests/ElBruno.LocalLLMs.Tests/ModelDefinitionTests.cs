@@ -225,6 +225,43 @@ public class ModelDefinitionTests
     }
 
     // ──────────────────────────────────────────────
+    // IsVisionCapable computed property
+    // ──────────────────────────────────────────────
+
+    [Fact]
+    public void IsVisionCapable_GenAIModel_IsFalse()
+    {
+        var model = CreateMinimalModel() with { ModelType = OnnxModelType.GenAI };
+
+        Assert.False(model.IsVisionCapable);
+    }
+
+    [Fact]
+    public void IsVisionCapable_CausalLMModel_IsFalse()
+    {
+        var model = CreateMinimalModel() with { ModelType = OnnxModelType.CausalLM };
+
+        Assert.False(model.IsVisionCapable);
+    }
+
+    [Fact]
+    public void IsVisionCapable_VisionGenAIModel_IsTrue()
+    {
+        var model = CreateMinimalModel() with { ModelType = OnnxModelType.VisionGenAI };
+
+        Assert.True(model.IsVisionCapable);
+    }
+
+    [Fact]
+    public void Defaults_IsVisionCapable_IsFalse()
+    {
+        // Default ModelType is GenAI, so IsVisionCapable should be false by default
+        var model = CreateMinimalModel();
+
+        Assert.False(model.IsVisionCapable);
+    }
+
+    // ──────────────────────────────────────────────
     // RequiredFiles edge cases
     // ──────────────────────────────────────────────
 

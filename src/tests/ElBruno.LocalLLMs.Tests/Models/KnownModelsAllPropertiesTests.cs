@@ -73,7 +73,8 @@ public class KnownModelsAllPropertiesTests
         ChatTemplateFormat ExpectedTemplate,
         ModelTier ExpectedTier,
         bool HasNativeOnnx,
-        bool ToolCalling);
+        bool ToolCalling,
+        bool VisionCapable);
 
     [Theory]
     [MemberData(nameof(ModelSpecs))]
@@ -109,6 +110,11 @@ public class KnownModelsAllPropertiesTests
     [MemberData(nameof(ModelSpecs))]
     public void Model_HasExpectedToolCallingFlag(ModelSpec spec)
         => Assert.Equal(spec.ToolCalling, spec.Model.SupportsToolCalling);
+
+    [Theory]
+    [MemberData(nameof(ModelSpecs))]
+    public void Model_HasExpectedVisionCapableFlag(ModelSpec spec)
+        => Assert.Equal(spec.VisionCapable, spec.Model.IsVisionCapable);
 
     // ──────────────────────────────────────────────────────────────────────────
     // Native ONNX models must have elbruno/* or well-known publisher repos
@@ -165,180 +171,180 @@ public class KnownModelsAllPropertiesTests
         new(KnownModels.TinyLlama11BChat,
             "tinyllama-1.1b-chat", "elbruno/TinyLlama-1.1B-Chat-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.ChatML, ModelTier.Tiny,
-            HasNativeOnnx: true, ToolCalling: false),
+            HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.SmolLM2_17BInstruct,
             "smollm2-1.7b-instruct", "elbruno/SmolLM2-1.7B-Instruct-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.ChatML, ModelTier.Tiny,
-            HasNativeOnnx: true, ToolCalling: false),
+            HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Qwen25_05BInstruct,
             "qwen2.5-0.5b-instruct", "elbruno/Qwen2.5-0.5B-Instruct-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Qwen, ModelTier.Tiny,
-            HasNativeOnnx: true, ToolCalling: true),
+            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
 
         new(KnownModels.Qwen25_05B_ToolCalling,
             "qwen2.5-0.5b-localllms-toolcalling", "elbruno/Qwen2.5-0.5B-LocalLLMs-ToolCalling",
             OnnxModelType.GenAI, ChatTemplateFormat.Qwen, ModelTier.Tiny,
-            HasNativeOnnx: true, ToolCalling: true),
+            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
 
         new(KnownModels.Qwen25_05B_RAG,
             "qwen2.5-0.5b-localllms-rag", "elbruno/Qwen2.5-0.5B-Instruct-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Qwen, ModelTier.Tiny,
-            HasNativeOnnx: true, ToolCalling: false),
+            HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Qwen25_05B_Instruct_FineTuned,
             "qwen2.5-0.5b-localllms-instruct", "elbruno/Qwen2.5-0.5B-Instruct-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Qwen, ModelTier.Tiny,
-            HasNativeOnnx: true, ToolCalling: true),
+            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
 
         new(KnownModels.Qwen25_15BInstruct,
             "qwen2.5-1.5b-instruct", "elbruno/Qwen2.5-1.5B-Instruct-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Qwen, ModelTier.Tiny,
-            HasNativeOnnx: true, ToolCalling: true),
+            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
 
         new(KnownModels.Gemma2BIT,
             "gemma-2b-it", "elbruno/Gemma-2B-IT-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Gemma, ModelTier.Tiny,
-            HasNativeOnnx: true, ToolCalling: false),
+            HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Gemma4E2BIT,
             "gemma-4-e2b-it", "google/gemma-4-E2B-it",
             OnnxModelType.GenAI, ChatTemplateFormat.Gemma, ModelTier.Tiny,
-            HasNativeOnnx: false, ToolCalling: true),
+            HasNativeOnnx: false, ToolCalling: true, VisionCapable: false),
 
         new(KnownModels.StableLM2_16BChat,
             "stablelm-2-1.6b-chat", "stabilityai/stablelm-2-zephyr-1_6b",
             OnnxModelType.GenAI, ChatTemplateFormat.ChatML, ModelTier.Tiny,
-            HasNativeOnnx: false, ToolCalling: false),
+            HasNativeOnnx: false, ToolCalling: false, VisionCapable: false),
 
         // ── Small tier ─────────────────────────────────────────────────────────
         new(KnownModels.Phi35MiniInstruct,
             "phi-3.5-mini-instruct", "microsoft/Phi-3.5-mini-instruct-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Phi3, ModelTier.Small,
-            HasNativeOnnx: true, ToolCalling: true),
+            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
 
         new(KnownModels.Qwen25_3BInstruct,
             "qwen2.5-3b-instruct", "elbruno/Qwen2.5-3B-Instruct-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Qwen, ModelTier.Small,
-            HasNativeOnnx: true, ToolCalling: true),
+            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
 
         new(KnownModels.Llama32_3BInstruct,
             "llama-3.2-3b-instruct", "elbruno/Llama-3.2-3B-Instruct-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Llama3, ModelTier.Small,
-            HasNativeOnnx: true, ToolCalling: false),
+            HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Gemma2_2BIT,
             "gemma-2-2b-it", "elbruno/Gemma-2-2B-IT-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Gemma, ModelTier.Small,
-            HasNativeOnnx: true, ToolCalling: false),
+            HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Gemma4E4BIT,
             "gemma-4-e4b-it", "google/gemma-4-E4B-it",
             OnnxModelType.GenAI, ChatTemplateFormat.Gemma, ModelTier.Small,
-            HasNativeOnnx: false, ToolCalling: true),
+            HasNativeOnnx: false, ToolCalling: true, VisionCapable: false),
 
         // ── Medium tier ────────────────────────────────────────────────────────
         new(KnownModels.Qwen25_7BInstruct,
             "qwen2.5-7b-instruct", "elbruno/Qwen2.5-7B-Instruct-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Qwen, ModelTier.Medium,
-            HasNativeOnnx: true, ToolCalling: true),
+            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
 
         new(KnownModels.Qwen25Coder_7BInstruct,
             "qwen2.5-coder-7b-instruct", "elbruno/Qwen2.5-Coder-7B-Instruct-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Qwen, ModelTier.Medium,
-            HasNativeOnnx: true, ToolCalling: true),
+            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
 
         new(KnownModels.Llama31_8BInstruct,
             "llama-3.1-8b-instruct", "elbruno/Llama-3.1-8B-Instruct-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Llama3, ModelTier.Medium,
-            HasNativeOnnx: true, ToolCalling: false),
+            HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Mistral7BInstructV03,
             "mistral-7b-instruct-v0.3", "elbruno/Mistral-7B-Instruct-v0.3-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Mistral, ModelTier.Medium,
-            HasNativeOnnx: true, ToolCalling: false),
+            HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Gemma2_9BIT,
             "gemma-2-9b-it", "elbruno/Gemma-2-9B-IT-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Gemma, ModelTier.Medium,
-            HasNativeOnnx: true, ToolCalling: false),
+            HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Phi4,
             "phi-4", "microsoft/phi-4-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Phi3, ModelTier.Medium,
-            HasNativeOnnx: true, ToolCalling: true),
+            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
 
         new(KnownModels.DeepSeekR1DistillQwen14B,
             "deepseek-r1-distill-qwen-14b", "elbruno/DeepSeek-R1-Distill-Qwen-14B-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.DeepSeek, ModelTier.Medium,
-            HasNativeOnnx: true, ToolCalling: false),
+            HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.MistralSmall24BInstruct,
             "mistral-small-24b-instruct", "elbruno/Mistral-Small-24B-Instruct-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Mistral, ModelTier.Medium,
-            HasNativeOnnx: true, ToolCalling: false),
+            HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Gemma4_12BIT,
             "gemma-4-12b-it", "google/gemma-4-12B-it",
             OnnxModelType.GenAI, ChatTemplateFormat.Gemma, ModelTier.Medium,
-            HasNativeOnnx: false, ToolCalling: true),
+            HasNativeOnnx: false, ToolCalling: true, VisionCapable: false),
 
         new(KnownModels.Fara15_9B,
             "fara1.5-9b", "elbruno/Fara1.5-9B-onnx",
             OnnxModelType.VisionGenAI, ChatTemplateFormat.Fara, ModelTier.Medium,
-            HasNativeOnnx: true, ToolCalling: false),
+            HasNativeOnnx: true, ToolCalling: false, VisionCapable: true),
 
         // ── Large tier ─────────────────────────────────────────────────────────
         new(KnownModels.Qwen25_14BInstruct,
             "qwen2.5-14b-instruct", "elbruno/Qwen2.5-14B-Instruct-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Qwen, ModelTier.Large,
-            HasNativeOnnx: true, ToolCalling: false),
+            HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Qwen25_32BInstruct,
             "qwen2.5-32b-instruct", "elbruno/Qwen2.5-32B-Instruct-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Qwen, ModelTier.Large,
-            HasNativeOnnx: true, ToolCalling: false),
+            HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Llama33_70BInstruct,
             "llama-3.3-70b-instruct", "elbruno/Llama-3.3-70B-Instruct-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Llama3, ModelTier.Large,
-            HasNativeOnnx: true, ToolCalling: false),
+            HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Mixtral8x7BInstructV01,
             "mixtral-8x7b-instruct-v0.1", "mistralai/Mixtral-8x7B-Instruct-v0.1",
             OnnxModelType.GenAI, ChatTemplateFormat.Mistral, ModelTier.Large,
-            HasNativeOnnx: false, ToolCalling: false),
+            HasNativeOnnx: false, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.DeepSeekR1DistillLlama70B,
             "deepseek-r1-distill-llama-70b", "deepseek-ai/DeepSeek-R1-Distill-Llama-70B",
             OnnxModelType.GenAI, ChatTemplateFormat.DeepSeek, ModelTier.Large,
-            HasNativeOnnx: false, ToolCalling: false),
+            HasNativeOnnx: false, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.CommandR35B,
             "command-r-35b", "CohereForAI/c4ai-command-r-v01",
             OnnxModelType.GenAI, ChatTemplateFormat.ChatML, ModelTier.Large,
-            HasNativeOnnx: false, ToolCalling: false),
+            HasNativeOnnx: false, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Gemma4_26BA4BIT,
             "gemma-4-26b-a4b-it", "google/gemma-4-26B-A4B-it",
             OnnxModelType.GenAI, ChatTemplateFormat.Gemma, ModelTier.Large,
-            HasNativeOnnx: false, ToolCalling: true),
+            HasNativeOnnx: false, ToolCalling: true, VisionCapable: false),
 
         new(KnownModels.Gemma4_31BIT,
             "gemma-4-31b-it", "google/gemma-4-31B-it",
             OnnxModelType.GenAI, ChatTemplateFormat.Gemma, ModelTier.Large,
-            HasNativeOnnx: false, ToolCalling: true),
+            HasNativeOnnx: false, ToolCalling: true, VisionCapable: false),
 
         // ── Agentic ────────────────────────────────────────────────────────────
         new(KnownModels.Qwen3_14BInstruct,
             "qwen3-14b-instruct", "onnx-community/Qwen3-14B-ONNX",
             OnnxModelType.GenAI, ChatTemplateFormat.Qwen3, ModelTier.Large,
-            HasNativeOnnx: true, ToolCalling: true),
+            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
 
         new(KnownModels.MagenticBrain,
             "magentic-brain", "elbruno/MagenticBrain-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Qwen3, ModelTier.Large,
-            HasNativeOnnx: true, ToolCalling: true),
+            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
     ];
 }
