@@ -505,7 +505,7 @@ public static class KnownModels
         DisplayName = "Fara1.5-9B",
         HuggingFaceRepoId = "elbruno/Fara1.5-9B-onnx",
         RequiredFiles = ["*"],
-        ModelType = OnnxModelType.GenAI,
+        ModelType = OnnxModelType.VisionGenAI,
         ChatTemplate = ChatTemplateFormat.Fara,
         Tier = ModelTier.Medium,
         HasNativeOnnx = true,

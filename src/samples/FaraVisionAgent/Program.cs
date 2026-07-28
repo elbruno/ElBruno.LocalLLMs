@@ -1,9 +1,9 @@
-// FaraVisionAgent — demo of Fara1.5-9B agentic model via LocalChatClient.
+// FaraVisionAgent — demo of Fara1.5-9B agentic model via LocalVisionChatClient.
 //
-// Fara1.5-9B uses the qwen3_5 text architecture in ORT-GenAI 0.14.1.
-// It loads via the GenAI/text path (LocalChatClient), not the vision path.
-// ONNX INT4 is available at elbruno/Fara1.5-9B-onnx — set EnsureModelDownloaded = true
-// to auto-download on first run.
+// Fara1.5-9B is a VisionGenAI (VLM) model using the qwen3_5 architecture.
+// IMPORTANT: The current ONNX export at elbruno/Fara1.5-9B-onnx is missing processor_config.json
+// and uses inputs_embeds instead of input_ids. Loading will fail until the export is fixed.
+// Track progress on GitHub issue #35.
 //
 // Usage:
 //   dotnet run                              (auto-download from elbruno/Fara1.5-9B-onnx)
@@ -31,9 +31,10 @@ if (!string.IsNullOrWhiteSpace(modelPath))
 else
 {
     Console.WriteLine("Loading Fara1.5-9B (auto-download from elbruno/Fara1.5-9B-onnx)...");
+    Console.WriteLine("NOTE: Loading will fail until issue #35 is resolved (export fix needed).");
 }
 
-await using var client = await LocalChatClient.CreateAsync(options);
+await using var client = new LocalVisionChatClient(options);
 
 // ── Query 1: Agentic action planning ────────────────────────────────────────
 Console.WriteLine("\n─── Query 1: Agentic action ────────────────────────────────────────");

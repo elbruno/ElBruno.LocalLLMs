@@ -286,7 +286,7 @@ public class KnownModelsAllPropertiesTests
 
         new(KnownModels.Fara15_9B,
             "fara1.5-9b", "elbruno/Fara1.5-9B-onnx",
-            OnnxModelType.GenAI, ChatTemplateFormat.Fara, ModelTier.Medium,
+            OnnxModelType.VisionGenAI, ChatTemplateFormat.Fara, ModelTier.Medium,
             HasNativeOnnx: true, ToolCalling: false),
 
         // ── Large tier ─────────────────────────────────────────────────────────

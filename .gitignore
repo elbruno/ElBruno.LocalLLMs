@@ -28,6 +28,7 @@ Thumbs.db
 # Test results
 TestResults/
 *.trx
+docs/tests/*.log
 
 # Python
 __pycache__/

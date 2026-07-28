@@ -2,10 +2,10 @@ namespace ElBruno.LocalLLMs.Tests.Models;
 
 /// <summary>
 /// Tests that <see cref="KnownModels.Fara15_9B"/> is correctly defined
-/// as a GenAI text model with the Fara chat template.
-/// Note: Fara1.5-9B uses the qwen3_5 (text) architecture in ORT-GenAI 0.14.1 —
-/// it loads via the GenAI/text path, not VisionGenAI/MultiModalProcessor.
-/// See issue #35 for context.
+/// as a VisionGenAI model with the Fara chat template.
+/// Note: Fara1.5-9B uses the qwen3_5 VLM architecture — it requires
+/// <see cref="LocalVisionChatClient"/> and a properly exported ONNX that includes
+/// processor_config.json. See issue #35 for current export issues.
 /// </summary>
 [Trait("Category", "Fara")]
 public class KnownModelsVisionTests
@@ -17,9 +17,9 @@ public class KnownModelsVisionTests
     }
 
     [Fact]
-    public void Fara15_9B_ModelType_IsGenAI()
+    public void Fara15_9B_ModelType_IsVisionGenAI()
     {
-        Assert.Equal(OnnxModelType.GenAI, KnownModels.Fara15_9B.ModelType);
+        Assert.Equal(OnnxModelType.VisionGenAI, KnownModels.Fara15_9B.ModelType);
     }
 
     [Fact]

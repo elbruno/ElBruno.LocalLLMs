@@ -26,6 +26,8 @@ public static class IntegrationTestModels
         KnownModels.Mixtral8x7BInstructV01.Id,    // 47B → ~24 GB (HasNativeOnnx=false, see issue #32)
         KnownModels.DeepSeekR1DistillLlama70B.Id, // 70B → ~35 GB (HasNativeOnnx=false, see issue #33)
         KnownModels.CommandR35B.Id,               // 35B → ~18 GB (HasNativeOnnx=false, see issue #34)
+        // 70B native ONNX model — requires CUDA/GPU; CPU-only machines fail with DLL missing error
+        KnownModels.Llama33_70BInstruct.Id,       // 70B → ~35 GB, requires GPU execution provider
     };
 
     /// <summary>
@@ -34,7 +36,10 @@ public static class IntegrationTestModels
     /// </summary>
     public static readonly HashSet<string> KnownExportIssueModelIds = new(StringComparer.OrdinalIgnoreCase)
     {
-        // Currently empty — Fara1.5-9B was re-classified as GenAI (text path) in fix for issue #35.
+        // Fara1.5-9B: ONNX export uses inputs_embeds (no input_ids) and is missing processor_config.json.
+        // VisionGenAI path fails (MultiModalProcessor can't init); GenAI/text path also fails (no input_ids).
+        // Excluded until ONNX is re-exported with processor_config.json. See GitHub issue #35.
+        KnownModels.Fara15_9B.Id,
     };
 
     // ──────────────────────────────────────────────────────────────────────────
