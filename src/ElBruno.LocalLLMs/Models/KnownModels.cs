@@ -206,17 +206,17 @@ public static class KnownModels
         HasNativeOnnx = true
     };
 
-    /// <summary>Gemma 4 E4B IT — Google's edge/laptop model, effective 4B params (8B total), 128K context.</summary>
+    /// <summary>Gemma 4 E4B IT — Google's edge/laptop model, effective 4B params (8B total), 128K context. ONNX artifact published at elbruno/Gemma-4-E4B-IT-onnx.</summary>
     public static readonly ModelDefinition Gemma4E4BIT = new()
     {
         Id = "gemma-4-e4b-it",
         DisplayName = "Gemma-4-E4B-IT",
-        HuggingFaceRepoId = "google/gemma-4-E4B-it",
+        HuggingFaceRepoId = "elbruno/Gemma-4-E4B-IT-onnx",
         RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Gemma,
         Tier = ModelTier.Small,
-        HasNativeOnnx = false,
+        HasNativeOnnx = true,
         SupportsToolCalling = true
     };
 

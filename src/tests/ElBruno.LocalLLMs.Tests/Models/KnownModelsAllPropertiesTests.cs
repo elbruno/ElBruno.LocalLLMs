@@ -240,9 +240,9 @@ public class KnownModelsAllPropertiesTests
             HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Gemma4E4BIT,
-            "gemma-4-e4b-it", "google/gemma-4-E4B-it",
+            "gemma-4-e4b-it", "elbruno/Gemma-4-E4B-IT-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Gemma, ModelTier.Small,
-            HasNativeOnnx: false, ToolCalling: true, VisionCapable: false),
+            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
 
         // ── Medium tier ────────────────────────────────────────────────────────
         new(KnownModels.Qwen25_7BInstruct,
