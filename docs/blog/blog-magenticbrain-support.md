@@ -14,6 +14,20 @@
 
 ---
 
+## Why this model is important (and what it is designed for)
+
+`MagenticBrain` is not just another general-purpose chat model. It is designed for **agent orchestration**: planning multi-step tasks, selecting tools, chaining tool calls across rounds, and deciding when to terminate with a final answer.
+
+That design matters because many app scenarios need more than one prompt/one response:
+
+- file + web research workflows
+- iterative tool usage with state between turns
+- “do the task, then submit result” orchestration patterns
+
+In short, MagenticBrain is built for **agentic execution loops**, which is why it is a strong fit for `.NET + LocalChatClient + MagenticUI` experiences.
+
+---
+
 When Microsoft Research introduced **MagenticLite, MagenticBrain, and Fara1.5**, they framed a practical path for local agentic workflows:
 
 - Official post:
