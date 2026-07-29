@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.20.4] - 2026-07-28
+
 ### Changed
 - **Issue #26 — `KnownModels.Gemma4E2BIT`**: updated `HuggingFaceRepoId` to `elbruno/Gemma-4-E2B-IT-onnx` and set
   `HasNativeOnnx = true` now that the ONNX artifact has been published. Auto-download via `EnsureModelDownloaded = true` is now supported.
