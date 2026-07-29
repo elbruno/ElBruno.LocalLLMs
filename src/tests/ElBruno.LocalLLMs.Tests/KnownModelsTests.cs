@@ -345,14 +345,14 @@ public class KnownModelsTests
     [InlineData("gemma-4-12b-it")]
     [InlineData("gemma-4-26b-a4b-it")]
     [InlineData("gemma-4-31b-it")]
-    public void Gemma4Models_AreConversionRequired_WithToolCallingSupport(string modelId)
+    public void Gemma4Models_HaveNativeOnnx_WithToolCallingSupport(string modelId)
     {
         var model = KnownModels.FindById(modelId);
 
         Assert.NotNull(model);
         Assert.Equal(OnnxModelType.GenAI, model!.ModelType);
         Assert.Equal(ChatTemplateFormat.Gemma, model.ChatTemplate);
-        Assert.False(model.HasNativeOnnx);
+        Assert.True(model.HasNativeOnnx);
         Assert.True(model.SupportsToolCalling);
     }
 
