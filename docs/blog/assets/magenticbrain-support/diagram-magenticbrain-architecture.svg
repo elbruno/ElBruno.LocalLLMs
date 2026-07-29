@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">MagenticBrain architecture flow</title>
+  <desc id="desc">Flow diagram showing browser to SignalR hub, orchestrator, LocalChatClient, and MagenticBrain ONNX.</desc>
+  <rect width="1600" height="900" fill="#0b1220"/>
+  <style>
+    .box{fill:#111827;stroke:#334155;stroke-width:3;rx:14}
+    .txt{fill:#e2e8f0;font-family:Segoe UI,Arial,sans-serif;font-size:30px;font-weight:700}
+    .sub{fill:#93c5fd;font-family:Segoe UI,Arial,sans-serif;font-size:22px}
+    .line{stroke:#60a5fa;stroke-width:7;fill:none;marker-end:url(#arr)}
+  </style>
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#60a5fa"/>
+    </marker>
+  </defs>
+  <rect class="box" x="90" y="340" width="250" height="140"/>
+  <text class="txt" x="215" y="405" text-anchor="middle">Browser UI</text>
+  <text class="sub" x="215" y="440" text-anchor="middle">React client</text>
+
+  <rect class="box" x="400" y="340" width="280" height="140"/>
+  <text class="txt" x="540" y="405" text-anchor="middle">SignalR Hub</text>
+  <text class="sub" x="540" y="440" text-anchor="middle">/hubs/agent</text>
+
+  <rect class="box" x="740" y="300" width="350" height="220"/>
+  <text class="txt" x="915" y="380" text-anchor="middle">MagenticUI</text>
+  <text class="txt" x="915" y="418" text-anchor="middle">Orchestrator</text>
+  <text class="sub" x="915" y="456" text-anchor="middle">round-based tool loop</text>
+
+  <rect class="box" x="1150" y="340" width="300" height="140"/>
+  <text class="txt" x="1300" y="405" text-anchor="middle">LocalChatClient</text>
+  <text class="sub" x="1300" y="440" text-anchor="middle">Qwen3 template</text>
+
+  <rect class="box" x="1150" y="560" width="300" height="150"/>
+  <text class="txt" x="1300" y="632" text-anchor="middle">MagenticBrain</text>
+  <text class="sub" x="1300" y="668" text-anchor="middle">ONNX INT4 local</text>
+
+  <path class="line" d="M340 410H400"/>
+  <path class="line" d="M680 410H740"/>
+  <path class="line" d="M1090 410H1150"/>
+  <path class="line" d="M1300 480V560"/>
+  <path class="line" d="M1150 630H900V520"/>
+
+  <text x="800" y="140" text-anchor="middle" fill="#cbd5e1" font-family="Segoe UI,Arial,sans-serif" font-size="42" font-weight="700">
+    MagenticBrain Local Agentic Pipeline
+  </text>
+  <text x="800" y="190" text-anchor="middle" fill="#94a3b8" font-family="Segoe UI,Arial,sans-serif" font-size="24">
+    Browser task -> orchestrator tool calls -> local ONNX inference -> submit final answer
+  </text>
+</svg>

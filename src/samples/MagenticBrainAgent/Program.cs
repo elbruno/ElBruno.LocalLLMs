@@ -18,7 +18,8 @@ using Microsoft.Extensions.AI;
 
 var options = new LocalLLMsOptions
 {
-    Model = KnownModels.Qwen3_14BInstruct,
+    Model = KnownModels.MagenticBrain,
+    EnsureModelDownloaded = true,
     Temperature = 0.7f,
     MaxSequenceLength = 32768,
 };

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">MagenticBrain round lifecycle</title>
+  <desc id="desc">Lifecycle diagram with receive task, select tool, execute tool, feed results, and submit.</desc>
+  <rect width="1600" height="900" fill="#111827"/>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#34d399"/>
+    </marker>
+  </defs>
+  <style>
+    .n{fill:#1f2937;stroke:#4b5563;stroke-width:3}
+    .t{fill:#ecfeff;font:700 28px 'Segoe UI',Arial,sans-serif}
+    .s{fill:#93c5fd;font:500 20px 'Segoe UI',Arial,sans-serif}
+    .l{stroke:#34d399;stroke-width:7;fill:none;marker-end:url(#a)}
+  </style>
+  <circle class="n" cx="250" cy="450" r="115"/>
+  <text class="t" x="250" y="445" text-anchor="middle">1</text>
+  <text class="s" x="250" y="480" text-anchor="middle">Receive task</text>
+
+  <circle class="n" cx="550" cy="250" r="115"/>
+  <text class="t" x="550" y="245" text-anchor="middle">2</text>
+  <text class="s" x="550" y="280" text-anchor="middle">Select tool</text>
+
+  <circle class="n" cx="900" cy="250" r="115"/>
+  <text class="t" x="900" y="245" text-anchor="middle">3</text>
+  <text class="s" x="900" y="280" text-anchor="middle">Execute tool</text>
+
+  <circle class="n" cx="1200" cy="450" r="115"/>
+  <text class="t" x="1200" y="445" text-anchor="middle">4</text>
+  <text class="s" x="1200" y="480" text-anchor="middle">Feed result</text>
+
+  <circle class="n" cx="800" cy="680" r="130" stroke="#10b981"/>
+  <text class="t" x="800" y="670" text-anchor="middle">5</text>
+  <text class="s" x="800" y="705" text-anchor="middle">Submit final answer</text>
+
+  <path class="l" d="M350 390L470 305"/>
+  <path class="l" d="M665 250H785"/>
+  <path class="l" d="M1015 305L1110 390"/>
+  <path class="l" d="M1115 530L900 625"/>
+  <path class="l" d="M680 620L345 500"/>
+  <path class="l" d="M320 380L470 290"/>
+
+  <text x="800" y="110" text-anchor="middle" fill="#d1fae5" font-family="Segoe UI,Arial,sans-serif" font-size="42" font-weight="700">
+    Agentic Round Loop (MagenticBrain)
+  </text>
+  <text x="800" y="160" text-anchor="middle" fill="#a7f3d0" font-family="Segoe UI,Arial,sans-serif" font-size="23">
+    Repeat rounds until the model emits submit as terminal tool signal
+  </text>
+</svg>

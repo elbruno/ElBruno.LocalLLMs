@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">MagenticUI connected state</title>
+  <desc id="desc">UI snapshot style image showing connected hub status and a task prompt in the input area.</desc>
+  <rect width="1600" height="900" fill="#0f0f13"/>
+  <rect x="80" y="70" width="1440" height="760" rx="16" fill="#111827" stroke="#2a2a3a" stroke-width="3"/>
+  <rect x="80" y="70" width="1440" height="78" rx="16" fill="#1a1a24"/>
+  <circle cx="130" cy="109" r="9" fill="#4ade80"/>
+  <text x="165" y="117" fill="#a78bfa" font-family="Segoe UI, Arial, sans-serif" font-size="30" font-weight="700">Magentic UI</text>
+  <text x="450" y="117" fill="#9ca3af" font-family="Segoe UI, Arial, sans-serif" font-size="20">connected</text>
+
+  <rect x="140" y="210" width="980" height="90" rx="10" fill="#1f2a1f" stroke="#2a4a2a"/>
+  <text x="170" y="245" fill="#6b7280" font-family="Segoe UI, Arial, sans-serif" font-size="17">You</text>
+  <text x="170" y="275" fill="#e0e0e0" font-family="Segoe UI, Arial, sans-serif" font-size="22">
+    Analyze README and summarize key model capabilities.
+  </text>
+
+  <rect x="140" y="340" width="1000" height="90" rx="10" fill="#1a2535" stroke="#2a4a6a"/>
+  <text x="170" y="375" fill="#6b7280" font-family="Segoe UI, Arial, sans-serif" font-size="17">Orchestrator · round 1</text>
+  <text x="170" y="405" fill="#e0e0e0" font-family="Segoe UI, Arial, sans-serif" font-size="22">
+    Calling FileSurfer_ListDirectory(.) then FileSurfer_ReadFile(README.md)
+  </text>
+
+  <rect x="120" y="715" width="1160" height="80" rx="10" fill="#12121a" stroke="#3a3a5c"/>
+  <text x="150" y="762" fill="#9ca3af" font-family="Segoe UI, Arial, sans-serif" font-size="22">Describe your task…</text>
+  <rect x="1310" y="715" width="160" height="80" rx="10" fill="#7c3aed"/>
+  <text x="1390" y="763" text-anchor="middle" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="700">Run</text>
+</svg>

@@ -290,6 +290,72 @@ See sample source:
 
 ---
 
+## MagenticBrainAgent — Agentic Tool-Calling Loop (Qwen3 Template)
+
+**What it demonstrates:** A round-based OmniAgent pattern with tools, using `KnownModels.MagenticBrain` or `KnownModels.Qwen3_14BInstruct`.
+
+**Run it:**
+
+```bash
+dotnet run --project src/samples/MagenticBrainAgent
+```
+
+**Key code:**
+
+```csharp
+var options = new LocalLLMsOptions
+{
+    Model = KnownModels.MagenticBrain,
+    EnsureModelDownloaded = true,
+    Temperature = 0.7f,
+    MaxSequenceLength = 32768
+};
+
+using var client = await LocalChatClient.CreateAsync(options);
+```
+
+**What happens:**
+
+1. Loads MagenticBrain locally (auto-download on first run).
+2. Sends the task and available tools to the model.
+3. Repeats tool-call rounds until the model emits `submit`.
+
+See sample source:
+
+- [`src/samples/MagenticBrainAgent/Program.cs`](../src/samples/MagenticBrainAgent/Program.cs)
+
+---
+
+## MagenticUIServer — Local Multi-Agent Web Sample
+
+**What it demonstrates:** A local web UX for agentic orchestration with SignalR streaming, React client, and Magentic-style orchestration loop.
+
+**Run it:**
+
+```bash
+# Terminal 1
+cd src/samples/MagenticUIServer/MagenticUIServer/ClientApp
+npm install
+npm run dev
+
+# Terminal 2
+dotnet run --project src/samples/MagenticUIServer/MagenticUIServer
+```
+
+**What happens:**
+
+1. React client submits tasks through SignalR.
+2. ASP.NET host routes tasks to the orchestrator service.
+3. Orchestrator executes multi-round tool calls and streams progress.
+
+See sample sources:
+
+- [`src/samples/MagenticUIServer/MagenticUIServer`](../src/samples/MagenticUIServer/MagenticUIServer)
+- [`src/samples/MagenticUIServer/MagenticUIServer/ClientApp`](../src/samples/MagenticUIServer/MagenticUIServer/ClientApp)
+- [`docs/magentic-ui-dotnet.md`](magentic-ui-dotnet.md)
+
+---
+
 ## Next Steps
 
 - 📖 [Getting Started](getting-started.md) — full setup guide with GPU configuration
