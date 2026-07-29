@@ -15,6 +15,7 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 
 ## What's New
 
+- 📦 **9 more models now support auto-download** (`v0.20.4`) — StableLM-2-1.6B-Chat, Gemma-4-E2B-IT, Gemma-4-E4B-IT, Gemma-4-12B-IT, Gemma-4-26B-A4B-IT, Gemma-4-31B-IT, Mixtral-8x7B-Instruct-v0.1, DeepSeek-R1-Distill-Llama-70B, and Command-R (35B) are now `HasNativeOnnx=true` with ONNX weights hosted at `elbruno/*-onnx` on HuggingFace. Set `EnsureModelDownloaded = true` to auto-download.
 - 🔍 **`ModelDefinition.IsVisionCapable`** — new computed property. Consumer apps can now check `model.IsVisionCapable` instead of comparing `ModelType == OnnxModelType.VisionGenAI`. Fara1.5-9B returns `true`; all text models return `false`.
 - 🛑 **Fail-fast for non-downloadable models** — `OptionsValidator` now throws an `InvalidOperationException` with actionable text when `EnsureModelDownloaded = true` is paired with a model that has `HasNativeOnnx = false` and no `ModelPath`. Eliminates the confusing "auto-download enabled" UX that previously gave no guidance.
 - 📄 **[Auto-download guide](docs/auto-download.md)** — new doc covering the auto-download flow, cache path, vision model usage, and first-run examples for MagenticBrain and Fara.
@@ -314,30 +315,30 @@ For detailed troubleshooting, see [docs/troubleshooting-guide.md](docs/troublesh
 | ⚪ Tiny | Qwen2.5-0.5B-Instruct | 0.5B | ✅ Native | `qwen2.5-0.5b-instruct` |
 | ⚪ Tiny | Qwen2.5-1.5B-Instruct | 1.5B | ✅ Native | `qwen2.5-1.5b-instruct` |
 | ⚪ Tiny | Gemma-2B-IT | 2B | ✅ Native | `gemma-2b-it` |
-| ⚪ Tiny | Gemma-4-E2B-IT | 5.1B (2B active) | 🔄 Convert | `gemma-4-e2b-it` |
-| ⚪ Tiny | StableLM-2-1.6B-Chat | 1.6B | 🔄 Convert | `stablelm-2-1.6b-chat` |
+| ⚪ Tiny | Gemma-4-E2B-IT | 5.1B (2B active) | ✅ Native | `gemma-4-e2b-it` |
+| ⚪ Tiny | StableLM-2-1.6B-Chat | 1.6B | ✅ Native | `stablelm-2-1.6b-chat` |
 | 🟢 Small | Phi-3.5 mini instruct | 3.8B | ✅ Native | `phi-3.5-mini-instruct` |
 | 🟢 Small | Qwen2.5-3B-Instruct | 3B | ✅ Native | `qwen2.5-3b-instruct` |
 | 🟢 Small | Llama-3.2-3B-Instruct | 3B | ✅ Native | `llama-3.2-3b-instruct` |
 | 🟢 Small | Gemma-2-2B-IT | 2B | ✅ Native | `gemma-2-2b-it` |
-| 🟢 Small | Gemma-4-E4B-IT | 8B (4B active) | 🔄 Convert | `gemma-4-e4b-it` |
+| 🟢 Small | Gemma-4-E4B-IT | 8B (4B active) | ✅ Native | `gemma-4-e4b-it` |
 | 🟡 Medium | Qwen2.5-7B-Instruct | 7B | ✅ Native | `qwen2.5-7b-instruct` |
 | 🟡 Medium | Qwen2.5-Coder-7B-Instruct | 7B | ✅ Native | `qwen2.5-coder-7b-instruct` |
 | 🟡 Medium | Llama-3.1-8B-Instruct | 8B | ✅ Native | `llama-3.1-8b-instruct` |
 | 🟡 Medium | Mistral-7B-Instruct-v0.3 | 7B | ✅ Native | `mistral-7b-instruct-v0.3` |
 | 🟡 Medium | Gemma-2-9B-IT | 9B | ✅ Native | `gemma-2-9b-it` |
-| 🟡 Medium | Gemma-4-12B-IT | 12B | 🔄 Convert | `gemma-4-12b-it` |
+| 🟡 Medium | Gemma-4-12B-IT | 12B | ✅ Native | `gemma-4-12b-it` |
 | 🟡 Medium | Phi-4 | 14B | ✅ Native | `phi-4` |
 | 🟡 Medium | DeepSeek-R1-Distill-Qwen-14B | 14B | ✅ Native | `deepseek-r1-distill-qwen-14b` |
 | 🟡 Medium | Mistral-Small-24B-Instruct | 24B | ✅ Native | `mistral-small-24b-instruct` |
 | 🔴 Large | Qwen2.5-14B-Instruct | 14B | ✅ Native | `qwen2.5-14b-instruct` |
 | 🔴 Large | Qwen2.5-32B-Instruct | 32B | ✅ Native | `qwen2.5-32b-instruct` |
 | 🔴 Large | Llama-3.3-70B-Instruct | 70B | ✅ ONNX | `llama-3.3-70b-instruct` |
-| 🔴 Large | Mixtral-8x7B-Instruct-v0.1 | 8x7B | 🔄 Convert | `mixtral-8x7b-instruct-v0.1` |
-| 🔴 Large | DeepSeek-R1-Distill-Llama-70B | 70B | 🔄 Convert | `deepseek-r1-distill-llama-70b` |
-| 🔴 Large | Command-R (35B) | 35B | 🔄 Convert | `command-r-35b` |
-| 🔴 Large | Gemma-4-26B-A4B-IT | 25.2B (3.8B active) | 🔄 Convert | `gemma-4-26b-a4b-it` |
-| 🔴 Large | Gemma-4-31B-IT | 30.7B | 🔄 Convert | `gemma-4-31b-it` |
+| 🔴 Large | Mixtral-8x7B-Instruct-v0.1 | 8x7B | ✅ Native | `mixtral-8x7b-instruct-v0.1` |
+| 🔴 Large | DeepSeek-R1-Distill-Llama-70B | 70B | ✅ Native | `deepseek-r1-distill-llama-70b` |
+| 🔴 Large | Command-R (35B) | 35B | ✅ Native | `command-r-35b` |
+| 🔴 Large | Gemma-4-26B-A4B-IT | 25.2B (3.8B active) | ✅ Native | `gemma-4-26b-a4b-it` |
+| 🔴 Large | Gemma-4-31B-IT | 30.7B | ✅ Native | `gemma-4-31b-it` |
 | 🟣 Next-Gen | Qwen3-14B-Instruct | 14.77B | ✅ Native | `qwen3-14b-instruct` |
 | 🤖 Agentic | MagenticBrain | ~14.77B | ✅ Native | `magentic-brain` |
 | 👁️ VLM | Fara 1.5-9B | ~9.4B | ✅ Native | `fara-1.5-9b` |

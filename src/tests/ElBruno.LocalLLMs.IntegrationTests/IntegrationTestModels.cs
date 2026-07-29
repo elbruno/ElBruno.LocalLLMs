@@ -23,9 +23,9 @@ public static class IntegrationTestModels
     public static readonly HashSet<string> LargeModelIds = new(StringComparer.OrdinalIgnoreCase)
     {
         // Non-native ONNX models that are also large — excluded until ONNX conversion is published
-        KnownModels.Mixtral8x7BInstructV01.Id,    // 47B → ~24 GB (HasNativeOnnx=false, see issue #32)
-        KnownModels.DeepSeekR1DistillLlama70B.Id, // 70B → ~35 GB (HasNativeOnnx=false, see issue #33)
-        KnownModels.CommandR35B.Id,               // 35B → ~18 GB (HasNativeOnnx=false, see issue #34)
+        KnownModels.Mixtral8x7BInstructV01.Id,    // 47B → ~24 GB (HasNativeOnnx=true, excluded due to size)
+        KnownModels.DeepSeekR1DistillLlama70B.Id, // 70B → ~35 GB (HasNativeOnnx=true, excluded due to size)
+        KnownModels.CommandR35B.Id,               // 35B → ~18 GB (HasNativeOnnx=true, excluded due to size)
         // 70B native ONNX model — requires CUDA/GPU; CPU-only machines fail with DLL missing error
         KnownModels.Llama33_70BInstruct.Id,       // 70B → ~35 GB, requires GPU execution provider
     };
