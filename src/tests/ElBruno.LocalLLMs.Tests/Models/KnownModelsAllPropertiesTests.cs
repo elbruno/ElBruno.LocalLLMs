@@ -214,9 +214,9 @@ public class KnownModelsAllPropertiesTests
             HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
 
         new(KnownModels.StableLM2_16BChat,
-            "stablelm-2-1.6b-chat", "stabilityai/stablelm-2-zephyr-1_6b",
+            "stablelm-2-1.6b-chat", "elbruno/StableLM-2-1.6B-Chat-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.ChatML, ModelTier.Tiny,
-            HasNativeOnnx: false, ToolCalling: false, VisionCapable: false),
+            HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         // ── Small tier ─────────────────────────────────────────────────────────
         new(KnownModels.Phi35MiniInstruct,
@@ -286,9 +286,9 @@ public class KnownModelsAllPropertiesTests
             HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Gemma4_12BIT,
-            "gemma-4-12b-it", "google/gemma-4-12B-it",
+            "gemma-4-12b-it", "elbruno/Gemma-4-12B-IT-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Gemma, ModelTier.Medium,
-            HasNativeOnnx: false, ToolCalling: true, VisionCapable: false),
+            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
 
         new(KnownModels.Fara15_9B,
             "fara1.5-9b", "elbruno/Fara1.5-9B-onnx",
@@ -312,29 +312,29 @@ public class KnownModelsAllPropertiesTests
             HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Mixtral8x7BInstructV01,
-            "mixtral-8x7b-instruct-v0.1", "mistralai/Mixtral-8x7B-Instruct-v0.1",
+            "mixtral-8x7b-instruct-v0.1", "elbruno/Mixtral-8x7B-Instruct-v0.1-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Mistral, ModelTier.Large,
-            HasNativeOnnx: false, ToolCalling: false, VisionCapable: false),
+            HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.DeepSeekR1DistillLlama70B,
-            "deepseek-r1-distill-llama-70b", "deepseek-ai/DeepSeek-R1-Distill-Llama-70B",
+            "deepseek-r1-distill-llama-70b", "elbruno/DeepSeek-R1-Distill-Llama-70B-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.DeepSeek, ModelTier.Large,
-            HasNativeOnnx: false, ToolCalling: false, VisionCapable: false),
+            HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.CommandR35B,
-            "command-r-35b", "CohereForAI/c4ai-command-r-v01",
+            "command-r-35b", "elbruno/Command-R-35B-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.ChatML, ModelTier.Large,
-            HasNativeOnnx: false, ToolCalling: false, VisionCapable: false),
+            HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Gemma4_26BA4BIT,
-            "gemma-4-26b-a4b-it", "google/gemma-4-26B-A4B-it",
+            "gemma-4-26b-a4b-it", "elbruno/Gemma-4-26B-A4B-IT-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Gemma, ModelTier.Large,
-            HasNativeOnnx: false, ToolCalling: true, VisionCapable: false),
+            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
 
         new(KnownModels.Gemma4_31BIT,
-            "gemma-4-31b-it", "google/gemma-4-31B-it",
+            "gemma-4-31b-it", "elbruno/Gemma-4-31B-IT-onnx",
             OnnxModelType.GenAI, ChatTemplateFormat.Gemma, ModelTier.Large,
-            HasNativeOnnx: false, ToolCalling: true, VisionCapable: false),
+            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
 
         // ── Agentic ────────────────────────────────────────────────────────────
         new(KnownModels.Qwen3_14BInstruct,

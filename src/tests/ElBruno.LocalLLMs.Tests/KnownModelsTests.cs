@@ -294,7 +294,7 @@ public class KnownModelsTests
         Assert.Equal("gemma-4-12b-it", model.Id);
         Assert.Equal("Gemma-4-12B-IT", model.DisplayName);
         Assert.Equal(ChatTemplateFormat.Gemma, model.ChatTemplate);
-        Assert.False(model.HasNativeOnnx);
+        Assert.True(model.HasNativeOnnx);
         Assert.True(model.SupportsToolCalling);
         Assert.False(string.IsNullOrWhiteSpace(model.HuggingFaceRepoId));
     }
@@ -307,7 +307,7 @@ public class KnownModelsTests
         Assert.Equal("gemma-4-26b-a4b-it", model.Id);
         Assert.Equal("Gemma-4-26B-A4B-IT", model.DisplayName);
         Assert.Equal(ChatTemplateFormat.Gemma, model.ChatTemplate);
-        Assert.False(model.HasNativeOnnx);
+        Assert.True(model.HasNativeOnnx);
         Assert.True(model.SupportsToolCalling);
         Assert.False(string.IsNullOrWhiteSpace(model.HuggingFaceRepoId));
     }
@@ -320,7 +320,7 @@ public class KnownModelsTests
         Assert.Equal("gemma-4-31b-it", model.Id);
         Assert.Equal("Gemma-4-31B-IT", model.DisplayName);
         Assert.Equal(ChatTemplateFormat.Gemma, model.ChatTemplate);
-        Assert.False(model.HasNativeOnnx);
+        Assert.True(model.HasNativeOnnx);
         Assert.True(model.SupportsToolCalling);
         Assert.False(string.IsNullOrWhiteSpace(model.HuggingFaceRepoId));
     }

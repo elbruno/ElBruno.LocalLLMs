@@ -13,7 +13,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Issue #26 — `KnownModels.Gemma4E2BIT`**: updated `HuggingFaceRepoId` to `elbruno/Gemma-4-E2B-IT-onnx` and set
   `HasNativeOnnx = true` now that the ONNX artifact has been published. Auto-download via `EnsureModelDownloaded = true` is now supported.
 - **Issue #27 — `KnownModels.Gemma4E4BIT`**: updated `HuggingFaceRepoId` to `elbruno/Gemma-4-E4B-IT-onnx` and set
-  `HasNativeOnnx = true` now that the ONNX artifact has been published. Auto-download via `EnsureModelDownloaded = true` is now supported.
+  `HasNativeOnnx = true` now that the ONNX artifact has been published.
+- **Issue #28 — `KnownModels.StableLM2_16BChat`**: updated `HuggingFaceRepoId` to `elbruno/StableLM-2-1.6B-Chat-onnx`,
+  `RequiredFiles` to `["*"]`, and set `HasNativeOnnx = true`.
+- **Issue #29 — `KnownModels.Gemma4_12BIT`**: updated `HuggingFaceRepoId` to `elbruno/Gemma-4-12B-IT-onnx` and set
+  `HasNativeOnnx = true`.
+- **Issue #30 — `KnownModels.Gemma4_26BA4BIT`**: updated `HuggingFaceRepoId` to `elbruno/Gemma-4-26B-A4B-IT-onnx` and set
+  `HasNativeOnnx = true`.
+- **Issue #31 — `KnownModels.Gemma4_31BIT`**: updated `HuggingFaceRepoId` to `elbruno/Gemma-4-31B-IT-onnx` and set
+  `HasNativeOnnx = true`.
+- **Issue #32 — `KnownModels.Mixtral8x7BInstructV01`**: updated `HuggingFaceRepoId` to `elbruno/Mixtral-8x7B-Instruct-v0.1-onnx`,
+  `RequiredFiles` to `["*"]`, and set `HasNativeOnnx = true`.
+- **Issue #33 — `KnownModels.DeepSeekR1DistillLlama70B`**: updated `HuggingFaceRepoId` to `elbruno/DeepSeek-R1-Distill-Llama-70B-onnx`,
+  `RequiredFiles` to `["*"]`, and set `HasNativeOnnx = true`.
+- **Issue #34 — `KnownModels.CommandR35B`**: updated `HuggingFaceRepoId` to `elbruno/Command-R-35B-onnx`,
+  `RequiredFiles` to `["*"]`, and set `HasNativeOnnx = true`.
 
 ---
 

@@ -134,17 +134,17 @@ public static class KnownModels
         SupportsToolCalling = true
     };
 
-    /// <summary>StableLM 2 Zephyr 1.6B — Stability AI's compact chat model.</summary>
+    /// <summary>StableLM 2 Zephyr 1.6B — Stability AI's compact chat model. ONNX artifact published at elbruno/StableLM-2-1.6B-Chat-onnx.</summary>
     public static readonly ModelDefinition StableLM2_16BChat = new()
     {
         Id = "stablelm-2-1.6b-chat",
         DisplayName = "StableLM-2-1.6B-Chat",
-        HuggingFaceRepoId = "stabilityai/stablelm-2-zephyr-1_6b",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/StableLM-2-1.6B-Chat-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.ChatML,
         Tier = ModelTier.Tiny,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
     // ────────────────────────────────────────────────────────
@@ -332,17 +332,17 @@ public static class KnownModels
         HasNativeOnnx = true
     };
 
-    /// <summary>Gemma 4 12B IT (Unified) — Google's June 2026 unified Gemma 4 model.</summary>
+    /// <summary>Gemma 4 12B IT (Unified) — Google's June 2026 unified Gemma 4 model. ONNX artifact published at elbruno/Gemma-4-12B-IT-onnx.</summary>
     public static readonly ModelDefinition Gemma4_12BIT = new()
     {
         Id = "gemma-4-12b-it",
         DisplayName = "Gemma-4-12B-IT",
-        HuggingFaceRepoId = "google/gemma-4-12B-it",
+        HuggingFaceRepoId = "elbruno/Gemma-4-12B-IT-onnx",
         RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Gemma,
         Tier = ModelTier.Medium,
-        HasNativeOnnx = false,
+        HasNativeOnnx = true,
         SupportsToolCalling = true
     };
 
@@ -389,70 +389,70 @@ public static class KnownModels
         HasNativeOnnx = true
     };
 
-    /// <summary>Mixtral 8x7B Instruct — Mistral AI's MoE model.</summary>
+    /// <summary>Mixtral 8x7B Instruct — Mistral AI's MoE model. ONNX artifact published at elbruno/Mixtral-8x7B-Instruct-v0.1-onnx.</summary>
     public static readonly ModelDefinition Mixtral8x7BInstructV01 = new()
     {
         Id = "mixtral-8x7b-instruct-v0.1",
         DisplayName = "Mixtral-8x7B-Instruct-v0.1",
-        HuggingFaceRepoId = "mistralai/Mixtral-8x7B-Instruct-v0.1",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/Mixtral-8x7B-Instruct-v0.1-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Mistral,
         Tier = ModelTier.Large,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
-    /// <summary>DeepSeek-R1-Distill-Llama-70B — large reasoning model.</summary>
+    /// <summary>DeepSeek-R1-Distill-Llama-70B — large reasoning model. ONNX artifact published at elbruno/DeepSeek-R1-Distill-Llama-70B-onnx.</summary>
     public static readonly ModelDefinition DeepSeekR1DistillLlama70B = new()
     {
         Id = "deepseek-r1-distill-llama-70b",
         DisplayName = "DeepSeek-R1-Distill-Llama-70B",
-        HuggingFaceRepoId = "deepseek-ai/DeepSeek-R1-Distill-Llama-70B",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/DeepSeek-R1-Distill-Llama-70B-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.DeepSeek,
         Tier = ModelTier.Large,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
-    /// <summary>Command-R 35B — Cohere's large command model.</summary>
+    /// <summary>Command-R 35B — Cohere's large command model. ONNX artifact published at elbruno/Command-R-35B-onnx.</summary>
     public static readonly ModelDefinition CommandR35B = new()
     {
         Id = "command-r-35b",
         DisplayName = "Command-R (35B)",
-        HuggingFaceRepoId = "CohereForAI/c4ai-command-r-v01",
-        RequiredFiles = ["onnx/model.onnx", "onnx/model.onnx.data"],
+        HuggingFaceRepoId = "elbruno/Command-R-35B-onnx",
+        RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.ChatML,
         Tier = ModelTier.Large,
-        HasNativeOnnx = false
+        HasNativeOnnx = true
     };
 
-    /// <summary>Gemma 4 26B A4B IT — Google's MoE model, 3.8B active / 25.2B total, 256K context.</summary>
+    /// <summary>Gemma 4 26B A4B IT — Google's MoE model, 3.8B active / 25.2B total, 256K context. ONNX artifact published at elbruno/Gemma-4-26B-A4B-IT-onnx.</summary>
     public static readonly ModelDefinition Gemma4_26BA4BIT = new()
     {
         Id = "gemma-4-26b-a4b-it",
         DisplayName = "Gemma-4-26B-A4B-IT",
-        HuggingFaceRepoId = "google/gemma-4-26B-A4B-it",
+        HuggingFaceRepoId = "elbruno/Gemma-4-26B-A4B-IT-onnx",
         RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Gemma,
         Tier = ModelTier.Large,
-        HasNativeOnnx = false,
+        HasNativeOnnx = true,
         SupportsToolCalling = true
     };
 
-    /// <summary>Gemma 4 31B IT — Google's dense flagship, 30.7B params, 256K context.</summary>
+    /// <summary>Gemma 4 31B IT — Google's dense flagship, 30.7B params, 256K context. ONNX artifact published at elbruno/Gemma-4-31B-IT-onnx.</summary>
     public static readonly ModelDefinition Gemma4_31BIT = new()
     {
         Id = "gemma-4-31b-it",
         DisplayName = "Gemma-4-31B-IT",
-        HuggingFaceRepoId = "google/gemma-4-31B-it",
+        HuggingFaceRepoId = "elbruno/Gemma-4-31B-IT-onnx",
         RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Gemma,
         Tier = ModelTier.Large,
-        HasNativeOnnx = false,
+        HasNativeOnnx = true,
         SupportsToolCalling = true
     };
 
