@@ -182,9 +182,68 @@ All new components must follow the patterns in `ElBruno.LocalLLMs.BlazorComponen
 3. `InvokeAsync(StateHasChanged)` for all cross-thread updates
 4. Parameters use `EventCallback<T>` not `Action<T>`
 5. Target `net8.0` only (no multi-targeting for Blazor components)
-6. Add to `BlazorDemo` sample app with a dedicated page
+6. Add to `BlazorDemo` sample app with a dedicated page (see pattern below)
 7. Add parameter table to `docs/blazor-components.md`
 8. Bump version and update `publish.yml` pack step
+
+---
+
+## BlazorDemo — two-section page pattern
+
+Every demo page **must** include both a live component and a collapsible
+copyable code panel. This is the standard used in the existing 5 pages and
+must be followed for every new Phase 1–3 page.
+
+### How it works
+
+1. **`CodeSnippets.cs`** — a static C# class at the root of the BlazorDemo
+   project. Add one `public static readonly string` field per component.
+   Use plain string concatenation (no raw string literals — the Razor compiler
+   in .NET 8 doesn't support them in `.razor` files).
+2. **`Components/CodeSample.razor`** — shared reusable component with a
+   Bootstrap `<details>` shell, dark `<pre>` block, and a `📋 Copy` button
+   using `IJSRuntime`. Single `[Parameter, EditorRequired] string Code`.
+3. **Page** — place the live component, then `<CodeSample Code="@CodeSnippets.ComponentName" />`
+
+### Example page structure
+
+```razor
+@page "/mycomponent"
+@rendermode InteractiveServer
+
+<h1>🧩 MyComponent</h1>
+<p>Brief description.</p>
+
+<MyComponent SomeParam="value" />
+
+<CodeSample Code="@CodeSnippets.MyComponent" />
+
+@code { /* optional page state */ }
+```
+
+### Snippet content guidelines
+
+Each snippet in `CodeSnippets.cs` should include:
+- `Program.cs` DI registration (if any new services are needed)
+- The minimal `.razor` markup to use the component
+- A `@code` block showing common parameters and event handlers
+- Inline comments explaining non-obvious options
+
+---
+
+## Future pages — one page per new component
+
+Add the corresponding `NavMenu.razor` entry for each new page.
+
+| Component | Route | File | NavMenu icon |
+|---|---|---|---|
+| `VisionChatBox` | `/vision` | `Pages/Vision.razor` | `bi-camera-video-fill` |
+| `InferenceMetricsPanel` | `/metrics` | `Pages/Metrics.razor` | `bi-graph-up` |
+| `DownloadQueueManager` | `/queue` | `Pages/Queue.razor` | `bi-cloud-download-fill` |
+| `PromptBuilder` | `/prompt` | `Pages/Prompt.razor` | `bi-pencil-square` |
+| `ConversationHistory` | `/history` | `Pages/History.razor` | `bi-clock-history` |
+| `ModelCompareView` | `/compare` | `Pages/Compare.razor` | `bi-layout-split` |
+| `ToolCallInspector` | `/tools` | `Pages/Tools.razor` | `bi-wrench-adjustable` |
 
 ---
 

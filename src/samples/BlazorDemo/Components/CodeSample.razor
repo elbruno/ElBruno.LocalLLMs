@@ -1,0 +1,29 @@
+@inject IJSRuntime JS
+
+<details class="code-sample mt-3 border rounded">
+    <summary class="px-3 py-2 bg-light user-select-none" style="cursor:pointer">
+        <i class="bi bi-code-slash me-1"></i> Show source code
+    </summary>
+    <div class="position-relative p-3 bg-dark text-light rounded-bottom">
+        <button class="btn btn-sm btn-outline-light position-absolute top-0 end-0 m-2"
+                @onclick="CopyToClipboard" title="Copy to clipboard">
+            @(_copied ? "✓ Copied" : "📋 Copy")
+        </button>
+        <pre class="mb-0" style="white-space:pre-wrap;font-size:.85rem;overflow-x:auto"><code>@Code</code></pre>
+    </div>
+</details>
+
+@code {
+    [Parameter, EditorRequired] public string Code { get; set; } = "";
+    bool _copied;
+
+    async Task CopyToClipboard()
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", Code);
+        _copied = true;
+        StateHasChanged();
+        await Task.Delay(2000);
+        _copied = false;
+        StateHasChanged();
+    }
+}

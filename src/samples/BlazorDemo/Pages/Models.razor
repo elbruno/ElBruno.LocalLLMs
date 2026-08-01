@@ -1,6 +1,5 @@
 @page "/models"
 @rendermode InteractiveServer
-@inject Microsoft.Extensions.AI.IChatClient ChatClient
 
 <PageTitle>Model Gallery — LocalLLMs Demo</PageTitle>
 
@@ -15,10 +14,12 @@
 @if (selectedModel is not null)
 {
     <div class="alert alert-success mt-3">
-        ✅ Selected:         <strong>@selectedModel.DisplayName</strong> — switch to
+        ✅ Selected: <strong>@selectedModel.DisplayName</strong> — switch to
         <a href="chat">Chat</a> to use it.
     </div>
 }
+
+<CodeSample Code="@CodeSnippets.ModelGallery" />
 
 @code {
     private ModelDefinition? selectedModel;
