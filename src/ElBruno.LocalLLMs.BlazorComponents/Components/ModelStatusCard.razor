@@ -1,0 +1,214 @@
+@using ElBruno.LocalLLMs.BlazorComponents.Services
+@inject ModelStateService ModelState
+@implements IDisposable
+
+<div class="llm-model-card @StatusClass">
+    <div class="llm-model-card-header">
+        <div class="llm-model-card-title">
+            <span class="llm-model-name">@Model.DisplayName</span>
+            <span class="llm-tier-badge llm-tier-@Model.Tier.ToString().ToLowerInvariant()">@Model.Tier</span>
+            @if (Model.IsVisionCapable)
+            {
+                <span class="llm-cap-badge">👁 Vision</span>
+            }
+            @if (Model.SupportsToolCalling)
+            {
+                <span class="llm-cap-badge">🔧 Tools</span>
+            }
+        </div>
+        <div class="llm-model-status-indicator">
+            @if (_status.State == ModelDownloadState.Downloading)
+            {
+                <span class="llm-status-dot llm-status-downloading">⬇</span>
+            }
+            else if (_status.State == ModelDownloadState.Downloaded)
+            {
+                <span class="llm-status-dot llm-status-ok">●</span>
+            }
+            else if (_status.State == ModelDownloadState.Error)
+            {
+                <span class="llm-status-dot llm-status-error">✕</span>
+            }
+            else
+            {
+                <span class="llm-status-dot llm-status-none">○</span>
+            }
+            <span class="llm-status-label">@StatusLabel</span>
+        </div>
+    </div>
+
+    @if (_status.State == ModelDownloadState.Downloading && _status.Progress is { } p)
+    {
+        <div class="llm-progress-section">
+            <div class="llm-progress-bar-track">
+                <div class="llm-progress-bar-fill" style="width:@p.PercentComplete.ToString("F0")%"></div>
+            </div>
+            <div class="llm-progress-info">
+                <span>@FormatBytes(p.BytesDownloaded) / @FormatBytes(p.TotalBytes)</span>
+                <span>@p.PercentComplete.ToString("F0")%</span>
+            </div>
+            @if (!string.IsNullOrEmpty(p.FileName))
+            {
+                <div class="llm-progress-file">@TruncateFileName(p.FileName)</div>
+            }
+        </div>
+    }
+
+    @if (_status.State == ModelDownloadState.Downloaded)
+    {
+        <div class="llm-model-size">
+            Size: @FormatBytes(_status.CachedSizeBytes)
+        </div>
+    }
+
+    @if (_status.State == ModelDownloadState.Error)
+    {
+        <div class="llm-model-error">@_status.ErrorMessage</div>
+    }
+
+    <div class="llm-model-actions">
+        @if (_status.State == ModelDownloadState.NotDownloaded || _status.State == ModelDownloadState.Error)
+        {
+            <button class="llm-btn llm-btn-primary" @onclick="DownloadAsync" disabled="@_busy">
+                ⬇ Download
+            </button>
+        }
+        else if (_status.State == ModelDownloadState.Downloading)
+        {
+            <button class="llm-btn llm-btn-danger" @onclick="CancelDownload">
+                ✕ Cancel
+            </button>
+        }
+        else if (_status.State == ModelDownloadState.Downloaded)
+        {
+            <button class="llm-btn llm-btn-secondary" @onclick="OpenFolderAsync" title="Open model folder">
+                📂 Folder
+            </button>
+            <button class="llm-btn llm-btn-danger" @onclick="DeleteAsync" disabled="@_busy">
+                🗑 Delete
+            </button>
+            @if (OnModelSelected.HasDelegate)
+            {
+                <button class="llm-btn llm-btn-primary" @onclick="SelectModel">
+                    ▶ Use
+                </button>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>The model to display and manage.</summary>
+    [Parameter, EditorRequired] public ModelDefinition Model { get; set; } = default!;
+
+    /// <summary>Raised when the user clicks "Use" on a downloaded model.</summary>
+    [Parameter] public EventCallback<ModelDefinition> OnModelSelected { get; set; }
+
+    /// <summary>Raised when the model is deleted.</summary>
+    [Parameter] public EventCallback<ModelDefinition> OnModelDeleted { get; set; }
+
+    private ModelStatus _status = default!;
+    private bool _busy;
+
+    protected override void OnInitialized()
+    {
+        _status = ModelState.GetStatus(Model);
+        ModelState.OnStateChanged += HandleStateChanged;
+    }
+
+    protected override void OnParametersSet()
+    {
+        _status = ModelState.GetStatus(Model);
+    }
+
+    private void HandleStateChanged()
+    {
+        _status = ModelState.GetStatus(Model);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task DownloadAsync()
+    {
+        _busy = true;
+        StateHasChanged();
+        try
+        {
+            await ModelState.StartDownloadAsync(Model);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void CancelDownload() => ModelState.CancelDownload(Model);
+
+    private async Task DeleteAsync()
+    {
+        _busy = true;
+        StateHasChanged();
+        try
+        {
+            await ModelState.DeleteModelAsync(Model);
+            await OnModelDeleted.InvokeAsync(Model);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task OpenFolderAsync()
+    {
+        var path = _status.LocalPath ?? ModelState.GetModelDirectory(Model);
+        if (!Directory.Exists(path)) return;
+
+        try
+        {
+            if (OperatingSystem.IsWindows())
+                System.Diagnostics.Process.Start("explorer.exe", path);
+            else if (OperatingSystem.IsMacOS())
+                System.Diagnostics.Process.Start("open", path);
+            else
+                System.Diagnostics.Process.Start("xdg-open", path);
+        }
+        catch { /* not critical */ }
+
+        await Task.CompletedTask;
+    }
+
+    private void SelectModel() => OnModelSelected.InvokeAsync(Model);
+
+    private string StatusLabel => _status.State switch
+    {
+        ModelDownloadState.Downloading => "Downloading…",
+        ModelDownloadState.Downloaded  => "Downloaded",
+        ModelDownloadState.Error       => "Error",
+        _                              => "Not downloaded"
+    };
+
+    private string StatusClass => _status.State switch
+    {
+        ModelDownloadState.Downloading => "llm-model-card--downloading",
+        ModelDownloadState.Downloaded  => "llm-model-card--downloaded",
+        ModelDownloadState.Error       => "llm-model-card--error",
+        _                              => "llm-model-card--pending"
+    };
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes <= 0) return "—";
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        if (bytes < 1024L * 1024 * 1024) return $"{bytes / (1024.0 * 1024):F1} MB";
+        return $"{bytes / (1024.0 * 1024 * 1024):F2} GB";
+    }
+
+    private static string TruncateFileName(string name)
+    {
+        const int maxLen = 40;
+        return name.Length > maxLen ? "…" + name[^(maxLen - 1)..] : name;
+    }
+
+    public void Dispose() => ModelState.OnStateChanged -= HandleStateChanged;
+}

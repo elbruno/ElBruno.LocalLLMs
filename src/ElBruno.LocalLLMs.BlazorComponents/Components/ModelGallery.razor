@@ -1,0 +1,99 @@
+@using ElBruno.LocalLLMs.BlazorComponents.Services
+
+<div class="llm-gallery">
+    <div class="llm-gallery-toolbar">
+        <div class="llm-gallery-filters">
+            <select class="llm-filter-select" @bind="_tierFilter">
+                <option value="">All tiers</option>
+                @foreach (var tier in Enum.GetValues<ModelTier>())
+                {
+                    <option value="@tier.ToString()">@tier</option>
+                }
+            </select>
+
+            <label class="llm-filter-toggle">
+                <input type="checkbox" @bind="_visionOnly" /> Vision only
+            </label>
+            <label class="llm-filter-toggle">
+                <input type="checkbox" @bind="_toolsOnly" /> Tool calling
+            </label>
+            <label class="llm-filter-toggle">
+                <input type="checkbox" @bind="_downloadedOnly" /> Downloaded only
+            </label>
+        </div>
+
+        @if (!string.IsNullOrEmpty(TotalCacheLabel))
+        {
+            <span class="llm-gallery-cache">💾 Cache: @TotalCacheLabel</span>
+        }
+    </div>
+
+    <div class="llm-gallery-grid">
+        @foreach (var model in FilteredModels)
+        {
+            <ModelStatusCard
+                Model="@model"
+                OnModelSelected="@OnModelSelected"
+                OnModelDeleted="@OnModelDeleted" />
+        }
+        @if (!FilteredModels.Any())
+        {
+            <div class="llm-gallery-empty">No models match the current filters.</div>
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>
+    /// Models to display. Defaults to <see cref="KnownModels.All"/> if not set.
+    /// </summary>
+    [Parameter] public IEnumerable<ModelDefinition>? Models { get; set; }
+
+    /// <summary>Raised when the user clicks "Use" on a downloaded model.</summary>
+    [Parameter] public EventCallback<ModelDefinition> OnModelSelected { get; set; }
+
+    /// <summary>Raised when a model is deleted.</summary>
+    [Parameter] public EventCallback<ModelDefinition> OnModelDeleted { get; set; }
+
+    [Inject] private ModelStateService ModelState { get; set; } = default!;
+
+    private string _tierFilter = string.Empty;
+    private bool _visionOnly;
+    private bool _toolsOnly;
+    private bool _downloadedOnly;
+
+    private IEnumerable<ModelDefinition> AllModels =>
+        Models ?? KnownModels.All;
+
+    private IEnumerable<ModelDefinition> FilteredModels
+    {
+        get
+        {
+            var q = AllModels;
+            if (!string.IsNullOrEmpty(_tierFilter) && Enum.TryParse<ModelTier>(_tierFilter, out var tier))
+                q = q.Where(m => m.Tier == tier);
+            if (_visionOnly) q = q.Where(m => m.IsVisionCapable);
+            if (_toolsOnly)  q = q.Where(m => m.SupportsToolCalling);
+            if (_downloadedOnly) q = q.Where(m => ModelState.GetStatus(m).State == ModelDownloadState.Downloaded);
+            return q;
+        }
+    }
+
+    private string TotalCacheLabel
+    {
+        get
+        {
+            long total = AllModels
+                .Select(m => ModelState.GetStatus(m).CachedSizeBytes)
+                .Sum();
+            return total > 0 ? FormatBytes(total) : string.Empty;
+        }
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes < 1024L * 1024) return $"{bytes / 1024.0:F1} KB";
+        if (bytes < 1024L * 1024 * 1024) return $"{bytes / (1024.0 * 1024):F1} MB";
+        return $"{bytes / (1024.0 * 1024 * 1024):F2} GB";
+    }
+}

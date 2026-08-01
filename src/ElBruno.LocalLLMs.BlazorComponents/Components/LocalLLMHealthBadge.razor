@@ -1,0 +1,57 @@
+@implements IDisposable
+
+<span class="llm-health-badge llm-health-@_state" title="@_tooltip">
+    @_icon @_label
+</span>
+
+@code {
+    /// <summary>
+    /// Optional loaded chat client. When null the badge shows "Not configured".
+    /// </summary>
+    [Parameter] public LocalChatClient? Client { get; set; }
+
+    /// <summary>
+    /// Auto-refresh interval. Set to zero to disable polling.
+    /// Default: every 30 seconds.
+    /// </summary>
+    [Parameter] public TimeSpan RefreshInterval { get; set; } = TimeSpan.FromSeconds(30);
+
+    private string _state = "unknown";
+    private string _icon  = "◌";
+    private string _label = "LLM…";
+    private string _tooltip = string.Empty;
+    private Timer? _timer;
+
+    protected override void OnParametersSet() => Refresh();
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && RefreshInterval > TimeSpan.Zero)
+            _timer = new Timer(_ => InvokeAsync(() => { Refresh(); StateHasChanged(); }),
+                null, RefreshInterval, RefreshInterval);
+    }
+
+    private void Refresh()
+    {
+        if (Client is null)
+        {
+            _state   = "unknown";
+            _icon    = "◌";
+            _label   = "LLM not configured";
+            _tooltip = "No LocalChatClient provided.";
+            return;
+        }
+
+        var diags = LocalChatClient.DiagnoseEnvironment();
+        var modelId = Client.Metadata.DefaultModelId ?? "unknown";
+        var provider = Client.ActiveExecutionProvider.ToString();
+
+        _state   = "ok";
+        _icon    = "●";
+        _label   = $"LLM Ready ({modelId} · {provider})";
+        _tooltip = $"CPU: {diags.CpuAvailable}  CUDA: {diags.CudaAvailable}  DirectML: {diags.DirectMLAvailable}\n"
+                 + $".NET: {diags.DotNetVersion}  Cores: {diags.ProcessorCount}";
+    }
+
+    public void Dispose() => _timer?.Dispose();
+}

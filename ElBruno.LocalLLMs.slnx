@@ -3,6 +3,7 @@
     <Project Path="src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj" />
     <Project Path="src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj" />
     <Project Path="src/ElBruno.LocalLLMs.BitNet/ElBruno.LocalLLMs.BitNet.csproj" />
+    <Project Path="src/ElBruno.LocalLLMs.BlazorComponents/ElBruno.LocalLLMs.BlazorComponents.csproj" />
   </Folder>
   <Folder Name="/src/native/">
     <Project Path="src/ElBruno.LocalLLMs.BitNet.Native.win-x64/ElBruno.LocalLLMs.BitNet.Native.win-x64.csproj" />

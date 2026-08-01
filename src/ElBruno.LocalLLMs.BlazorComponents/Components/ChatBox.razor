@@ -1,0 +1,226 @@
+@using Microsoft.Extensions.AI
+@using ElBruno.LocalLLMs.Progress
+@implements IAsyncDisposable
+
+<div class="llm-chatbox">
+    <div class="llm-chatbox-header">
+        <span class="llm-chatbox-title">💬 @(!string.IsNullOrEmpty(ModelName) ? ModelName : "Local LLM")</span>
+        @if (ShowMetrics && _lastUpdate is { } u)
+        {
+            <span class="llm-chatbox-metrics">
+                ⚡ @u.TokensPerSecond.ToString("F1") tok/s &nbsp;|&nbsp; @u.TotalTokens tokens
+            </span>
+        }
+        <button class="llm-btn llm-btn-ghost" @onclick="ClearConversation" title="Clear conversation">↺</button>
+    </div>
+
+    <div class="llm-chatbox-messages" @ref="_messagesContainer">
+        @if (_messages.Count == 0)
+        {
+            <div class="llm-chatbox-empty">
+                <span>Send a message to start chatting with a local AI model.</span>
+            </div>
+        }
+
+        @foreach (var msg in _messages)
+        {
+            <div class="llm-message llm-message-@msg.Role.Value">
+                <div class="llm-message-role">@(msg.Role == ChatRole.User ? "You" : "Assistant")</div>
+                <div class="llm-message-content">@msg.Text</div>
+            </div>
+        }
+
+        @if (_isGenerating && !string.IsNullOrEmpty(_partialResponse))
+        {
+            <div class="llm-message llm-message-assistant">
+                <div class="llm-message-role">Assistant</div>
+                <div class="llm-message-content">
+                    @_partialResponse<span class="llm-cursor">▌</span>
+                </div>
+            </div>
+        }
+        else if (_isGenerating)
+        {
+            <div class="llm-message llm-message-assistant">
+                <div class="llm-message-role">Assistant</div>
+                <div class="llm-message-content llm-thinking">
+                    <span class="llm-dot"></span><span class="llm-dot"></span><span class="llm-dot"></span>
+                </div>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="llm-chat-error">⚠ @_errorMessage</div>
+        }
+    </div>
+
+    <div class="llm-chatbox-input-row">
+        <textarea class="llm-chatbox-input"
+                  @bind="_inputText"
+                  @bind:event="oninput"
+                  @onkeydown="HandleKeyDown"
+                  placeholder="@Placeholder"
+                  rows="1"
+                  disabled="@(!CanSend)"></textarea>
+        @if (_isGenerating)
+        {
+            <button class="llm-btn llm-btn-stop" @onclick="StopGeneration" title="Stop">■ Stop</button>
+        }
+        else
+        {
+            <button class="llm-btn llm-btn-send" @onclick="SendAsync"
+                    disabled="@(!CanSend || string.IsNullOrWhiteSpace(_inputText))">
+                ➤ Send
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>
+    /// The chat client to use. When null the component renders a "not ready" state.
+    /// Provide an <see cref="IChatClient"/> (e.g., a <c>LocalChatClient</c> already initialised).
+    /// </summary>
+    [Parameter] public IChatClient? Client { get; set; }
+
+    /// <summary>Optional display name shown in the chat header.</summary>
+    [Parameter] public string? ModelName { get; set; }
+
+    /// <summary>System prompt prepended to every conversation. Optional.</summary>
+    [Parameter] public string? SystemPrompt { get; set; }
+
+    /// <summary>Placeholder text for the input textarea.</summary>
+    [Parameter] public string Placeholder { get; set; } = "Type a message…";
+
+    /// <summary>Show live inference metrics (tokens/sec, total tokens) in the header.</summary>
+    [Parameter] public bool ShowMetrics { get; set; } = true;
+
+    /// <summary>Maximum number of tokens to generate per response.</summary>
+    [Parameter] public int MaxTokens { get; set; } = 1024;
+
+    /// <summary>
+    /// Raised after each complete assistant response is appended to the conversation.
+    /// </summary>
+    [Parameter] public EventCallback<IReadOnlyList<ChatMessage>> OnConversationChanged { get; set; }
+
+    // ── State ──────────────────────────────────────────────────────────────────
+
+    private readonly List<ChatMessage> _messages = [];
+    private string _inputText = string.Empty;
+    private string _partialResponse = string.Empty;
+    private bool _isGenerating;
+    private string? _errorMessage;
+    private InferenceProgressUpdate? _lastUpdate;
+    private CancellationTokenSource? _generationCts;
+    private ElementReference _messagesContainer;
+
+    private bool CanSend => Client is not null && !_isGenerating;
+
+    // ── Event handlers ─────────────────────────────────────────────────────────
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey && CanSend && !string.IsNullOrWhiteSpace(_inputText))
+        {
+            await SendAsync();
+        }
+    }
+
+    private async Task SendAsync()
+    {
+        if (Client is null || string.IsNullOrWhiteSpace(_inputText)) return;
+
+        var userText = _inputText.Trim();
+        _inputText = string.Empty;
+        _errorMessage = null;
+        _partialResponse = string.Empty;
+
+        _messages.Add(new ChatMessage(ChatRole.User, userText));
+        _isGenerating = true;
+        StateHasChanged();
+
+        _generationCts = new CancellationTokenSource();
+
+        try
+        {
+            // Build message list including optional system prompt
+            var history = BuildHistory();
+
+            var sb = new System.Text.StringBuilder();
+            var options = new ChatOptions { MaxOutputTokens = MaxTokens };
+
+            var startTime = DateTime.UtcNow;
+            int tokenIndex = 0;
+
+            await foreach (var update in Client.GetStreamingResponseAsync(history, options, _generationCts.Token))
+            {
+                if (update.Text is { } chunk && !string.IsNullOrEmpty(chunk))
+                {
+                    sb.Append(chunk);
+                    _partialResponse = sb.ToString();
+                    tokenIndex++;
+
+                    _lastUpdate = new InferenceProgressUpdate
+                    {
+                        TokenIndex = tokenIndex,
+                        Token = chunk,
+                        TotalTokens = tokenIndex,
+                        Elapsed = DateTime.UtcNow - startTime
+                    };
+
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+
+            var assistantText = sb.ToString();
+            if (!string.IsNullOrEmpty(assistantText))
+                _messages.Add(new ChatMessage(ChatRole.Assistant, assistantText));
+        }
+        catch (OperationCanceledException)
+        {
+            if (!string.IsNullOrEmpty(_partialResponse))
+                _messages.Add(new ChatMessage(ChatRole.Assistant, _partialResponse + " [stopped]"));
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _partialResponse = string.Empty;
+            _isGenerating = false;
+            _generationCts?.Dispose();
+            _generationCts = null;
+            await InvokeAsync(StateHasChanged);
+            await OnConversationChanged.InvokeAsync(_messages.AsReadOnly());
+        }
+    }
+
+    private void StopGeneration() => _generationCts?.Cancel();
+
+    private void ClearConversation()
+    {
+        _messages.Clear();
+        _partialResponse = string.Empty;
+        _errorMessage = null;
+        _lastUpdate = null;
+        StateHasChanged();
+    }
+
+    private List<ChatMessage> BuildHistory()
+    {
+        var history = new List<ChatMessage>();
+        if (!string.IsNullOrWhiteSpace(SystemPrompt))
+            history.Add(new ChatMessage(ChatRole.System, SystemPrompt));
+        history.AddRange(_messages);
+        return history;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _generationCts?.Cancel();
+        _generationCts?.Dispose();
+        await Task.CompletedTask;
+    }
+}

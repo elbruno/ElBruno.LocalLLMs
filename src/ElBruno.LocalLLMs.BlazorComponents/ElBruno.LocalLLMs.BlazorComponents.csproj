@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>ElBruno.LocalLLMs.BlazorComponents</PackageId>
+    <Description>Blazor UI components for ElBruno.LocalLLMs — model status cards, chat boxes, download management, environment diagnostics, RAG playground and more.</Description>
+    <PackageProjectUrl>https://github.com/elbruno/ElBruno.LocalLLMs</PackageProjectUrl>
+    <PackageIcon>nuget_logo.png</PackageIcon>
+    <PackageTags>blazor;llm;onnx;ai;local;chat;components;phi;qwen;llama;rag</PackageTags>
+    <Version>0.20.6</Version>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ElBruno.LocalLLMs\ElBruno.LocalLLMs.csproj" />
+    <ProjectReference Include="..\ElBruno.LocalLLMs.Rag\ElBruno.LocalLLMs.Rag.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\images\nuget_logo.png" Pack="true" PackagePath="" />
+  </ItemGroup>
+</Project>

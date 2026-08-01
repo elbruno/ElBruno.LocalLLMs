@@ -1,0 +1,235 @@
+@using Microsoft.Extensions.AI
+@using ElBruno.LocalLLMs.Rag
+@using ElBruno.LocalLLMs.Rag.Chunking
+@using ElBruno.LocalLLMs.Rag.Storage
+@implements IAsyncDisposable
+
+<div class="llm-rag">
+    <div class="llm-rag-columns">
+
+        <!-- Index panel -->
+        <section class="llm-rag-panel llm-rag-index">
+            <h3 class="llm-rag-section-title">📄 Index Documents</h3>
+
+            <div class="llm-rag-add-row">
+                <input class="llm-input" placeholder="Document ID (optional)"
+                       @bind="_docId" @bind:event="oninput" />
+                <textarea class="llm-textarea" placeholder="Paste document text here…"
+                          @bind="_docText" @bind:event="oninput" rows="4"></textarea>
+                <button class="llm-btn llm-btn-primary" @onclick="AddDocument"
+                        disabled="@string.IsNullOrWhiteSpace(_docText)">
+                    + Add
+                </button>
+            </div>
+
+            <div class="llm-rag-doc-list">
+                @foreach (var (doc, i) in _pendingDocs.Select((d, i) => (d, i)))
+                {
+                    <div class="llm-rag-doc-item">
+                        <span class="llm-rag-doc-id">@doc.Id</span>
+                        <span class="llm-rag-doc-preview">@Truncate(doc.Content, 80)</span>
+                        <button class="llm-btn-icon" @onclick="() => RemoveDocument(i)">✕</button>
+                    </div>
+                }
+                @if (_pendingDocs.Count == 0)
+                {
+                    <span class="llm-rag-empty-hint">No documents added yet.</span>
+                }
+            </div>
+
+            <div class="llm-rag-index-actions">
+                <button class="llm-btn llm-btn-primary" @onclick="IndexAsync"
+                        disabled="@(_pendingDocs.Count == 0 || _indexing)">
+                    @(_indexing ? "Indexing…" : $"⬆ Index {_pendingDocs.Count} doc(s)")
+                </button>
+                <button class="llm-btn llm-btn-secondary" @onclick="ClearIndexAsync"
+                        disabled="@(_chunkCount == 0)">
+                    🗑 Clear Index
+                </button>
+                @if (_chunkCount > 0)
+                {
+                    <span class="llm-rag-chunk-count">@_chunkCount chunks indexed</span>
+                }
+            </div>
+
+            @if (!string.IsNullOrEmpty(_indexError))
+            {
+                <div class="llm-error">@_indexError</div>
+            }
+        </section>
+
+        <!-- Retrieve panel -->
+        <section class="llm-rag-panel llm-rag-retrieve">
+            <h3 class="llm-rag-section-title">🔍 Retrieve Context</h3>
+
+            <div class="llm-rag-query-row">
+                <input class="llm-input" placeholder="Enter a query…"
+                       @bind="_query" @bind:event="oninput"
+                       @onkeydown="HandleQueryKey" />
+                <div class="llm-rag-query-opts">
+                    <label>Top-K
+                        <input type="number" class="llm-input llm-input-sm" min="1" max="20"
+                               @bind="_topK" />
+                    </label>
+                    <label>Min similarity
+                        <input type="number" class="llm-input llm-input-sm" min="-1" max="1" step="0.05"
+                               @bind="_minSimilarity" />
+                    </label>
+                </div>
+                <button class="llm-btn llm-btn-primary" @onclick="RetrieveAsync"
+                        disabled="@(string.IsNullOrWhiteSpace(_query) || _retrieving || _chunkCount == 0)">
+                    @(_retrieving ? "Searching…" : "🔍 Search")
+                </button>
+            </div>
+
+            @if (_results is not null)
+            {
+                <div class="llm-rag-results">
+                    @if (_results.RetrievedChunks.Count == 0)
+                    {
+                        <div class="llm-rag-no-results">No chunks matched the query above the similarity threshold.</div>
+                    }
+                    @foreach (var (chunk, rank) in _results.RetrievedChunks.Select((c, i) => (c, i + 1)))
+                    {
+                        <div class="llm-rag-result-item">
+                            <div class="llm-rag-result-header">
+                                <span class="llm-rag-doc-id">@chunk.DocumentId</span>
+                                <span class="llm-rag-similarity">#@rank</span>
+                            </div>
+                            <div class="llm-rag-result-content">@chunk.Content</div>
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(_retrieveError))
+            {
+                <div class="llm-error">@_retrieveError</div>
+            }
+        </section>
+    </div>
+</div>
+
+@code {
+    /// <summary>
+    /// Embedding generator to power the RAG pipeline.
+    /// When null the component cannot index or search.
+    /// </summary>
+    [Parameter] public IEmbeddingGenerator<string, Embedding<float>>? EmbeddingGenerator { get; set; }
+
+    /// <summary>
+    /// Chunk size in characters for the sliding window chunker. Default: 300.
+    /// </summary>
+    [Parameter] public int ChunkSize { get; set; } = 300;
+
+    /// <summary>
+    /// Overlap in characters between adjacent chunks. Default: 50.
+    /// </summary>
+    [Parameter] public int ChunkOverlap { get; set; } = 50;
+
+    private LocalRagPipeline? _pipeline;
+    private readonly List<Document> _pendingDocs = [];
+    private string _docId = string.Empty;
+    private string _docText = string.Empty;
+    private string _query = string.Empty;
+    private int _topK = 3;
+    private float _minSimilarity = 0.0f;
+    private int _chunkCount;
+    private bool _indexing;
+    private bool _retrieving;
+    private RagContext? _results;
+    private string? _indexError;
+    private string? _retrieveError;
+
+    protected override void OnParametersSet()
+    {
+        if (EmbeddingGenerator is not null && _pipeline is null)
+        {
+            var chunker = new SlidingWindowChunker(ChunkSize, ChunkOverlap);
+            var store = new InMemoryDocumentStore();
+            _pipeline = new LocalRagPipeline(chunker, store, EmbeddingGenerator);
+        }
+    }
+
+    private void AddDocument()
+    {
+        if (string.IsNullOrWhiteSpace(_docText)) return;
+        var id = string.IsNullOrWhiteSpace(_docId)
+            ? $"doc-{_pendingDocs.Count + 1}"
+            : _docId.Trim();
+        _pendingDocs.Add(new Document(id, _docText.Trim()));
+        _docId = string.Empty;
+        _docText = string.Empty;
+    }
+
+    private void RemoveDocument(int index)
+    {
+        if (index >= 0 && index < _pendingDocs.Count)
+            _pendingDocs.RemoveAt(index);
+    }
+
+    private async Task IndexAsync()
+    {
+        if (_pipeline is null || _pendingDocs.Count == 0) return;
+        _indexing = true;
+        _indexError = null;
+        StateHasChanged();
+        try
+        {
+            await _pipeline.IndexDocumentsAsync(_pendingDocs);
+            _chunkCount += _pendingDocs.Count;
+            _pendingDocs.Clear();
+            _results = null;
+        }
+        catch (Exception ex)
+        {
+            _indexError = ex.Message;
+        }
+        finally
+        {
+            _indexing = false;
+        }
+    }
+
+    private async Task ClearIndexAsync()
+    {
+        if (_pipeline is null) return;
+        await _pipeline.ClearIndexAsync();
+        _chunkCount = 0;
+        _results = null;
+    }
+
+    private async Task RetrieveAsync()
+    {
+        if (_pipeline is null || string.IsNullOrWhiteSpace(_query)) return;
+        _retrieving = true;
+        _retrieveError = null;
+        StateHasChanged();
+        try
+        {
+            _results = await _pipeline.RetrieveContextAsync(_query.Trim(), _topK, _minSimilarity);
+        }
+        catch (Exception ex)
+        {
+            _retrieveError = ex.Message;
+        }
+        finally
+        {
+            _retrieving = false;
+        }
+    }
+
+    private async Task HandleQueryKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await RetrieveAsync();
+    }
+
+    private static string Truncate(string text, int max) =>
+        text.Length > max ? text[..max] + "…" : text;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_pipeline is not null)
+            await _pipeline.ClearIndexAsync();
+    }
+}

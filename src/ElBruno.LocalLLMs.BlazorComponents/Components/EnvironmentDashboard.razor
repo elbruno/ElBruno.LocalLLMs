@@ -1,0 +1,78 @@
+@using ElBruno.LocalLLMs.Diagnostics
+
+<div class="llm-env @(Compact ? "llm-env--compact" : "")">
+    @if (!Compact)
+    {
+        <div class="llm-env-title">🖥 Environment</div>
+    }
+
+    <div class="llm-env-badges">
+        <span class="llm-env-badge @(_diags.CpuAvailable ? "llm-ok" : "llm-dim")">
+            @(_diags.CpuAvailable ? "✅" : "❌") CPU (@_diags.ProcessorCount cores)
+        </span>
+        <span class="llm-env-badge @(_diags.DirectMLAvailable ? "llm-ok" : "llm-dim")">
+            @(_diags.DirectMLAvailable ? "✅" : "❌") DirectML
+        </span>
+        <span class="llm-env-badge @(_diags.CudaAvailable ? "llm-ok" : "llm-dim")">
+            @(_diags.CudaAvailable ? "✅" : "❌") CUDA
+        </span>
+    </div>
+
+    @if (!Compact)
+    {
+        <div class="llm-env-details">
+            <span>@_diags.DotNetVersion</span>
+            <span>@_diags.OSDescription</span>
+        </div>
+
+        @if (ShowCacheInfo && _diags.CacheDirectory is { } cacheDir)
+        {
+            <div class="llm-env-cache">
+                <span class="llm-env-cache-label">Cache:</span>
+                <code class="llm-env-cache-path">@cacheDir</code>
+                <span class="llm-env-cache-size">@FormatBytes(_diags.CacheSizeBytes)</span>
+            </div>
+        }
+
+        @if (Client is not null)
+        {
+            <div class="llm-env-provider">
+                <span class="llm-env-badge llm-ok">▶ @Client.ActiveExecutionProvider</span>
+                @if (!string.IsNullOrEmpty(Client.ProviderSelectionDetails))
+                {
+                    <span class="llm-env-provider-detail">@Client.ProviderSelectionDetails</span>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// Optional loaded chat client; when supplied, the active execution provider is shown.
+    /// </summary>
+    [Parameter] public LocalChatClient? Client { get; set; }
+
+    /// <summary>Show cache directory path and total size.</summary>
+    [Parameter] public bool ShowCacheInfo { get; set; } = true;
+
+    /// <summary>
+    /// Compact mode: renders a single row of badges suitable for nav bars.
+    /// </summary>
+    [Parameter] public bool Compact { get; set; }
+
+    private ElBruno.LocalLLMs.Diagnostics.EnvironmentDiagnostics _diags = default!;
+
+    protected override void OnInitialized()
+    {
+        _diags = LocalChatClient.DiagnoseEnvironment();
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes <= 0) return "0 B";
+        if (bytes < 1024L * 1024) return $"{bytes / 1024.0:F1} KB";
+        if (bytes < 1024L * 1024 * 1024) return $"{bytes / (1024.0 * 1024):F1} MB";
+        return $"{bytes / (1024.0 * 1024 * 1024):F2} GB";
+    }
+}

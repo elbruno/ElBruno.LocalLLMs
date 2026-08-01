@@ -1,0 +1,42 @@
+/* ModelSelector scoped styles */
+
+.llm-model-selector { display: flex; flex-direction: column; gap: 6px; }
+
+.llm-selector-label { font-size: .85rem; font-weight: 500; color: #444; }
+
+.llm-selector-wrapper { position: relative; }
+
+.llm-selector-select {
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 7px 28px 7px 10px;
+    font-size: .88rem;
+    appearance: none;
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E") no-repeat right 10px center;
+    cursor: pointer;
+    font-family: inherit;
+    outline: none;
+}
+
+.llm-selector-select:focus { border-color: #1976d2; }
+
+.llm-selector-details {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 2px;
+}
+
+.llm-badge {
+    font-size: .72rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+}
+.llm-badge-vision { background: #f3e5f5; color: #6a1b9a; }
+.llm-badge-tools  { background: #e8eaf6; color: #283593; }
+.llm-badge-tier   { background: #e3f2fd; color: #1565c0; }
+.llm-badge-ok     { background: #e8f5e9; color: #2e7d32; }
+.llm-badge-dim    { background: #f5f5f5; color: #9e9e9e; }

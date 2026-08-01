@@ -53,6 +53,7 @@ jobs:
           dotnet build src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
           dotnet build src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
           dotnet build src/ElBruno.LocalLLMs.BitNet/ElBruno.LocalLLMs.BitNet.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
+          dotnet build src/ElBruno.LocalLLMs.BlazorComponents/ElBruno.LocalLLMs.BlazorComponents.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
 
       - name: Unit Tests
         run: |
@@ -65,6 +66,7 @@ jobs:
           dotnet pack src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
           dotnet pack src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
           dotnet pack src/ElBruno.LocalLLMs.BitNet/ElBruno.LocalLLMs.BitNet.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
+          dotnet pack src/ElBruno.LocalLLMs.BlazorComponents/ElBruno.LocalLLMs.BlazorComponents.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
 
       - name: NuGet login (OIDC → temp API key)
         uses: NuGet/login@v1

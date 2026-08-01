@@ -1,0 +1,107 @@
+@using ElBruno.LocalLLMs.BlazorComponents.Services
+
+<div class="llm-model-selector">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label class="llm-selector-label">@Label</label>
+    }
+
+    <div class="llm-selector-wrapper">
+        <select class="llm-selector-select" value="@Value?.Id" @onchange="OnSelectChanged">
+            <option value="">@Placeholder</option>
+            @if (GroupByTier)
+            {
+                @foreach (var tier in TiersInList)
+                {
+                    <optgroup label="@tier">
+                        @foreach (var m in ModelsInTier(tier))
+                        {
+                            <option value="@m.Id">@ModelLabel(m)</option>
+                        }
+                    </optgroup>
+                }
+            }
+            else
+            {
+                @foreach (var m in DisplayModels)
+                {
+                    <option value="@m.Id">@ModelLabel(m)</option>
+                }
+            }
+        </select>
+    </div>
+
+    @if (Value is not null && ShowDetails)
+    {
+        <div class="llm-selector-details">
+            @if (Value.IsVisionCapable)   { <span class="llm-badge llm-badge-vision">👁 Vision</span> }
+            @if (Value.SupportsToolCalling) { <span class="llm-badge llm-badge-tools">🔧 Tools</span> }
+            <span class="llm-badge llm-badge-tier">@Value.Tier</span>
+            @if (ShowDownloadStatus)
+            {
+                var s = ModelState.GetStatus(Value);
+                <span class="llm-badge @(s.State == ModelDownloadState.Downloaded ? "llm-badge-ok" : "llm-badge-dim")">
+                    @(s.State == ModelDownloadState.Downloaded ? "✅ Downloaded" : "⬇ Not downloaded")
+                </span>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>Selected model (use with @bind-Value).</summary>
+    [Parameter] public ModelDefinition? Value { get; set; }
+
+    /// <summary>Notifies parent when the selection changes.</summary>
+    [Parameter] public EventCallback<ModelDefinition?> ValueChanged { get; set; }
+
+    /// <summary>Models to list. Defaults to KnownModels.All.</summary>
+    [Parameter] public IEnumerable<ModelDefinition>? Models { get; set; }
+
+    /// <summary>Optional visible label above the select.</summary>
+    [Parameter] public string Label { get; set; } = string.Empty;
+
+    /// <summary>Placeholder option text.</summary>
+    [Parameter] public string Placeholder { get; set; } = "— choose a model —";
+
+    /// <summary>Group options by ModelTier.</summary>
+    [Parameter] public bool GroupByTier { get; set; } = true;
+
+    /// <summary>Show download status in the option label.</summary>
+    [Parameter] public bool ShowDownloadStatus { get; set; } = true;
+
+    /// <summary>Show capability details below the select when a model is selected.</summary>
+    [Parameter] public bool ShowDetails { get; set; } = true;
+
+    [Inject] private ModelStateService ModelState { get; set; } = default!;
+
+    private IEnumerable<ModelDefinition> DisplayModels =>
+        Models ?? KnownModels.All;
+
+    private IEnumerable<ModelTier> TiersInList =>
+        DisplayModels.Select(m => m.Tier).Distinct().OrderBy(t => t);
+
+    private IEnumerable<ModelDefinition> ModelsInTier(ModelTier tier) =>
+        DisplayModels.Where(m => m.Tier == tier);
+
+    private string ModelLabel(ModelDefinition m)
+    {
+        if (!ShowDownloadStatus) return m.DisplayName;
+        var state = ModelState.GetStatus(m).State;
+        return state == ModelDownloadState.Downloaded
+            ? $"✅ {m.DisplayName}"
+            : $"   {m.DisplayName}";
+    }
+
+    private async Task OnSelectChanged(ChangeEventArgs e)
+    {
+        var id = e.Value?.ToString();
+        if (string.IsNullOrEmpty(id))
+        {
+            await ValueChanged.InvokeAsync(null);
+            return;
+        }
+        var model = DisplayModels.FirstOrDefault(m => m.Id == id);
+        await ValueChanged.InvokeAsync(model);
+    }
+}
