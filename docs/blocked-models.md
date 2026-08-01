@@ -19,7 +19,7 @@ Use `Llama-3.1-8B-Instruct` (already converted, native ONNX) or `Llama-3.2-3B-In
 
 | Model | Params | Blocker | Status | Next Step |
 |-------|--------|---------|--------|-----------|
-| **Gemma-4 Family** | 5.1B–30.7B | ~~PLE architecture not supported~~ | ✅ Resolved | Supported with conversion on onnxruntime-genai v0.14.1+ |
+| **Gemma-4 Family** | 5.1B–30.7B | ~~PLE architecture not supported~~ | ✅ Resolved | Supported with conversion on onnxruntime-genai v0.15.0+ |
 | **StableLM-2-1.6B-Chat** | 1.6B | Unsupported architecture | ⛔ Blocked | Wait for builder support or use standard ONNX |
 | **Mixtral-8x7B-Instruct-v0.1** | 46.7B (MoE) | MoE routing not supported | ⛔ Blocked | Wait for builder MoE support or use Mistral-7B |
 | **DeepSeek-R1-Distill-Llama-70B** | 70B | RAM: ~450GB needed for INT4 | ⛔ Blocked | Use 512GB+ machine, cloud GPU, or smaller DeepSeek-R1-Distill-Qwen-14B |
@@ -44,7 +44,7 @@ Use `Llama-3.1-8B-Instruct` (already converted, native ONNX) or `Llama-3.2-3B-In
 
 **HuggingFace:** https://huggingface.co/google/gemma-4-E2B-it  
 **License:** Apache 2.0 (open, no gating)  
-**Status:** ✅ Resolved — conversion path available with `onnxruntime-genai` v0.14.1+
+**Status:** ✅ Resolved — conversion path available with `onnxruntime-genai` v0.15.0+
 
 #### Historical blocker (resolved)
 
@@ -63,7 +63,7 @@ All three were runtime-level limitations and required runtime-level support.
 1. **Patched GenAI builder** to route Gemma 4 through Gemma 3 pipeline → produced 1.6GB ONNX file, but runtime failed with `ShapeInferenceError` at full attention layers (head dim mismatch)
 2. **Examined onnx-community models** → correct ONNX structure but incompatible with GenAI's external KV cache management
 3. **Attempted `Gemma4ForCausalLM` loading** → weights stored under multimodal prefix, mismatch
-4. **Validated with newer runtime** → support available in `onnxruntime-genai` v0.14.1+
+4. **Validated with newer runtime** → support available in `onnxruntime-genai` v0.15.0+
 
 #### What's available now
 
@@ -549,7 +549,7 @@ These models are in the `team.md` roadmap but haven't been added to the library 
 - ❌ DeepSeek-V3 (671B + MoE + impractical for local)
 - ❌ Inkling (975B + MoE + multimodal — data-center only)
 
-> **Note:** Gemma 4 family (E2B, E4B, 12B, 26B-A4B, 31B) was previously listed here as blocked (PLE architecture). It is now **✅ Resolved** — supported via conversion on `onnxruntime-genai` v0.14.1+. See the Gemma 4 section above.
+> **Note:** Gemma 4 family (E2B, E4B, 12B, 26B-A4B, 31B) was previously listed here as blocked (PLE architecture). It is now **✅ Resolved** — supported via conversion on `onnxruntime-genai` v0.15.0+. See the Gemma 4 section above.
 
 ### Mid-Term (2025–2026)
 
@@ -567,10 +567,10 @@ These models are in the `team.md` roadmap but haven't been added to the library 
 
 | Model | Realistic Timeline | Effort Level |
 |-------|-------------------|--------------|
-| Gemma-4-E2B-IT | ✅ Done | ✅ Resolved (conversion on onnxruntime-genai v0.14.1+) |
-| Gemma-4-E4B-IT | ✅ Done | ✅ Resolved (conversion on onnxruntime-genai v0.14.1+) |
-| Gemma-4-26B-A4B-IT | ✅ Done | ✅ Resolved (conversion on onnxruntime-genai v0.14.1+) |
-| Gemma-4-31B-IT | ✅ Done | ✅ Resolved (conversion on onnxruntime-genai v0.14.1+) |
+| Gemma-4-E2B-IT | ✅ Done | ✅ Resolved (conversion on onnxruntime-genai v0.15.0+) |
+| Gemma-4-E4B-IT | ✅ Done | ✅ Resolved (conversion on onnxruntime-genai v0.15.0+) |
+| Gemma-4-26B-A4B-IT | ✅ Done | ✅ Resolved (conversion on onnxruntime-genai v0.15.0+) |
+| Gemma-4-31B-IT | ✅ Done | ✅ Resolved (conversion on onnxruntime-genai v0.15.0+) |
 | Qwen3-8B, Qwen3-32B | 2025 | ✅ Low (architecture compatible) |
 | Gemma-3-12B-IT | 2025 | ✅ Low (Gemma-2 compatible) |
 | Mixtral-8x7B | 2025–2026 | 🔴 High (requires MoE builder support) |
