@@ -220,7 +220,16 @@ internal sealed class MockEmbeddingGenerator : IEmbeddingGenerator<string, Embed
 
     private static ReadOnlyMemory<float> GenerateEmbedding(string text)
     {
-        var hash = text.GetHashCode();
+        // Use a stable polynomial hash instead of GetHashCode(), which is randomized
+        // per-process in .NET 5+ and would produce non-deterministic embeddings across CI runs.
+        int hash;
+        unchecked
+        {
+            hash = 17;
+            foreach (char c in text)
+                hash = hash * 31 + c;
+        }
+
         var rng = new Random(hash);
         var vector = new float[384];
         for (int i = 0; i < vector.Length; i++)
