@@ -1,0 +1,97 @@
+@page "/"
+@rendermode InteractiveServer
+
+<PageTitle>LocalLLMs Blazor Demo</PageTitle>
+
+<h1>🧠 ElBruno.LocalLLMs — Blazor Demo</h1>
+
+<p class="lead">
+    This sample app shows all components from the
+    <code>ElBruno.LocalLLMs.BlazorComponents</code> package in action.
+</p>
+
+<div class="row g-4 mt-2">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">📦 Model Gallery</h5>
+                <p class="card-text">
+                    Browse all supported models, filter by tier or capability,
+                    download them, and see their cached size.
+                </p>
+                <a href="models" class="btn btn-primary">Open Gallery →</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">💬 Chat</h5>
+                <p class="card-text">
+                    Stream responses token-by-token from a local model.
+                    Includes live tok/s metrics and a Stop button.
+                </p>
+                <a href="chat" class="btn btn-primary">Open Chat →</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">🔍 RAG Playground</h5>
+                <p class="card-text">
+                    Index documents and retrieve the most relevant chunks
+                    using the local RAG pipeline.
+                </p>
+                <a href="rag" class="btn btn-primary">Open Playground →</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">🖥️ Environment</h5>
+                <p class="card-text">
+                    View CPU/CUDA/DirectML badges, .NET version, OS, and
+                    local model cache information.
+                </p>
+                <a href="environment" class="btn btn-primary">Open Dashboard →</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr class="my-4" />
+
+<h2>ModelStatusCard — quick glance</h2>
+<p>
+    The <code>&lt;ModelStatusCard&gt;</code> shows download state, triggers
+    download/cancel/delete, and lets you select a model for use.
+</p>
+
+<div class="row g-3">
+    <div class="col-md-6 col-lg-4">
+        <ModelStatusCard Model="KnownModels.Phi35MiniInstruct"
+                         OnModelSelected="OnModelSelected" />
+    </div>
+    <div class="col-md-6 col-lg-4">
+        <ModelStatusCard Model="KnownModels.Llama32_3BInstruct"
+                         OnModelSelected="OnModelSelected" />
+    </div>
+    <div class="col-md-6 col-lg-4">
+        <ModelStatusCard Model="KnownModels.Qwen25_05BInstruct"
+                         OnModelSelected="OnModelSelected" />
+    </div>
+</div>
+
+@if (selectedModel is not null)
+{
+    <div class="alert alert-success mt-3">
+        ✅ Selected: <strong>@selectedModel.DisplayName</strong>
+    </div>
+}
+
+@code {
+    private ModelDefinition? selectedModel;
+    private void OnModelSelected(ModelDefinition model) => selectedModel = model;
+}

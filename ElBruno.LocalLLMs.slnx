@@ -28,6 +28,7 @@
     <Project Path="src/samples/StreamingChat/StreamingChat.csproj" />
     <Project Path="src/samples/MultiModelChat/MultiModelChat.csproj" />
     <Project Path="src/samples/DependencyInjection/DependencyInjection.csproj" />
+    <Project Path="src/samples/BlazorDemo/BlazorDemo.csproj" />
     <Project Path="src/samples/ConsoleAppDemo/ConsoleAppDemo.csproj" />
     <Project Path="src/samples/ToolCallingAgent/ToolCallingAgent.csproj" />
     <Project Path="src/samples/FineTunedToolCalling/FineTunedToolCalling.csproj" />

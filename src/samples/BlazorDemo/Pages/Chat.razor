@@ -1,0 +1,27 @@
+@page "/chat"
+@rendermode InteractiveServer
+@inject Microsoft.Extensions.AI.IChatClient ChatClient
+
+<PageTitle>Chat — LocalLLMs Demo</PageTitle>
+
+<h1>💬 Chat</h1>
+<p>
+    Responses stream token-by-token from the local model. The footer shows
+    live tokens-per-second once generation starts.
+</p>
+
+<div class="row">
+    <div class="col-12 col-lg-3 mb-3">
+        <label class="form-label fw-semibold">Model</label>
+        <ModelSelector @bind-Value="selectedModel" />
+    </div>
+</div>
+
+<ChatBox Client="ChatClient"
+         ModelName="@selectedModel?.DisplayName"
+         SystemPrompt="You are a helpful assistant running entirely on-device."
+         ShowMetrics="true" />
+
+@code {
+    private ModelDefinition? selectedModel = KnownModels.Phi35MiniInstruct;
+}

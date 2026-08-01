@@ -15,6 +15,7 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 
 ## What's New
 
+- 🧩 **`ElBruno.LocalLLMs.BlazorComponents`** — new Razor Class Library with 7 ready-to-use Blazor components: `ModelStatusCard` (download progress bar + actions), `ModelGallery` (filterable grid), `ModelSelector` (two-way-bindable dropdown), `ChatBox` (streaming token display), `EnvironmentDashboard` (CPU/CUDA/DirectML badges), `LocalLLMHealthBadge` (nav-bar status dot), and `RagPlayground`. Call `services.AddLocalLLMsBlazorComponents()` to register. See the [Blazor Components Guide](docs/blazor-components.md) and the [BlazorDemo sample](src/samples/BlazorDemo/).
 - 📦 **9 more models now support auto-download** (`v0.20.4`) — StableLM-2-1.6B-Chat, Gemma-4-E2B-IT, Gemma-4-E4B-IT, Gemma-4-12B-IT, Gemma-4-26B-A4B-IT, Gemma-4-31B-IT, Mixtral-8x7B-Instruct-v0.1, DeepSeek-R1-Distill-Llama-70B, and Command-R (35B) are now `HasNativeOnnx=true` with ONNX weights hosted at `elbruno/*-onnx` on HuggingFace. Set `EnsureModelDownloaded = true` to auto-download.
 - 🔍 **`ModelDefinition.IsVisionCapable`** — new computed property. Consumer apps can now check `model.IsVisionCapable` instead of comparing `ModelType == OnnxModelType.VisionGenAI`. Fara1.5-9B returns `true`; all text models return `false`.
 - 🛑 **Fail-fast for non-downloadable models** — `OptionsValidator` now throws an `InvalidOperationException` with actionable text when `EnsureModelDownloaded = true` is paired with a model that has `HasNativeOnnx = false` and no `ModelPath`. Eliminates the confusing "auto-download enabled" UX that previously gave no guidance.
@@ -34,6 +35,7 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 
 ## Features
 
+- 🧩 **Blazor components** — `ModelStatusCard`, `ChatBox`, `ModelGallery`, `ModelSelector`, `EnvironmentDashboard`, `LocalLLMHealthBadge`, `RagPlayground` via `ElBruno.LocalLLMs.BlazorComponents` ([guide](docs/blazor-components.md))
 - 🔌 **`IChatClient` implementation** — seamless integration with [Microsoft.Extensions.AI](https://learn.microsoft.com/dotnet/ai/microsoft-extensions-ai)
 - 📦 **Automatic model download** — models are fetched from HuggingFace on first use
 - 🚀 **Zero friction** — works out of the box with sensible defaults (Phi-3.5 mini)
@@ -54,6 +56,7 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 | `ElBruno.LocalLLMs` | [![NuGet](https://img.shields.io/nuget/v/ElBruno.LocalLLMs.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs) | [![Downloads](https://img.shields.io/nuget/dt/ElBruno.LocalLLMs.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs) | Core library — ONNX Runtime GenAI models via IChatClient |
 | `ElBruno.LocalLLMs.Rag` | [![NuGet](https://img.shields.io/nuget/v/ElBruno.LocalLLMs.Rag.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs.Rag) | [![Downloads](https://img.shields.io/nuget/dt/ElBruno.LocalLLMs.Rag.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs.Rag) | RAG pipeline — document chunking, indexing, retrieval |
 | `ElBruno.LocalLLMs.BitNet` | [![NuGet](https://img.shields.io/nuget/v/ElBruno.LocalLLMs.BitNet.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs.BitNet) | [![Downloads](https://img.shields.io/nuget/dt/ElBruno.LocalLLMs.BitNet.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs.BitNet) | BitNet 1.58-bit models via bitnet.cpp + IChatClient |
+| `ElBruno.LocalLLMs.BlazorComponents` | [![NuGet](https://img.shields.io/nuget/v/ElBruno.LocalLLMs.BlazorComponents.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs.BlazorComponents) | [![Downloads](https://img.shields.io/nuget/dt/ElBruno.LocalLLMs.BlazorComponents.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs.BlazorComponents) | Blazor components — ModelStatusCard, ChatBox, ModelGallery, and more |
 
 ## Installation
 

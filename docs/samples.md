@@ -356,9 +356,56 @@ See sample sources:
 
 ---
 
+---
+
+## BlazorDemo — Full Blazor Server showcase
+
+**What it demonstrates:** All seven components from `ElBruno.LocalLLMs.BlazorComponents`
+in a single Blazor Server app — model gallery, streaming chat, RAG playground,
+environment dashboard, and a health badge in the nav bar.
+
+**Run it:**
+
+```bash
+dotnet run --project src/samples/BlazorDemo
+```
+
+Then open `https://localhost:5001` in your browser.
+
+**Pages:**
+
+| Page | URL | Component(s) shown |
+|------|-----|--------------------|
+| Home | `/` | `ModelStatusCard` (×3 quick view) |
+| Models | `/models` | `ModelGallery` with tier/vision/tools filters |
+| Chat | `/chat` | `ChatBox` + `ModelSelector` |
+| RAG Playground | `/rag` | `RagPlayground` |
+| Environment | `/environment` | `EnvironmentDashboard` |
+| (nav bar) | all pages | `LocalLLMHealthBadge` |
+
+**Key code (`Program.cs`):**
+
+```csharp
+// Register core IChatClient
+builder.Services.AddLocalLLMs(options =>
+{
+    options.Model = KnownModels.Phi35MiniInstruct;
+    options.EnsureModelDownloaded = true;
+});
+
+// Register all BlazorComponents services
+builder.Services.AddLocalLLMsBlazorComponents();
+```
+
+See the full [Blazor Components Guide](blazor-components.md) for component
+API reference and configuration options.
+
+---
+
 ## Next Steps
 
 - 📖 [Getting Started](getting-started.md) — full setup guide with GPU configuration
 - 🎯 [Supported Models](supported-models.md) — find the right model for your use case
 - 📊 [Benchmarks](benchmarks.md) — measure performance on your hardware
 - 🏗️ [Architecture](architecture.md) — understand the internal design
+- 🧩 [Blazor Components](blazor-components.md) — ready-to-use UI components for Blazor apps

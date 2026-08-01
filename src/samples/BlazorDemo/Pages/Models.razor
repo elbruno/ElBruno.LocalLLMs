@@ -1,0 +1,26 @@
+@page "/models"
+@rendermode InteractiveServer
+@inject Microsoft.Extensions.AI.IChatClient ChatClient
+
+<PageTitle>Model Gallery — LocalLLMs Demo</PageTitle>
+
+<h1>📦 Model Gallery</h1>
+<p>
+    Filter and download any supported model. Click <strong>Use</strong> to set it
+    as the active model for the Chat page.
+</p>
+
+<ModelGallery OnModelSelected="OnModelSelected" />
+
+@if (selectedModel is not null)
+{
+    <div class="alert alert-success mt-3">
+        ✅ Selected:         <strong>@selectedModel.DisplayName</strong> — switch to
+        <a href="chat">Chat</a> to use it.
+    </div>
+}
+
+@code {
+    private ModelDefinition? selectedModel;
+    private void OnModelSelected(ModelDefinition model) => selectedModel = model;
+}

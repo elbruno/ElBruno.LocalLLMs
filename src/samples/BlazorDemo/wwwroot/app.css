@@ -1,0 +1,37 @@
+/* Minimal app styles — copied from the standard Blazor Server template */
+html, body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+a, .btn-link { color: #0071c1; }
+.btn-primary { color: #fff; background-color: #1b6ec2; border-color: #1861ac; }
+.content { padding-top: 1.1rem; }
+
+.top-row {
+    background-color: #f7f7f7;
+    border-bottom: 1px solid #d6d5d5;
+    height: 3.5rem;
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+    gap: 0.75rem;
+}
+
+.sidebar {
+    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+}
+
+.sidebar .nav-link { color: #d7d7d7; }
+.sidebar .nav-link:hover, .sidebar .nav-link.active {
+    background-color: rgba(255,255,255,0.25);
+    color: white;
+}
+
+.page { display: flex; flex-direction: column; min-height: 100vh; }
+main { flex: 1; }
+
+@media (min-width: 641px) {
+    .page { flex-direction: row; }
+    .sidebar { width: 250px; height: 100vh; position: sticky; top: 0; }
+    .top-row { position: sticky; top: 0; z-index: 1; }
+}
