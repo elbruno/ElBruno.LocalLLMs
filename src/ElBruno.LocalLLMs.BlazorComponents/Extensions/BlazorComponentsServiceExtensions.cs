@@ -17,15 +17,17 @@ public static class BlazorComponentsServiceExtensions
     /// Registers:
     /// <list type="bullet">
     ///   <item><see cref="IModelDownloader"/> (singleton) — downloads and caches models.</item>
-    ///   <item><see cref="ModelStateService"/> (scoped) — tracks per-model download/lifecycle state.</item>
+    ///   <item><see cref="ModelStateService"/> (singleton) — tracks application-wide per-model download/lifecycle state.</item>
     /// </list>
     /// <para>
-    /// <b>Blazor Server:</b> <see cref="ModelStateService"/> is registered as <i>scoped</i> —
-    /// one instance per SignalR circuit, so each browser tab gets its own download state.
+    /// <b>Blazor Server:</b> <see cref="ModelStateService"/> is registered as
+    /// <i>singleton</i> so SignalR circuit teardown cannot cancel an active download.
+    /// All circuits observe the same model state and can use explicit model-global
+    /// cancellation.
     /// </para>
     /// <para>
-    /// <b>Blazor WebAssembly:</b> Scoped behaves like singleton in WASM (one app instance),
-    /// which is also the correct behaviour here.
+    /// <b>Blazor WebAssembly:</b> singleton provides the same one-app-instance
+    /// behaviour.
     /// </para>
     /// </remarks>
     /// <param name="services">The service collection.</param>
@@ -37,8 +39,8 @@ public static class BlazorComponentsServiceExtensions
         // ModelDownloader is thread-safe and expensive to create — use singleton
         services.AddSingleton<IModelDownloader, ModelDownloader>();
 
-        // ModelStateService is scoped: one per Blazor circuit / WASM app
-        services.AddScoped<ModelStateService>();
+        // ModelStateService is application-wide so circuit teardown does not cancel downloads.
+        services.AddSingleton<ModelStateService>();
 
         return services;
     }

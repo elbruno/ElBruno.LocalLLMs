@@ -212,19 +212,32 @@ No parameters. The component manages its own `LocalRagPipeline` instance.
 
 ## Service: ModelStateService
 
-`ModelStateService` is a **scoped** service that tracks download/cache state for
-all models across components in the same Blazor circuit.  Components use it
-internally — you generally don't inject it directly — but it is available if you
-need to observe or drive state from custom code.
+`ModelStateService` is a **singleton** service that tracks download/cache state
+for all models across the application. Components use it internally — you
+generally don't inject it directly — but it is available if you need to observe
+or drive state from custom code. Because it is application-wide, a Blazor Server
+circuit disconnect does not cancel an active download.
 
 ```csharp
 // In a custom component
 @inject ModelStateService ModelState
 
 // Listen for state changes
+@implements IDisposable
+
 protected override void OnInitialized()
 {
-    ModelState.OnStateChanged += () => InvokeAsync(StateHasChanged);
+    ModelState.OnStateChanged += HandleStateChanged;
+}
+
+private void HandleStateChanged()
+{
+    _ = InvokeAsync(StateHasChanged);
+}
+
+public void Dispose()
+{
+    ModelState.OnStateChanged -= HandleStateChanged;
 }
 ```
 
@@ -232,9 +245,9 @@ protected override void OnInitialized()
 
 | Member | Description |
 |--------|-------------|
-| `GetStatusAsync(model)` | Returns the current `ModelStatus` for a model |
+| `GetStatus(model)` | Returns the current `ModelStatus` for a model |
 | `StartDownloadAsync(model)` | Kicks off background download |
-| `CancelDownload(model)` | Cancels an active download |
+| `CancelDownload(model)` | Explicitly cancels the active download for that model |
 | `DeleteModelAsync(model)` | Removes cached files |
 | `OnStateChanged` | Event raised on every state transition |
 
@@ -268,7 +281,7 @@ Then open `https://localhost:5001` in your browser.
 | Service | Lifetime | Notes |
 |---------|----------|-------|
 | `IModelDownloader` | Singleton | Shared download manager |
-| `ModelStateService` | Scoped | One per Blazor circuit |
+| `ModelStateService` | Singleton | Application-wide state; circuit teardown does not cancel downloads |
 
 Your app must also call `AddLocalLLMs()` (or `AddLocalVisionLLM()`) to register
 `IChatClient` before calling `AddLocalLLMsBlazorComponents()`.

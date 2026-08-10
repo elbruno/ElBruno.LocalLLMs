@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Issue #42** — `ModelStateService` is now application-wide and coordinates one in-flight download per model, so Blazor Server circuit disconnects no longer cancel active downloads. Explicit cancellation and application-shutdown cancellation remain supported.
+
 ---
 
 ## [0.20.4] - 2026-07-28

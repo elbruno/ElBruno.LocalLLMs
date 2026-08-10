@@ -14,7 +14,8 @@ builder.Services.AddLocalLLMs(options =>
     options.EnsureModelDownloaded = true;
 });
 
-// Register all BlazorComponents services (IModelDownloader + ModelStateService)
+// Register all BlazorComponents services; ModelStateService is application-wide
+// so a disconnected Blazor circuit does not cancel an active model download.
 builder.Services.AddLocalLLMsBlazorComponents();
 
 var app = builder.Build();

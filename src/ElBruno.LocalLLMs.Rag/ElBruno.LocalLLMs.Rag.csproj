@@ -7,7 +7,7 @@
     <PackageProjectUrl>https://github.com/elbruno/ElBruno.LocalLLMs</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>rag;retrieval;embeddings;semantic-search;vector-db;chunking;llm</PackageTags>
-    <Version>0.20.9</Version>
+    <Version>0.20.10</Version>
     <IsPackable>true</IsPackable>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
