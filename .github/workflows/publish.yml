@@ -60,6 +60,7 @@ jobs:
           dotnet test src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj -c Release --framework net8.0 --verbosity normal
           dotnet test src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj -c Release --framework net8.0 --verbosity normal
           dotnet test src/tests/ElBruno.LocalLLMs.BitNet.Tests/ElBruno.LocalLLMs.BitNet.Tests.csproj -c Release --framework net8.0 --verbosity normal
+          dotnet test src/tests/ElBruno.LocalLLMs.BlazorComponents.Tests/ElBruno.LocalLLMs.BlazorComponents.Tests.csproj -c Release --framework net8.0 --verbosity normal
 
       - name: Pack
         run: |

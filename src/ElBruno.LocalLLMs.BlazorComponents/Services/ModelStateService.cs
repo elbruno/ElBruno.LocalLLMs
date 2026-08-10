@@ -4,16 +4,17 @@ using ElBruno.LocalLLMs;
 namespace ElBruno.LocalLLMs.BlazorComponents.Services;
 
 /// <summary>
-/// Scoped service that tracks download and cache state for all models.
-/// Shared across all Blazor components in the same scope so a ModelStatusCard
-/// and a LocalLLMHealthBadge both reflect the same reality.
+/// Application-wide service that tracks download and cache state for all models.
+/// Shared across all Blazor circuits so a circuit disconnect does not cancel an
+/// active download. Explicit model cancellation remains available through
+/// <see cref="CancelDownload"/>.
 /// </summary>
 public sealed class ModelStateService : IAsyncDisposable
 {
     private readonly IModelDownloader _downloader;
     private readonly string _cacheDirectory;
     private readonly ConcurrentDictionary<string, ModelStatus> _states = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ConcurrentDictionary<string, CancellationTokenSource> _downloadCts = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, Lazy<DownloadOperation>> _downloads = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Fires whenever any model's status changes. Subscribe for UI refresh.</summary>
     public event Action? OnStateChanged;
@@ -51,23 +52,36 @@ public sealed class ModelStateService : IAsyncDisposable
     /// <summary>
     /// Starts downloading the model asynchronously, reporting progress through state updates.
     /// No-op if the model is already downloading or downloaded.
+    /// The operation is shared application-wide; use <see cref="CancelDownload"/>
+    /// for explicit model-global cancellation.
     /// </summary>
     public Task StartDownloadAsync(ModelDefinition model, CancellationToken callerToken = default)
     {
         ArgumentNullException.ThrowIfNull(model);
 
+        if (_downloads.TryGetValue(model.Id, out var activeOperation))
+            return activeOperation.Value.Completion.Task;
+
         var current = GetStatus(model);
         if (current.State is ModelDownloadState.Downloading or ModelDownloadState.Downloaded)
             return Task.CompletedTask;
 
-        return DoDownloadAsync(model, callerToken);
+        var candidate = new Lazy<DownloadOperation>(
+            () => new DownloadOperation(callerToken),
+            LazyThreadSafetyMode.ExecutionAndPublication);
+        var operation = _downloads.GetOrAdd(model.Id, candidate);
+
+        if (ReferenceEquals(operation, candidate))
+            _ = DoDownloadAsync(model, operation);
+
+        return operation.Value.Completion.Task;
     }
 
     /// <summary>Cancels an in-progress download for the given model.</summary>
     public void CancelDownload(ModelDefinition model)
     {
-        if (_downloadCts.TryGetValue(model.Id, out var cts))
-            cts.Cancel();
+        if (_downloads.TryGetValue(model.Id, out var operation))
+            operation.Value.CancellationSource.Cancel();
     }
 
     /// <summary>
@@ -108,20 +122,19 @@ public sealed class ModelStateService : IAsyncDisposable
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
-    private async Task DoDownloadAsync(ModelDefinition model, CancellationToken callerToken)
+    private async Task DoDownloadAsync(ModelDefinition model, Lazy<DownloadOperation> operationEntry)
     {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(callerToken);
-        _downloadCts[model.Id] = cts;
-
-        SetState(model.Id, new ModelStatus
-        {
-            Model = model,
-            State = ModelDownloadState.Downloading,
-            Progress = new ModelDownloadProgress(string.Empty, 0, 0, 0)
-        });
+        var operation = operationEntry.Value;
 
         try
         {
+            SetState(model.Id, new ModelStatus
+            {
+                Model = model,
+                State = ModelDownloadState.Downloading,
+                Progress = new ModelDownloadProgress(string.Empty, 0, 0, 0)
+            });
+
             var progress = new Progress<ModelDownloadProgress>(p =>
             {
                 SetState(model.Id, new ModelStatus
@@ -133,7 +146,7 @@ public sealed class ModelStateService : IAsyncDisposable
             });
 
             var path = await _downloader.EnsureModelAsync(
-                model, _cacheDirectory, progress, cts.Token).ConfigureAwait(false);
+                model, _cacheDirectory, progress, operation.CancellationSource.Token).ConfigureAwait(false);
 
             var size = ComputeDirectorySize(path);
             SetState(model.Id, new ModelStatus
@@ -160,7 +173,9 @@ public sealed class ModelStateService : IAsyncDisposable
         }
         finally
         {
-            _downloadCts.TryRemove(model.Id, out _);
+            _downloads.TryRemove(model.Id, out _);
+            operation.CancellationSource.Dispose();
+            operation.Completion.TrySetResult();
         }
     }
 
@@ -218,14 +233,36 @@ public sealed class ModelStateService : IAsyncDisposable
     private static string SanitizePath(string modelId) =>
         string.Concat(modelId.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
 
-    /// <summary>Cancels any active downloads and frees managed resources.</summary>
+    /// <summary>
+    /// Cancels any active downloads and frees managed resources when the
+    /// application service provider shuts down.
+    /// </summary>
     public ValueTask DisposeAsync()
     {
-        foreach (var cts in _downloadCts.Values)
+        foreach (var operationEntry in _downloads.Values)
         {
-            try { cts.Cancel(); cts.Dispose(); } catch { /* ignore */ }
+            try
+            {
+                var operation = operationEntry.Value;
+                operation.CancellationSource.Cancel();
+                operation.CancellationSource.Dispose();
+            }
+            catch { /* ignore */ }
         }
-        _downloadCts.Clear();
+        _downloads.Clear();
         return ValueTask.CompletedTask;
+    }
+
+    private sealed class DownloadOperation
+    {
+        public DownloadOperation(CancellationToken callerToken)
+        {
+            CancellationSource = CancellationTokenSource.CreateLinkedTokenSource(callerToken);
+            Completion = new TaskCompletionSource(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+        }
+
+        public CancellationTokenSource CancellationSource { get; }
+        public TaskCompletionSource Completion { get; }
     }
 }

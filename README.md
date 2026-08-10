@@ -15,6 +15,7 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 
 ## What's New
 
+- 🛡️ **`v0.20.10`** — Blazor Server model downloads now survive SignalR circuit disconnects, with one coordinated in-flight operation per model (Issue #42).
 - ⬆️ **`v0.20.9`** — Upgraded `onnxruntime-genai` to **0.15.1** and `Microsoft.Extensions.AI.Abstractions` to **10.8.3** across all projects. No API changes.
 - 🧩 **`ElBruno.LocalLLMs.BlazorComponents`** — new Razor Class Library with 7 ready-to-use Blazor components: `ModelStatusCard` (download progress bar + actions), `ModelGallery` (filterable grid), `ModelSelector` (two-way-bindable dropdown), `ChatBox` (streaming token display), `EnvironmentDashboard` (CPU/CUDA/DirectML badges), `LocalLLMHealthBadge` (nav-bar status dot), and `RagPlayground`. Call `services.AddLocalLLMsBlazorComponents()` to register. See the [Blazor Components Guide](docs/blazor-components.md) and the [BlazorDemo sample](src/samples/BlazorDemo/).
 - 📦 **9 more models now support auto-download** (`v0.20.4`) — StableLM-2-1.6B-Chat, Gemma-4-E2B-IT, Gemma-4-E4B-IT, Gemma-4-12B-IT, Gemma-4-26B-A4B-IT, Gemma-4-31B-IT, Mixtral-8x7B-Instruct-v0.1, DeepSeek-R1-Distill-Llama-70B, and Command-R (35B) are now `HasNativeOnnx=true` with ONNX weights hosted at `elbruno/*-onnx` on HuggingFace. Set `EnsureModelDownloaded = true` to auto-download.
