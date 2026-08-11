@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-08-11
+### Fixed
+- Republished as `0.21.0` after `0.20.12` was accepted by the NuGet push API but never propagated to the flat-container/registration/search indexes (issue #49 follow-up). No code changes since `0.20.12`; this is a clean version bump only.
+
+## [0.20.12] - 2026-08-11
+
+### Fixed
+- **Issue #49 — `ElBruno.LocalLLMs` `AssemblyVersion` drift**: centralized `Version`/`PackageVersion`/`AssemblyVersion`/`FileVersion` derivation in `Directory.Build.props` for all four packable projects, so the core package can never ship an `AssemblyVersion` older than its sibling packages again. Added `scripts/Validate-PackageAssemblyVersions.ps1` and wired it into the publish workflow.
+- **Issue #51 — vision token-probe regression**: `OnnxVisionModel` no longer calls `CreateProbeGenerator(int.MaxValue)`; it now bounds the probe to `ModelMetadata.ConfigMaxSequenceLength` when available and treats probe creation/probing failures as non-fatal, falling back to `runtime.CountPromptTokens(prompt)`.
+
+### Verified
+- **Issue #50 — Fara effective image resolution**: confirmed via native CPU inference that Fara uses aspect-ratio-preserving smart resize (not a fixed 540x360 clamp), documented measured token/resolution behavior for 1920x1080 and 800x2000 inputs in `docs/onnx-conversion-fara.md`, and added debug-level logging of resolved multimodal input-token counts.
+
 ## [0.20.11] - 2026-08-11
 
 ### Fixed

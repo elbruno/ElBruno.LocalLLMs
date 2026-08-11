@@ -93,6 +93,39 @@ The script reads each `.nupkg`, extracts the assemblies to a repo-local scratch 
 
 ---
 
+## Release Version Bump & Validation
+
+Use `Set-ReleaseVersion.ps1` to bump the package version everywhere it needs to change in one pass, and `Validate-ReleaseVersion.ps1` to confirm every file agrees before tagging/publishing a release. These exist because issue #49 was caused by exactly this kind of drift (`Directory.Build.props` left at an old version while other files moved on).
+
+### Bump a version
+
+```powershell
+.\scripts\Set-ReleaseVersion.ps1 -Version 0.21.0 `
+    -Highlight '🔁 **`v0.21.0`** — Description of what changed in this release.' `
+    -ChangelogBody @('### Fixed', '- Describe the fix here.')
+```
+
+Updates in one pass:
+
+- `Directory.Build.props` → `<PublishedSiblingPackageVersion>`
+- `README.md` → prepends a bullet to `## What's New`, keeping exactly the last 5 entries (warns about any entry it drops)
+- `docs/CHANGELOG.md` → inserts a new `## [Version] - Date` section right after `## [Unreleased]`
+
+The `-Highlight` text must mention `v<Version>` or the script fails fast, so the bullet can never point at the wrong release.
+
+### Validate a version bump
+
+```powershell
+.\scripts\Validate-ReleaseVersion.ps1 -Version 0.21.0
+
+# Also validate packed assembly versions once artifacts exist
+.\scripts\Validate-ReleaseVersion.ps1 -Version 0.21.0 -PackageDirectory .\artifacts
+```
+
+Checks `Directory.Build.props`, the README `## What's New` section (exactly 5 entries, first one mentions the version), and `docs/CHANGELOG.md` (has a matching `## [Version]` section). Reports every failure found, not just the first.
+
+---
+
 ## Model Cache Management
 
 Use `manage-models.ps1` to inspect and manage downloaded models in cache roots.
