@@ -81,6 +81,18 @@ Arguments: -NonInteractive -ExecutionPolicy Bypass -File "C:\src\ElBruno.LocalLL
 
 ---
 
+## Package Version Validation
+
+Use `Validate-PackageAssemblyVersions.ps1` before publishing NuGet packages to confirm every packed `lib/**/*.dll` carries the same assembly version as the package version.
+
+```powershell
+.\scripts\Validate-PackageAssemblyVersions.ps1 -PackageDirectory .\artifacts
+```
+
+The script reads each `.nupkg`, extracts the assemblies to a repo-local scratch folder, compares their assembly versions with the package version, and fails fast on any mismatch.
+
+---
+
 ## Model Cache Management
 
 Use `manage-models.ps1` to inspect and manage downloaded models in cache roots.

@@ -23,5 +23,19 @@
     <Copyright>Copyright © Bruno Capuano $([System.DateTime]::Now.Year)</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageIcon>nuget_logo.png</PackageIcon>
+    <PublishedSiblingPackageVersion>0.20.11</PublishedSiblingPackageVersion>
+    <ManagePublishedSiblingPackageVersion
+      Condition="'$(MSBuildProjectName)' == 'ElBruno.LocalLLMs'
+        Or '$(MSBuildProjectName)' == 'ElBruno.LocalLLMs.Rag'
+        Or '$(MSBuildProjectName)' == 'ElBruno.LocalLLMs.BitNet'
+        Or '$(MSBuildProjectName)' == 'ElBruno.LocalLLMs.BlazorComponents'">true</ManagePublishedSiblingPackageVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(ManagePublishedSiblingPackageVersion)' == 'true'">
+    <Version Condition="'$(Version)' == '' and '$(PackageVersion)' != ''">$(PackageVersion)</Version>
+    <Version Condition="'$(Version)' == '' and '$(PackageVersion)' == ''">$(PublishedSiblingPackageVersion)</Version>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">$(Version)</PackageVersion>
+    <AssemblyVersion Condition="'$(AssemblyVersion)' == ''">$([System.String]::Copy('$(PackageVersion)').Split('-')[0])</AssemblyVersion>
+    <FileVersion Condition="'$(FileVersion)' == ''">$([System.String]::Copy('$(PackageVersion)').Split('-')[0])</FileVersion>
   </PropertyGroup>
 </Project>

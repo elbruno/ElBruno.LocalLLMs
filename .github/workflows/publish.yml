@@ -37,7 +37,7 @@ jobs:
           elif [[ -n "${{ inputs.version }}" ]]; then
             VERSION="${{ inputs.version }}"
           else
-            VERSION=$(grep -oP '<Version>\K[^<]+' src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj)
+            VERSION=$(dotnet msbuild src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj -nologo -getProperty:Version | tr -d '\r')
           fi
           if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
             echo "❌ Invalid version: '$VERSION'"; exit 1
@@ -57,9 +57,9 @@ jobs:
 
       - name: Unit Tests
         run: |
-          dotnet test src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj -c Release --framework net8.0 --verbosity normal
-          dotnet test src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj -c Release --framework net8.0 --verbosity normal
-          dotnet test src/tests/ElBruno.LocalLLMs.BitNet.Tests/ElBruno.LocalLLMs.BitNet.Tests.csproj -c Release --framework net8.0 --verbosity normal
+          dotnet test src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj -c Release --framework net8.0 -p:Version=${{ steps.version.outputs.version }} --verbosity normal
+          dotnet test src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj -c Release --framework net8.0 -p:Version=${{ steps.version.outputs.version }} --verbosity normal
+          dotnet test src/tests/ElBruno.LocalLLMs.BitNet.Tests/ElBruno.LocalLLMs.BitNet.Tests.csproj -c Release --framework net8.0 -p:Version=${{ steps.version.outputs.version }} --verbosity normal
 
       - name: Validate README What's New policy
         run: |
@@ -83,6 +83,9 @@ jobs:
           dotnet pack src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
           dotnet pack src/ElBruno.LocalLLMs.BitNet/ElBruno.LocalLLMs.BitNet.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
           dotnet pack src/ElBruno.LocalLLMs.BlazorComponents/ElBruno.LocalLLMs.BlazorComponents.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
+      - name: Validate packed assembly versions
+        shell: pwsh
+        run: ./scripts/Validate-PackageAssemblyVersions.ps1 -PackageDirectory ./artifacts
 
       - name: NuGet login (OIDC → temp API key)
         uses: NuGet/login@v1

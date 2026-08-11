@@ -104,6 +104,51 @@ public class OnnxVisionModelTests
     }
 
     [Fact]
+    public void GenerateWithImages_ClampsProbeToConfiguredContextLength()
+    {
+        var imagePath = GetVisionFixturePath();
+        var runtime = new RecordingVisionRuntime(
+            promptTokenCount: 12,
+            inputShape: [1L, 2876L],
+            generatedTokenIds: [101],
+            decodedTokens: new Dictionary<int, string> { [101] = "vision" });
+
+        var result = OnnxVisionModel.GenerateWithImagesCore(
+            "Describe the image",
+            [imagePath],
+            new GenerationParameters(MaxLength: 4096, MaxOutputTokens: 64, Temperature: 0),
+            CancellationToken.None,
+            runtime,
+            probeMaxLength: 32768);
+
+        Assert.Equal("vision", result.Text);
+        Assert.Equal(32768, runtime.ProbeMaxLength);
+    }
+
+    [Fact]
+    public void GenerateWithImages_WhenProbeCreationFails_FallsBackToPromptTokenCount()
+    {
+        var imagePath = GetVisionFixturePath();
+        var runtime = new RecordingVisionRuntime(
+            promptTokenCount: 12,
+            inputShape: [1L, 2876L],
+            generatedTokenIds: [101],
+            decodedTokens: new Dictionary<int, string> { [101] = "vision" },
+            failProbeCreation: true);
+
+        var result = OnnxVisionModel.GenerateWithImagesCore(
+            "Describe the image",
+            [imagePath],
+            new GenerationParameters(MaxLength: 4096, MaxOutputTokens: 64, Temperature: 0),
+            CancellationToken.None,
+            runtime);
+
+        Assert.Equal("vision", result.Text);
+        Assert.Equal(12, result.InputTokenCount);
+        Assert.Equal(76, runtime.GenerationMaxLength);
+    }
+
+    [Fact]
     public async Task GenerateWithImagesStreamingAsync_UsesMultimodalInputIdsLengthForMaxOutputTokens()
     {
         var imagePath = GetVisionFixturePath();
@@ -220,19 +265,22 @@ public class OnnxVisionModelTests
         private readonly IReadOnlyList<int> _generatedTokenIds;
         private readonly IReadOnlyDictionary<int, string> _decodedTokens;
         private readonly bool _failWhenProbeMaxLengthIsTooSmall;
+        private readonly bool _failProbeCreation;
 
         internal RecordingVisionRuntime(
             int promptTokenCount,
             long[] inputShape,
             IReadOnlyList<int> generatedTokenIds,
             IReadOnlyDictionary<int, string> decodedTokens,
-            bool failWhenProbeMaxLengthIsTooSmall = false)
+            bool failWhenProbeMaxLengthIsTooSmall = false,
+            bool failProbeCreation = false)
         {
             _promptTokenCount = promptTokenCount;
             _inputShape = inputShape;
             _generatedTokenIds = generatedTokenIds;
             _decodedTokens = decodedTokens;
             _failWhenProbeMaxLengthIsTooSmall = failWhenProbeMaxLengthIsTooSmall;
+            _failProbeCreation = failProbeCreation;
         }
 
         internal IReadOnlyList<string>? LoadedImagePaths { get; private set; }
@@ -276,6 +324,9 @@ public class OnnxVisionModelTests
         public IVisionGenerator CreateProbeGenerator(int maxLength)
         {
             ProbeMaxLength = maxLength;
+            if (_failProbeCreation)
+                throw new InvalidOperationException("probe unavailable");
+
             return new RecordingVisionGenerator(
                 inputShape: _inputShape,
                 generatedTokenIds: [],

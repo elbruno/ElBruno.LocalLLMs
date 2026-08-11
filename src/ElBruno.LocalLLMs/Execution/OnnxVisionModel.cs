@@ -71,7 +71,14 @@ internal sealed class OnnxVisionModel : IVisionGenerationModel
     internal GenerationResult GenerateWithImages(string prompt, string[] imagePaths, GenerationParameters parameters, CancellationToken ct)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        return GenerateWithImagesCore(prompt, imagePaths, parameters, ct, _runtime);
+        return GenerateWithImagesCore(
+            prompt,
+            imagePaths,
+            parameters,
+            ct,
+            _runtime,
+            Metadata?.ConfigMaxSequenceLength > 0 ? Metadata.ConfigMaxSequenceLength : null,
+            _logger);
     }
 
     internal async IAsyncEnumerable<string> GenerateWithImagesStreamingAsync(
@@ -82,7 +89,14 @@ internal sealed class OnnxVisionModel : IVisionGenerationModel
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        await foreach (var token in GenerateWithImagesStreamingCore(prompt, imagePaths, parameters, ct, _runtime).ConfigureAwait(false))
+        await foreach (var token in GenerateWithImagesStreamingCore(
+            prompt,
+            imagePaths,
+            parameters,
+            ct,
+            _runtime,
+            Metadata?.ConfigMaxSequenceLength > 0 ? Metadata.ConfigMaxSequenceLength : null,
+            _logger).ConfigureAwait(false))
         {
             yield return token;
         }
@@ -230,7 +244,9 @@ internal sealed class OnnxVisionModel : IVisionGenerationModel
         string[] imagePaths,
         GenerationParameters parameters,
         CancellationToken ct,
-        IVisionGenerationRuntime runtime)
+        IVisionGenerationRuntime runtime,
+        int? probeMaxLength = null,
+        ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(runtime);
         ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
@@ -241,7 +257,7 @@ internal sealed class OnnxVisionModel : IVisionGenerationModel
             using var inputs = runtime.ProcessImages(prompt, images);
 
             var inputTokenCount = imagePaths.Length > 0
-                ? ResolveVisionInputTokenCount(runtime, prompt, inputs)
+                ? ResolveVisionInputTokenCount(runtime, prompt, inputs, probeMaxLength, logger)
                 : runtime.CountPromptTokens(prompt);
 
             using var searchOptions = runtime.CreateSearchOptions();
@@ -288,7 +304,9 @@ internal sealed class OnnxVisionModel : IVisionGenerationModel
         string[] imagePaths,
         GenerationParameters parameters,
         [EnumeratorCancellation] CancellationToken ct,
-        IVisionGenerationRuntime runtime)
+        IVisionGenerationRuntime runtime,
+        int? probeMaxLength = null,
+        ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(runtime);
         ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
@@ -299,7 +317,7 @@ internal sealed class OnnxVisionModel : IVisionGenerationModel
             using var inputs = runtime.ProcessImages(prompt, images);
 
             var inputTokenCount = imagePaths.Length > 0
-                ? ResolveVisionInputTokenCount(runtime, prompt, inputs)
+                ? ResolveVisionInputTokenCount(runtime, prompt, inputs, probeMaxLength, logger)
                 : runtime.CountPromptTokens(prompt);
 
             using var searchOptions = runtime.CreateSearchOptions();
@@ -337,24 +355,39 @@ internal sealed class OnnxVisionModel : IVisionGenerationModel
     private static int ResolveVisionInputTokenCount(
         IVisionGenerationRuntime runtime,
         string prompt,
-        IVisionInputs inputs)
+        IVisionInputs inputs,
+        int? probeMaxLength,
+        ILogger? logger)
     {
-        using var probeGenerator = runtime.CreateProbeGenerator(ProbeMaxLength);
-        probeGenerator.SetInputs(inputs);
+        var fallbackTokenCount = runtime.CountPromptTokens(prompt);
+        var effectiveProbeMaxLength = probeMaxLength is > 0
+            ? Math.Min(probeMaxLength.Value, ProbeMaxLength)
+            : ProbeMaxLength;
 
-        return ResolveInputTokenCount(
-            name =>
-            {
-                try
+        try
+        {
+            using var probeGenerator = runtime.CreateProbeGenerator(effectiveProbeMaxLength);
+            probeGenerator.SetInputs(inputs);
+
+            return ResolveInputTokenCount(
+                name =>
                 {
-                    return probeGenerator.GetInputShape(name);
-                }
-                catch
-                {
-                    return null;
-                }
-            },
-            runtime.CountPromptTokens(prompt));
+                    try
+                    {
+                        return probeGenerator.GetInputShape(name);
+                    }
+                    catch
+                    {
+                        return null;
+                    }
+                },
+                fallbackTokenCount);
+        }
+        catch (Exception ex)
+        {
+            logger?.LogDebug(ex, "Vision input token probe failed; falling back to prompt token count.");
+            return fallbackTokenCount;
+        }
     }
 
     // ── Dispose ──────────────────────────────────────────────────────────────
