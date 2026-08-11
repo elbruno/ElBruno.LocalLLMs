@@ -23,7 +23,7 @@
     <Copyright>Copyright © Bruno Capuano $([System.DateTime]::Now.Year)</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageIcon>nuget_logo.png</PackageIcon>
-    <PublishedSiblingPackageVersion>0.20.11</PublishedSiblingPackageVersion>
+    <PublishedSiblingPackageVersion>0.20.12</PublishedSiblingPackageVersion>
     <ManagePublishedSiblingPackageVersion
       Condition="'$(MSBuildProjectName)' == 'ElBruno.LocalLLMs'
         Or '$(MSBuildProjectName)' == 'ElBruno.LocalLLMs.Rag'

@@ -17,11 +17,10 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 
 > The last 5 notable additions to the library. Updated with each NuGet release.
 
-- 🚀 **`v0.20.11`** — Blazor downloads now survive Server circuit churn, vision `MaxOutputTokens` now respects multimodal input length, and provider diagnostics now surface safer GPU readiness plus opt-in cache-folder actions.
+- 🚀 **`v0.20.12`** — Corrects sibling-package assembly versions, hardens vision token probing against model context limits, and verifies Fara smart image resizing for screenshot workflows.
 - ⬆️ **`v0.20.9`** — Upgraded `onnxruntime-genai` to **0.15.1** and `Microsoft.Extensions.AI.Abstractions` to **10.8.3** across all projects. No API changes.
 - 🧩 **`ElBruno.LocalLLMs.BlazorComponents`** — new Razor Class Library with 7 ready-to-use Blazor components: `ModelStatusCard` (download progress bar + actions), `ModelGallery` (filterable grid), `ModelSelector` (two-way-bindable dropdown), `ChatBox` (streaming token display), `EnvironmentDashboard` (CPU/CUDA/DirectML badges), `LocalLLMHealthBadge` (nav-bar status dot), and `RagPlayground`. Call `services.AddLocalLLMsBlazorComponents()` to register. See the [Blazor Components Guide](docs/blazor-components.md) and the [BlazorDemo sample](src/samples/BlazorDemo/).
 - 📦 **4 more models now support auto-download** (`v0.20.4`) — StableLM-2-1.6B-Chat, Mixtral-8x7B-Instruct-v0.1, DeepSeek-R1-Distill-Llama-70B, and Command-R (35B) are `HasNativeOnnx=true` with ONNX weights hosted at `elbruno/*-onnx` on HuggingFace. Gemma 4 remains a conversion/manual-path family until validated public artifacts are published.
-- 🔍 **`ModelDefinition.IsVisionCapable`** — new computed property. Consumer apps can now check `model.IsVisionCapable` instead of comparing `ModelType == OnnxModelType.VisionGenAI`. Fara1.5-9B returns `true`; all text models return `false`.
 
 ## Features
 
