@@ -282,6 +282,7 @@ Follow this exact order:
 - Badge URLs use shields.io
 - Sample links point to `src/samples/`
 - Doc links point to `docs/`
+- Keep a `## What's New` section with the **last 5 important added features** only; on every NuGet release, validate whether a new entry must be added.
 
 ---
 

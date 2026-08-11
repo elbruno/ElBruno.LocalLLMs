@@ -5,7 +5,7 @@ namespace ElBruno.LocalLLMs;
 /// </summary>
 public enum ExecutionProvider
 {
-    /// <summary>Automatic selection: CUDA, then DirectML, then CPU fallback.</summary>
+    /// <summary>Automatic selection: DirectML, then CUDA, then CPU fallback on Windows; CUDA, then CPU on Linux.</summary>
     Auto,
 
     /// <summary>CPU execution (default, works everywhere).</summary>
@@ -17,3 +17,4 @@ public enum ExecutionProvider
     /// <summary>Windows DirectML GPU acceleration (AMD, Intel, NVIDIA).</summary>
     DirectML
 }
+

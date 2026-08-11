@@ -120,17 +120,17 @@ public static class KnownModels
         HasNativeOnnx = true
     };
 
-    /// <summary>Gemma 4 E2B IT — Google's edge model, effective 2B params (5.1B total), 128K context. ONNX artifact published at elbruno/Gemma-4-E2B-IT-onnx.</summary>
+    /// <summary>Gemma 4 E2B IT — Google's edge model, effective 2B params (5.1B total), 128K context. Use the conversion scripts to produce a local ONNX model path.</summary>
     public static readonly ModelDefinition Gemma4E2BIT = new()
     {
         Id = "gemma-4-e2b-it",
         DisplayName = "Gemma-4-E2B-IT",
-        HuggingFaceRepoId = "elbruno/Gemma-4-E2B-IT-onnx",
+        HuggingFaceRepoId = "google/gemma-4-E2B-it",
         RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Gemma,
         Tier = ModelTier.Tiny,
-        HasNativeOnnx = true,
+        HasNativeOnnx = false,
         SupportsToolCalling = true
     };
 
@@ -206,17 +206,17 @@ public static class KnownModels
         HasNativeOnnx = true
     };
 
-    /// <summary>Gemma 4 E4B IT — Google's edge/laptop model, effective 4B params (8B total), 128K context. ONNX artifact published at elbruno/Gemma-4-E4B-IT-onnx.</summary>
+    /// <summary>Gemma 4 E4B IT — Google's edge/laptop model, effective 4B params (8B total), 128K context. Use the conversion scripts to produce a local ONNX model path.</summary>
     public static readonly ModelDefinition Gemma4E4BIT = new()
     {
         Id = "gemma-4-e4b-it",
         DisplayName = "Gemma-4-E4B-IT",
-        HuggingFaceRepoId = "elbruno/Gemma-4-E4B-IT-onnx",
+        HuggingFaceRepoId = "google/gemma-4-E4B-it",
         RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Gemma,
         Tier = ModelTier.Small,
-        HasNativeOnnx = true,
+        HasNativeOnnx = false,
         SupportsToolCalling = true
     };
 
@@ -332,17 +332,17 @@ public static class KnownModels
         HasNativeOnnx = true
     };
 
-    /// <summary>Gemma 4 12B IT (Unified) — Google's June 2026 unified Gemma 4 model. ONNX artifact published at elbruno/Gemma-4-12B-IT-onnx.</summary>
+    /// <summary>Gemma 4 12B IT (Unified) — Google's June 2026 unified Gemma 4 model. Use the conversion scripts to produce a local ONNX model path.</summary>
     public static readonly ModelDefinition Gemma4_12BIT = new()
     {
         Id = "gemma-4-12b-it",
         DisplayName = "Gemma-4-12B-IT",
-        HuggingFaceRepoId = "elbruno/Gemma-4-12B-IT-onnx",
+        HuggingFaceRepoId = "google/gemma-4-12B-it",
         RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Gemma,
         Tier = ModelTier.Medium,
-        HasNativeOnnx = true,
+        HasNativeOnnx = false,
         SupportsToolCalling = true
     };
 
@@ -428,31 +428,31 @@ public static class KnownModels
         HasNativeOnnx = true
     };
 
-    /// <summary>Gemma 4 26B A4B IT — Google's MoE model, 3.8B active / 25.2B total, 256K context. ONNX artifact published at elbruno/Gemma-4-26B-A4B-IT-onnx.</summary>
+    /// <summary>Gemma 4 26B A4B IT — Google's MoE model, 3.8B active / 25.2B total, 256K context. Use the conversion scripts to produce a local ONNX model path.</summary>
     public static readonly ModelDefinition Gemma4_26BA4BIT = new()
     {
         Id = "gemma-4-26b-a4b-it",
         DisplayName = "Gemma-4-26B-A4B-IT",
-        HuggingFaceRepoId = "elbruno/Gemma-4-26B-A4B-IT-onnx",
+        HuggingFaceRepoId = "google/gemma-4-26B-A4B-it",
         RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Gemma,
         Tier = ModelTier.Large,
-        HasNativeOnnx = true,
+        HasNativeOnnx = false,
         SupportsToolCalling = true
     };
 
-    /// <summary>Gemma 4 31B IT — Google's dense flagship, 30.7B params, 256K context. ONNX artifact published at elbruno/Gemma-4-31B-IT-onnx.</summary>
+    /// <summary>Gemma 4 31B IT — Google's dense flagship, 30.7B params, 256K context. Use the conversion scripts to produce a local ONNX model path.</summary>
     public static readonly ModelDefinition Gemma4_31BIT = new()
     {
         Id = "gemma-4-31b-it",
         DisplayName = "Gemma-4-31B-IT",
-        HuggingFaceRepoId = "elbruno/Gemma-4-31B-IT-onnx",
+        HuggingFaceRepoId = "google/gemma-4-31B-it",
         RequiredFiles = ["*"],
         ModelType = OnnxModelType.GenAI,
         ChatTemplate = ChatTemplateFormat.Gemma,
         Tier = ModelTier.Large,
-        HasNativeOnnx = true,
+        HasNativeOnnx = false,
         SupportsToolCalling = true
     };
 

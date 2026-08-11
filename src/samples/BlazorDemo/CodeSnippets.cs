@@ -99,7 +99,7 @@ internal static class CodeSnippets
         "@using ElBruno.LocalLLMs.BlazorComponents.Components\n" +
         "\n" +
         "// Full dashboard (default)\n" +
-        "// Shows CPU/CUDA/DirectML badges, .NET version, OS, cache path and size\n" +
+        "// Shows CPU/CUDA/DirectML badges, provider readiness, .NET version, OS, cache path and size\n" +
         "<EnvironmentDashboard />\n" +
         "\n" +
         "// Compact mode — single line for nav bars or sidebars\n" +
@@ -108,6 +108,9 @@ internal static class CodeSnippets
         "// Hide the cache info section\n" +
         "<EnvironmentDashboard ShowCacheInfo=\"false\" />\n" +
         "\n" +
-        "// Pass a LocalChatClient to include per-model cache sizes\n" +
-        "<EnvironmentDashboard Client=\"@localClient\" ShowCacheInfo=\"true\" />";
+        "// Opt in to the host-side cache-folder button (still disabled unless services enable host folder actions)\n" +
+        "<EnvironmentDashboard ShowOpenFolderButton=\"true\" />\n" +
+        "\n" +
+        "// Pass a LocalChatClient to show the currently selected provider summary\n" +
+        "<EnvironmentDashboard Client=\"@localClient\" ShowCacheInfo=\"true\" ShowOpenFolderButton=\"true\" />";
 }

@@ -7,7 +7,7 @@
     <PackageProjectUrl>https://github.com/elbruno/ElBruno.LocalLLMs</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>rag;retrieval;embeddings;semantic-search;vector-db;chunking;llm</PackageTags>
-    <Version>0.20.10</Version>
+    <Version>0.20.11</Version>
     <IsPackable>true</IsPackable>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -21,6 +21,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.8.3" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.3" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.12" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,3 +29,4 @@
     <None Include="..\..\images\nuget_logo.png" Pack="true" PackagePath="" />
   </ItemGroup>
 </Project>
+

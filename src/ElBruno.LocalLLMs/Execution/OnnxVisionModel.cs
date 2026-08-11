@@ -11,8 +11,12 @@ namespace ElBruno.LocalLLMs.Internal;
 /// </summary>
 internal sealed class OnnxVisionModel : IVisionGenerationModel
 {
+    // The probe never generates tokens; it only needs a ceiling that cannot undershoot
+    // the expanded multimodal input_ids length before we can compute the real max_length.
+    private const int ProbeMaxLength = int.MaxValue;
     private readonly Model _model;
     private readonly MultiModalProcessor _processor;
+    private readonly IVisionGenerationRuntime _runtime;
     private readonly ILogger _logger;
     private bool _disposed;
 
@@ -29,84 +33,17 @@ internal sealed class OnnxVisionModel : IVisionGenerationModel
         ArgumentException.ThrowIfNullOrWhiteSpace(modelPath);
         _logger = logger ?? NullLogger.Instance;
 
-        var selectedProvider = provider;
-        var providerFailures = new List<string>();
+        var initialization = ExecutionProviderSelection.InitializeModel(
+            provider,
+            _logger,
+            candidate => CreateModel(modelPath, candidate, gpuDeviceId));
 
-        if (provider == ExecutionProvider.Auto)
-        {
-            var candidates = GetProviderFallbackOrder(provider);
-            for (var i = 0; i < candidates.Count; i++)
-            {
-                var candidate = candidates[i];
-                try
-                {
-                    LogMessages.ProviderAttempt(_logger, candidate);
-                    _model = CreateModel(modelPath, candidate, gpuDeviceId);
-                    selectedProvider = candidate;
-                    goto ModelInitialized;
-                }
-                catch (Exception ex) when (candidate != ExecutionProvider.Cpu && ShouldFallbackToNextProvider(candidate, ex, ExecutionProvider.Auto))
-                {
-                    var reason = BuildProviderFailureReason(candidate, ex);
-                    providerFailures.Add(reason);
-                    var nextProvider = i + 1 < candidates.Count ? candidates[i + 1] : ExecutionProvider.Cpu;
-                    LogMessages.ProviderFallback(_logger, candidate, nextProvider, reason);
-                }
-                catch (Exception ex) when (candidate != ExecutionProvider.Cpu)
-                {
-                    LogMessages.ModelInitError(_logger, $"Hard error with provider {candidate}", ex);
-                    throw new ExecutionProviderException(
-                        $"Failed to initialize model with provider {candidate}. This was treated as a hard error (no fallback).",
-                        candidate,
-                        ex);
-                }
-            }
-
-            var details = providerFailures.Count > 0
-                ? " Failures: " + string.Join(" | ", providerFailures)
-                : string.Empty;
-
-            throw new ExecutionProviderException(
-                "Unable to initialize model with any execution provider." + details,
-                ExecutionProvider.Auto);
-        }
-
-        try
-        {
-            LogMessages.ProviderAttempt(_logger, provider);
-            _model = CreateModel(modelPath, provider, gpuDeviceId);
-        }
-        catch (Exception ex) when (provider != ExecutionProvider.Cpu && IsProviderNotInstalledError(provider, ex))
-        {
-            var packageName = provider switch
-            {
-                ExecutionProvider.Cuda => "Microsoft.ML.OnnxRuntimeGenAI.Cuda",
-                ExecutionProvider.DirectML => "Microsoft.ML.OnnxRuntimeGenAI.DirectML",
-                _ => $"Microsoft.ML.OnnxRuntimeGenAI.{provider}"
-            };
-
-            var suggestion = $"Add the '{packageName}' NuGet package to your application project and ensure the required runtime is installed. " +
-                $"Replace 'Microsoft.ML.OnnxRuntimeGenAI' with '{packageName}' — do not reference both packages simultaneously.";
-
-            LogMessages.ModelInitError(_logger, $"Provider {provider} not installed", ex);
-            throw new ExecutionProviderException(
-                $"The {provider} execution provider is not available. " +
-                suggestion +
-                $" Inner error: {ex.Message}",
-                provider,
-                suggestion,
-                ex);
-        }
-
-    ModelInitialized:
-        ActiveProvider = selectedProvider;
-        if (provider == ExecutionProvider.Auto && providerFailures.Count > 0)
-        {
-            ProviderSelectionDetails =
-                $"Auto selected {selectedProvider} after provider fallbacks: {string.Join(" | ", providerFailures)}";
-        }
+        _model = initialization.Model;
+        ActiveProvider = initialization.ActiveProvider;
+        ProviderSelectionDetails = initialization.ProviderSelectionDetails;
 
         _processor = new MultiModalProcessor(_model);
+        _runtime = new OnnxVisionGenerationRuntime(_model, _processor);
         Metadata = GenAIConfigParser.TryParse(modelPath, optionsMaxSequenceLength);
 
         if (Metadata?.ModelName is not null &&
@@ -120,56 +57,21 @@ internal sealed class OnnxVisionModel : IVisionGenerationModel
         }
     }
 
+    internal OnnxVisionModel(IVisionGenerationRuntime runtime, ILogger? logger = null)
+    {
+        _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
+        _model = null!;
+        _processor = null!;
+        _logger = logger ?? NullLogger.Instance;
+        ActiveProvider = ExecutionProvider.Cpu;
+    }
+
     // ── Vision generation ────────────────────────────────────────────────────
 
     internal GenerationResult GenerateWithImages(string prompt, string[] imagePaths, GenerationParameters parameters, CancellationToken ct)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
-
-        using var genParams = new GeneratorParams(_model);
-
-        var inputTokenCount = CountPromptTokensInternal(prompt);
-        ApplyParameters(genParams, parameters, inputTokenCount);
-
-        Images? images = imagePaths.Length > 0 ? Images.Load(imagePaths) : null;
-        try
-        {
-            using var inputs = _processor.ProcessImages(prompt, images!);
-            using var generator = new Generator(_model, genParams);
-            generator.SetInputs(inputs);
-
-            using var tokenizerStream = _processor.CreateStream();
-            var outputText = new System.Text.StringBuilder();
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            var timeToFirstToken = TimeSpan.Zero;
-            var outputTokenCount = 0;
-            var firstTokenSeen = false;
-
-            while (!generator.IsDone())
-            {
-                ct.ThrowIfCancellationRequested();
-                generator.GenerateNextToken();
-
-                var seq = generator.GetSequence(0);
-                var tokenId = seq[^1];
-                var decoded = tokenizerStream.Decode(tokenId);
-                outputText.Append(decoded);
-                outputTokenCount++;
-
-                if (!firstTokenSeen)
-                {
-                    firstTokenSeen = true;
-                    timeToFirstToken = sw.Elapsed;
-                }
-            }
-
-            return new GenerationResult(outputText.ToString(), inputTokenCount, outputTokenCount, timeToFirstToken);
-        }
-        finally
-        {
-            images?.Dispose();
-        }
+        return GenerateWithImagesCore(prompt, imagePaths, parameters, ct, _runtime);
     }
 
     internal async IAsyncEnumerable<string> GenerateWithImagesStreamingAsync(
@@ -179,43 +81,10 @@ internal sealed class OnnxVisionModel : IVisionGenerationModel
         [EnumeratorCancellation] CancellationToken ct)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
 
-        var streamInputTokenCount = CountPromptTokensInternal(prompt);
-
-        using var genParams = new GeneratorParams(_model);
-        ApplyParameters(genParams, parameters, streamInputTokenCount);
-
-        Images? images = imagePaths.Length > 0 ? Images.Load(imagePaths) : null;
-        try
+        await foreach (var token in GenerateWithImagesStreamingCore(prompt, imagePaths, parameters, ct, _runtime).ConfigureAwait(false))
         {
-            using var inputs = _processor.ProcessImages(prompt, images!);
-            using var generator = new Generator(_model, genParams);
-            generator.SetInputs(inputs);
-
-            using var tokenizerStream = _processor.CreateStream();
-
-            while (!generator.IsDone())
-            {
-                ct.ThrowIfCancellationRequested();
-                generator.GenerateNextToken();
-                ct.ThrowIfCancellationRequested();
-
-                var seq = generator.GetSequence(0);
-                var tokenId = seq[^1];
-                var tokenText = tokenizerStream.Decode(tokenId);
-                if (!string.IsNullOrEmpty(tokenText))
-                {
-                    ct.ThrowIfCancellationRequested();
-                    yield return tokenText;
-                }
-
-                await Task.Yield();
-            }
-        }
-        finally
-        {
-            images?.Dispose();
+            yield return token;
         }
     }
 
@@ -273,78 +142,16 @@ internal sealed class OnnxVisionModel : IVisionGenerationModel
     // ── Provider selection (mirrored from OnnxGenAIModel) ───────────────────
 
     private static IReadOnlyList<ExecutionProvider> GetProviderFallbackOrder(ExecutionProvider provider) =>
-        provider switch
-        {
-            ExecutionProvider.Auto => OperatingSystem.IsWindows()
-                ? [ExecutionProvider.DirectML, ExecutionProvider.Cuda, ExecutionProvider.Cpu]
-                : [ExecutionProvider.Cuda, ExecutionProvider.Cpu],
-            _ => [provider]
-        };
+        ExecutionProviderSelection.GetProviderFallbackOrder(provider);
 
     private static bool IsProviderNotInstalledError(ExecutionProvider provider, Exception ex)
-    {
-        ArgumentNullException.ThrowIfNull(ex);
-        return ShouldFallbackToNextProvider(provider, ex, provider);
-    }
+        => ExecutionProviderSelection.IsProviderNotInstalledError(provider, ex);
 
     private static bool ShouldFallbackToNextProvider(ExecutionProvider provider, Exception ex, ExecutionProvider initialProvider)
-    {
-        ArgumentNullException.ThrowIfNull(ex);
-
-        var message = ex.ToString();
-        if (string.IsNullOrWhiteSpace(message))
-            return false;
-
-        var normalized = message.ToLowerInvariant();
-
-        if (initialProvider == ExecutionProvider.Auto)
-        {
-            if (ex is DllNotFoundException or BadImageFormatException or EntryPointNotFoundException)
-                return true;
-
-            if (normalized.Contains("is not supported", StringComparison.Ordinal) ||
-                normalized.Contains("not available", StringComparison.Ordinal) ||
-                normalized.Contains("is unavailable", StringComparison.Ordinal) ||
-                normalized.Contains("specified provider", StringComparison.Ordinal))
-            {
-                return true;
-            }
-        }
-
-        var providerToken = provider switch
-        {
-            ExecutionProvider.Cuda => "cuda",
-            ExecutionProvider.DirectML => "dml",
-            _ => provider.ToString().ToLowerInvariant()
-        };
-
-        var hasProviderContext = normalized.Contains(providerToken, StringComparison.Ordinal) ||
-            (provider == ExecutionProvider.DirectML && normalized.Contains("directml", StringComparison.Ordinal));
-
-        if (!hasProviderContext)
-            return false;
-
-        return normalized.Contains("failed to load", StringComparison.Ordinal) ||
-               normalized.Contains("not found", StringComparison.Ordinal) ||
-               normalized.Contains("not supported", StringComparison.Ordinal) ||
-               normalized.Contains("is unavailable", StringComparison.Ordinal) ||
-               normalized.Contains("provider is unavailable", StringComparison.Ordinal) ||
-               normalized.Contains("is not enabled", StringComparison.Ordinal) ||
-               normalized.Contains("not been built with", StringComparison.Ordinal) ||
-               normalized.Contains("could not be created", StringComparison.Ordinal) ||
-               normalized.Contains("no available provider", StringComparison.Ordinal) ||
-               normalized.Contains("unable to find", StringComparison.Ordinal) ||
-               normalized.Contains("cannot load", StringComparison.Ordinal) ||
-               normalized.Contains("not available", StringComparison.Ordinal);
-    }
+        => ExecutionProviderSelection.ShouldFallbackToNextProvider(provider, ex, initialProvider);
 
     private static string BuildProviderFailureReason(ExecutionProvider provider, Exception ex)
-    {
-        var message = ex.Message.Replace(Environment.NewLine, " ", StringComparison.Ordinal).Trim();
-        if (message.Length > 180)
-            message = message[..180] + "...";
-        return $"{provider}: {ex.GetType().Name}: {message}";
-    }
+        => ExecutionProviderSelection.BuildProviderFailureReason(provider, ex);
 
     private static Model CreateModel(string modelPath, ExecutionProvider provider, int gpuDeviceId)
     {
@@ -367,32 +174,187 @@ internal sealed class OnnxVisionModel : IVisionGenerationModel
         return new Model(config);
     }
 
-    private static void ApplyParameters(GeneratorParams genParams, GenerationParameters parameters, int inputTokenCount = 0)
+    private static void ApplyParameters(IVisionSearchOptions searchOptions, GenerationParameters parameters, int inputTokenCount = 0)
     {
-        var effectiveMaxLength = parameters.MaxOutputTokens.HasValue
-            ? Math.Min(parameters.MaxLength, inputTokenCount + parameters.MaxOutputTokens.Value)
-            : parameters.MaxLength;
-
-        genParams.SetSearchOption("max_length", Math.Max(effectiveMaxLength, inputTokenCount + 1));
-        genParams.SetSearchOption("temperature", parameters.Temperature);
-        genParams.SetSearchOption("top_p", parameters.TopP);
+        searchOptions.SetSearchOption("max_length", ResolveMaxLength(parameters.MaxLength, inputTokenCount, parameters.MaxOutputTokens));
+        searchOptions.SetSearchOption("temperature", parameters.Temperature);
+        searchOptions.SetSearchOption("top_p", parameters.TopP);
 
         if (parameters.TopK.HasValue)
-            genParams.SetSearchOption("top_k", parameters.TopK.Value);
+            searchOptions.SetSearchOption("top_k", parameters.TopK.Value);
 
         if (parameters.RepetitionPenalty != 1.0f)
-            genParams.SetSearchOption("repetition_penalty", parameters.RepetitionPenalty);
+            searchOptions.SetSearchOption("repetition_penalty", parameters.RepetitionPenalty);
 
-        genParams.SetSearchOption("do_sample", parameters.Temperature > 0);
+        searchOptions.SetSearchOption("do_sample", parameters.Temperature > 0);
     }
 
     private int CountPromptTokensInternal(string prompt)
     {
-        // Use a temporary tokenizer for token counting since NamedTensors
-        // does not expose input_ids length.
-        using var tmpTokenizer = new Tokenizer(_model);
-        using var seq = tmpTokenizer.Encode(prompt);
-        return seq[0].Length;
+        return _runtime.CountPromptTokens(prompt);
+    }
+
+    internal static int ResolveInputTokenCount(Func<string, long[]?> inputShapeProvider, int fallbackTokenCount)
+    {
+        ArgumentNullException.ThrowIfNull(inputShapeProvider);
+
+        try
+        {
+            var shape = inputShapeProvider("input_ids");
+            if (shape is { Length: > 0 })
+            {
+                var tokenCount = shape[^1];
+                if (tokenCount > 0 && tokenCount <= int.MaxValue)
+                    return checked((int)tokenCount);
+            }
+        }
+        catch
+        {
+            // Fall back to text-only tokenization if the multimodal input shape is not accessible.
+        }
+
+        return fallbackTokenCount;
+    }
+
+    internal static int ResolveMaxLength(int maxLength, int inputTokenCount, int? maxOutputTokens)
+    {
+        var effectiveMaxLength = maxOutputTokens.HasValue
+            ? Math.Min(maxLength, inputTokenCount + maxOutputTokens.Value)
+            : maxLength;
+
+        return Math.Max(effectiveMaxLength, inputTokenCount + 1);
+    }
+
+    internal static GenerationResult GenerateWithImagesCore(
+        string prompt,
+        string[] imagePaths,
+        GenerationParameters parameters,
+        CancellationToken ct,
+        IVisionGenerationRuntime runtime)
+    {
+        ArgumentNullException.ThrowIfNull(runtime);
+        ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
+
+        IVisionImages? images = imagePaths.Length > 0 ? runtime.LoadImages(imagePaths) : null;
+        try
+        {
+            using var inputs = runtime.ProcessImages(prompt, images);
+
+            var inputTokenCount = imagePaths.Length > 0
+                ? ResolveVisionInputTokenCount(runtime, prompt, inputs)
+                : runtime.CountPromptTokens(prompt);
+
+            using var searchOptions = runtime.CreateSearchOptions();
+            ApplyParameters(searchOptions, parameters, inputTokenCount);
+
+            using var generator = runtime.CreateGenerator(searchOptions);
+            generator.SetInputs(inputs);
+
+            using var tokenizerStream = runtime.CreateTokenizerStream();
+            var outputText = new System.Text.StringBuilder();
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var timeToFirstToken = TimeSpan.Zero;
+            var outputTokenCount = 0;
+            var firstTokenSeen = false;
+
+            while (!generator.IsDone())
+            {
+                ct.ThrowIfCancellationRequested();
+                generator.GenerateNextToken();
+
+                var seq = generator.GetSequence(0);
+                var tokenId = seq[^1];
+                var decoded = tokenizerStream.Decode(tokenId);
+                outputText.Append(decoded);
+                outputTokenCount++;
+
+                if (!firstTokenSeen)
+                {
+                    firstTokenSeen = true;
+                    timeToFirstToken = sw.Elapsed;
+                }
+            }
+
+            return new GenerationResult(outputText.ToString(), inputTokenCount, outputTokenCount, timeToFirstToken);
+        }
+        finally
+        {
+            images?.Dispose();
+        }
+    }
+
+    internal static async IAsyncEnumerable<string> GenerateWithImagesStreamingCore(
+        string prompt,
+        string[] imagePaths,
+        GenerationParameters parameters,
+        [EnumeratorCancellation] CancellationToken ct,
+        IVisionGenerationRuntime runtime)
+    {
+        ArgumentNullException.ThrowIfNull(runtime);
+        ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
+
+        IVisionImages? images = imagePaths.Length > 0 ? runtime.LoadImages(imagePaths) : null;
+        try
+        {
+            using var inputs = runtime.ProcessImages(prompt, images);
+
+            var inputTokenCount = imagePaths.Length > 0
+                ? ResolveVisionInputTokenCount(runtime, prompt, inputs)
+                : runtime.CountPromptTokens(prompt);
+
+            using var searchOptions = runtime.CreateSearchOptions();
+            ApplyParameters(searchOptions, parameters, inputTokenCount);
+
+            using var generator = runtime.CreateGenerator(searchOptions);
+            generator.SetInputs(inputs);
+
+            using var tokenizerStream = runtime.CreateTokenizerStream();
+
+            while (!generator.IsDone())
+            {
+                ct.ThrowIfCancellationRequested();
+                generator.GenerateNextToken();
+                ct.ThrowIfCancellationRequested();
+
+                var seq = generator.GetSequence(0);
+                var tokenId = seq[^1];
+                var tokenText = tokenizerStream.Decode(tokenId);
+                if (!string.IsNullOrEmpty(tokenText))
+                {
+                    ct.ThrowIfCancellationRequested();
+                    yield return tokenText;
+                }
+
+                await Task.Yield();
+            }
+        }
+        finally
+        {
+            images?.Dispose();
+        }
+    }
+
+    private static int ResolveVisionInputTokenCount(
+        IVisionGenerationRuntime runtime,
+        string prompt,
+        IVisionInputs inputs)
+    {
+        using var probeGenerator = runtime.CreateProbeGenerator(ProbeMaxLength);
+        probeGenerator.SetInputs(inputs);
+
+        return ResolveInputTokenCount(
+            name =>
+            {
+                try
+                {
+                    return probeGenerator.GetInputShape(name);
+                }
+                catch
+                {
+                    return null;
+                }
+            },
+            runtime.CountPromptTokens(prompt));
     }
 
     // ── Dispose ──────────────────────────────────────────────────────────────
@@ -402,7 +364,128 @@ internal sealed class OnnxVisionModel : IVisionGenerationModel
         if (_disposed) return;
         _disposed = true;
 
-        _processor.Dispose();
-        _model.Dispose();
+        _processor?.Dispose();
+        _model?.Dispose();
     }
+}
+
+internal interface IVisionGenerationRuntime
+{
+    IVisionImages LoadImages(string[] imagePaths);
+    IVisionInputs ProcessImages(string prompt, IVisionImages? images);
+    int CountPromptTokens(string prompt);
+    IVisionSearchOptions CreateSearchOptions();
+    IVisionGenerator CreateGenerator(IVisionSearchOptions searchOptions);
+    IVisionGenerator CreateProbeGenerator(int maxLength);
+    IVisionTokenizerStream CreateTokenizerStream();
+}
+
+internal interface IVisionImages : IDisposable;
+
+internal interface IVisionInputs : IDisposable;
+
+internal interface IVisionSearchOptions : IDisposable
+{
+    void SetSearchOption(string name, int value);
+    void SetSearchOption(string name, float value);
+    void SetSearchOption(string name, bool value);
+}
+
+internal interface IVisionGenerator : IDisposable
+{
+    void SetInputs(IVisionInputs inputs);
+    bool IsDone();
+    void GenerateNextToken();
+    int[] GetSequence(int sequenceIndex);
+    long[]? GetInputShape(string name);
+}
+
+internal interface IVisionTokenizerStream : IDisposable
+{
+    string Decode(int tokenId);
+}
+
+file sealed class OnnxVisionGenerationRuntime(Model model, MultiModalProcessor processor) : IVisionGenerationRuntime
+{
+    public IVisionImages LoadImages(string[] imagePaths)
+        => new OnnxVisionImages(Images.Load(imagePaths));
+
+    public IVisionInputs ProcessImages(string prompt, IVisionImages? images)
+        => new OnnxVisionInputs(processor.ProcessImages(prompt, (images as OnnxVisionImages)?.Inner!));
+
+    public int CountPromptTokens(string prompt)
+    {
+        using var tokenizer = new Tokenizer(model);
+        using var sequence = tokenizer.Encode(prompt);
+        return sequence[0].Length;
+    }
+
+    public IVisionSearchOptions CreateSearchOptions()
+        => new OnnxVisionSearchOptions(model);
+
+    public IVisionGenerator CreateGenerator(IVisionSearchOptions searchOptions)
+        => new OnnxVisionGenerator(model, ((OnnxVisionSearchOptions)searchOptions).Inner);
+
+    public IVisionGenerator CreateProbeGenerator(int maxLength)
+    {
+        var searchOptions = new OnnxVisionSearchOptions(model);
+        searchOptions.SetSearchOption("max_length", maxLength);
+        return new OnnxVisionGenerator(model, searchOptions.Inner, searchOptions);
+    }
+
+    public IVisionTokenizerStream CreateTokenizerStream()
+        => new OnnxVisionTokenizerStream(processor.CreateStream());
+}
+
+file sealed class OnnxVisionSearchOptions(Model model) : IVisionSearchOptions
+{
+    internal GeneratorParams Inner { get; } = new(model);
+
+    public void SetSearchOption(string name, int value) => Inner.SetSearchOption(name, value);
+    public void SetSearchOption(string name, float value) => Inner.SetSearchOption(name, value);
+    public void SetSearchOption(string name, bool value) => Inner.SetSearchOption(name, value);
+    public void Dispose() => Inner.Dispose();
+}
+
+file sealed class OnnxVisionGenerator(Model model, GeneratorParams parameters, IDisposable? ownedResource = null) : IVisionGenerator
+{
+    private readonly Generator _generator = new(model, parameters);
+
+    public void SetInputs(IVisionInputs inputs)
+        => _generator.SetInputs(((OnnxVisionInputs)inputs).Inner);
+
+    public bool IsDone() => _generator.IsDone();
+
+    public void GenerateNextToken() => _generator.GenerateNextToken();
+
+    public int[] GetSequence(int sequenceIndex) => _generator.GetSequence((ulong)sequenceIndex).ToArray();
+
+    public long[]? GetInputShape(string name) => _generator.GetInput(name).Shape();
+
+    public void Dispose()
+    {
+        _generator.Dispose();
+        ownedResource?.Dispose();
+    }
+}
+
+file sealed class OnnxVisionTokenizerStream(TokenizerStream inner) : IVisionTokenizerStream
+{
+    public string Decode(int tokenId) => inner.Decode(tokenId);
+
+    public void Dispose() => inner.Dispose();
+}
+
+file sealed class OnnxVisionImages(Images inner) : IVisionImages
+{
+    internal Images Inner { get; } = inner;
+
+    public void Dispose() => Inner.Dispose();
+}
+
+file sealed class OnnxVisionInputs(NamedTensors inner) : IVisionInputs
+{
+    internal NamedTensors Inner { get; } = inner;
+
+    public void Dispose() => Inner.Dispose();
 }

@@ -31,6 +31,21 @@ public sealed class ModelStateServiceTests
     }
 
     [Fact]
+    public void Registration_AddsHostFolderLauncher_AsSingletonAndDisabledByDefault()
+    {
+        var services = new ServiceCollection();
+
+        services.AddLocalLLMsBlazorComponents();
+        using var provider = services.BuildServiceProvider();
+
+        var descriptor = services.Single(service => service.ServiceType == typeof(IHostFolderLauncher));
+        var launcher = provider.GetRequiredService<IHostFolderLauncher>();
+
+        Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
+        Assert.False(launcher.CanOpenFolders);
+    }
+
+    [Fact]
     public async Task Singleton_IsSharedAcrossChildScopes()
     {
         using var downloader = new BlockingModelDownloader();

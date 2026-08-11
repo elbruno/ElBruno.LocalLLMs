@@ -9,26 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.11] - 2026-08-11
+
 ### Fixed
-- **Issue #42** — `ModelStateService` is now application-wide and coordinates one in-flight download per model, so Blazor Server circuit disconnects no longer cancel active downloads. Explicit cancellation and application-shutdown cancellation remain supported.
+- **Issue #44 — vision `MaxOutputTokens` for multimodal prompts**: `OnnxVisionModel` now probes the expanded
+  multimodal `input_ids` length before applying `max_length`, so bounded vision requests stop after the requested
+  generated-token budget instead of throwing `input_ids size exceeds max length`.
+- **Issue #45 — CUDA preflight and safer provider fallback**: added CUDA runtime/provider library preflight plus
+  safer `ExecutionProvider.Auto` initialization so missing CUDA 13 / cuDNN 9 dependencies surface as
+  `ExecutionProviderException` or CPU fallback instead of entering the failing native path.
+
+### Changed
+- **Issue #46 — `EnvironmentDashboard` diagnostics and safe folder actions**: added provider-readiness details
+  (`ExecutionProvider.Auto` resolution, per-provider availability, and unavailable reasons) plus an explicitly
+  opt-in host folder launcher used by `EnvironmentDashboard` and `ModelStatusCard`. Folder-open actions are
+  disabled by default so Blazor Server apps do not shell out on the server accidentally.
+- **Issue #42 — `ModelStateService` lifetime**: registered `ModelStateService` as a singleton so
+  Blazor Server circuit teardown no longer cancels active downloads. Explicit model cancellation
+  remains supported, and application shutdown still cancels active downloads during disposal.
+- Retired the Gemma 4 blocker monitor workflow, closed issue #39, and removed the daily schedule; the workflow remains manual-only as a terminal-state stub.
+- Reverted Gemma 4 `HasNativeOnnx=true` claims back to conversion/manual-path truth after auditing Hugging Face reachability and finding that the claimed public `elbruno/Gemma-4-*-onnx` repos were not validated.
+- Updated `scripts/convert_gemma4.py` with Hugging Face upload support and a Python `onnxruntime-genai` version gate so future publication attempts fail fast until a validated `v0.15.1+` conversion environment is available.
 
 ---
 
 ## [0.20.4] - 2026-07-28
 
 ### Changed
-- **Issue #26 — `KnownModels.Gemma4E2BIT`**: updated `HuggingFaceRepoId` to `elbruno/Gemma-4-E2B-IT-onnx` and set
-  `HasNativeOnnx = true` now that the ONNX artifact has been published. Auto-download via `EnsureModelDownloaded = true` is now supported.
-- **Issue #27 — `KnownModels.Gemma4E4BIT`**: updated `HuggingFaceRepoId` to `elbruno/Gemma-4-E4B-IT-onnx` and set
-  `HasNativeOnnx = true` now that the ONNX artifact has been published.
+- **Issue #26 — `KnownModels.Gemma4E2BIT`**: native ONNX publication was attempted for `elbruno/Gemma-4-E2B-IT-onnx`, but this claim was later reverted in `Unreleased` after artifact validation found no verified public repo. Use manual conversion for now.
+- **Issue #27 — `KnownModels.Gemma4E4BIT`**: native ONNX publication was attempted for `elbruno/Gemma-4-E4B-IT-onnx`, but this claim was later reverted in `Unreleased` after artifact validation found no verified public repo.
 - **Issue #28 — `KnownModels.StableLM2_16BChat`**: updated `HuggingFaceRepoId` to `elbruno/StableLM-2-1.6B-Chat-onnx`,
   `RequiredFiles` to `["*"]`, and set `HasNativeOnnx = true`.
-- **Issue #29 — `KnownModels.Gemma4_12BIT`**: updated `HuggingFaceRepoId` to `elbruno/Gemma-4-12B-IT-onnx` and set
-  `HasNativeOnnx = true`.
-- **Issue #30 — `KnownModels.Gemma4_26BA4BIT`**: updated `HuggingFaceRepoId` to `elbruno/Gemma-4-26B-A4B-IT-onnx` and set
-  `HasNativeOnnx = true`.
-- **Issue #31 — `KnownModels.Gemma4_31BIT`**: updated `HuggingFaceRepoId` to `elbruno/Gemma-4-31B-IT-onnx` and set
-  `HasNativeOnnx = true`.
+- **Issue #29 — `KnownModels.Gemma4_12BIT`**: native ONNX publication was attempted for `elbruno/Gemma-4-12B-IT-onnx`, but this claim was later reverted in `Unreleased` after artifact validation found no verified public repo.
+- **Issue #30 — `KnownModels.Gemma4_26BA4BIT`**: native ONNX publication was attempted for `elbruno/Gemma-4-26B-A4B-IT-onnx`, but this claim was later reverted in `Unreleased` after artifact validation found no verified public repo.
+- **Issue #31 — `KnownModels.Gemma4_31BIT`**: native ONNX publication was attempted for `elbruno/Gemma-4-31B-IT-onnx`, but this claim was later reverted in `Unreleased` after artifact validation found no verified public repo.
 - **Issue #32 — `KnownModels.Mixtral8x7BInstructV01`**: updated `HuggingFaceRepoId` to `elbruno/Mixtral-8x7B-Instruct-v0.1-onnx`,
   `RequiredFiles` to `["*"]`, and set `HasNativeOnnx = true`.
 - **Issue #33 — `KnownModels.DeepSeekR1DistillLlama70B`**: updated `HuggingFaceRepoId` to `elbruno/DeepSeek-R1-Distill-Llama-70B-onnx`,

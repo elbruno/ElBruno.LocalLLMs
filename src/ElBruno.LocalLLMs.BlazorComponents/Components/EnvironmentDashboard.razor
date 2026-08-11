@@ -1,4 +1,8 @@
 @using ElBruno.LocalLLMs.Diagnostics
+@using ElBruno.LocalLLMs.BlazorComponents.Options
+@using ElBruno.LocalLLMs.BlazorComponents.Services
+@inject ModelStateService ModelState
+@inject IHostFolderLauncher FolderLauncher
 
 <div class="llm-env @(Compact ? "llm-env--compact" : "")">
     @if (!Compact)
@@ -7,15 +11,16 @@
     }
 
     <div class="llm-env-badges">
-        <span class="llm-env-badge @(_diags.CpuAvailable ? "llm-ok" : "llm-dim")">
-            @(_diags.CpuAvailable ? "✅" : "❌") CPU (@_diags.ProcessorCount cores)
-        </span>
-        <span class="llm-env-badge @(_diags.DirectMLAvailable ? "llm-ok" : "llm-dim")">
-            @(_diags.DirectMLAvailable ? "✅" : "❌") DirectML
-        </span>
-        <span class="llm-env-badge @(_diags.CudaAvailable ? "llm-ok" : "llm-dim")">
-            @(_diags.CudaAvailable ? "✅" : "❌") CUDA
-        </span>
+        @foreach (var providerRow in BadgeRows)
+        {
+            <span class="llm-env-badge @GetSummaryBadgeClass(providerRow.Status)">
+                @GetBadgeIcon(providerRow.Status) @providerRow.Provider
+                @if (providerRow.Provider == ExecutionProvider.Cpu)
+                {
+                    <text> (@_diags.ProcessorCount cores)</text>
+                }
+            </span>
+        }
     </div>
 
     @if (!Compact)
@@ -31,25 +36,52 @@
                 <span class="llm-env-cache-label">Cache:</span>
                 <code class="llm-env-cache-path">@cacheDir</code>
                 <span class="llm-env-cache-size">@FormatBytes(_diags.CacheSizeBytes)</span>
-            </div>
-        }
-
-        @if (Client is not null)
-        {
-            <div class="llm-env-provider">
-                <span class="llm-env-badge llm-ok">▶ @Client.ActiveExecutionProvider</span>
-                @if (!string.IsNullOrEmpty(Client.ProviderSelectionDetails))
+                @if (_viewModel.ShowOpenFolderButton)
                 {
-                    <span class="llm-env-provider-detail">@Client.ProviderSelectionDetails</span>
+                    <button class="llm-env-open-folder" @onclick="OpenCacheFolderAsync" disabled="@(!_viewModel.CanOpenCacheFolder)" title="@_viewModel.CacheFolderButtonTitle">
+                        📂 Open cache folder
+                    </button>
                 }
             </div>
         }
+
+        <div class="llm-env-provider-panel">
+            <div class="llm-env-provider">
+                <span class="llm-env-section-label">@_viewModel.SelectedProviderCaption:</span>
+                <span class="llm-env-badge @GetDetailBadgeClass(_viewModel.SelectedProviderStatus)">
+                    @GetBadgeIcon(_viewModel.SelectedProviderStatus) @_viewModel.SelectedProviderLabel
+                </span>
+                @if (!string.IsNullOrEmpty(_viewModel.SelectedProviderDetails))
+                {
+                    <span class="llm-env-provider-detail">@_viewModel.SelectedProviderDetails</span>
+                }
+            </div>
+
+            <div class="llm-env-provider-list">
+                @foreach (var providerRow in _viewModel.ProviderRows)
+                {
+                    <div class="llm-env-provider-row">
+                        <span class="llm-env-badge @GetDetailBadgeClass(providerRow.Status)">
+                            @GetBadgeIcon(providerRow.Status) @providerRow.Provider
+                        </span>
+                        @if (!string.IsNullOrEmpty(providerRow.Detail))
+                        {
+                            <span class="llm-env-provider-detail">@providerRow.Detail</span>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="llm-env-note">
+                Readiness checks are conservative. DirectML can remain unknown until a real model initializes; GPU inventory and driver versions are not probed.
+            </div>
+        </div>
     }
 </div>
 
 @code {
     /// <summary>
-    /// Optional loaded chat client; when supplied, the active execution provider is shown.
+    /// Optional loaded chat client; when supplied, the selected provider summary uses the client state.
     /// </summary>
     [Parameter] public LocalChatClient? Client { get; set; }
 
@@ -57,15 +89,59 @@
     [Parameter] public bool ShowCacheInfo { get; set; } = true;
 
     /// <summary>
+    /// Shows the cache-folder button. The button remains disabled unless host folder
+    /// actions are explicitly enabled in <see cref="BlazorComponentsOptions"/>.
+    /// </summary>
+    [Parameter] public bool ShowOpenFolderButton { get; set; }
+
+    /// <summary>
     /// Compact mode: renders a single row of badges suitable for nav bars.
     /// </summary>
     [Parameter] public bool Compact { get; set; }
 
     private ElBruno.LocalLLMs.Diagnostics.EnvironmentDiagnostics _diags = default!;
+    private EnvironmentDashboardViewModel _viewModel = default!;
+    private static readonly ExecutionProvider[] BadgeOrder =
+    [
+        ExecutionProvider.Cpu,
+        ExecutionProvider.DirectML,
+        ExecutionProvider.Cuda
+    ];
 
-    protected override void OnInitialized()
+    protected override void OnParametersSet()
     {
-        _diags = LocalChatClient.DiagnoseEnvironment();
+        _diags = LocalChatClient.DiagnoseEnvironment(ModelState.CacheDirectory);
+        _viewModel = EnvironmentDashboardPresenter.Create(
+            _diags,
+            Client,
+            ShowOpenFolderButton,
+            CanOpenCacheFolder,
+            CacheFolderButtonTitle);
+    }
+
+    private IEnumerable<EnvironmentDashboardProviderRow> BadgeRows =>
+        BadgeOrder.Select(provider => _viewModel.ProviderRows.First(row => row.Provider == provider));
+
+    private bool CanOpenCacheFolder =>
+        FolderLauncher.CanOpenFolders &&
+        _diags.CacheDirectory is { Length: > 0 } cacheDirectory &&
+        Directory.Exists(cacheDirectory);
+
+    private string CacheFolderButtonTitle =>
+        CanOpenCacheFolder
+            ? "Open the model cache folder on the host machine."
+            : FolderLauncher.CanOpenFolders
+                ? "The model cache folder does not exist on the host yet."
+                : FolderLauncher.UnavailableReason;
+
+    private async Task OpenCacheFolderAsync()
+    {
+        if (_diags.CacheDirectory is not { Length: > 0 } cacheDirectory)
+        {
+            return;
+        }
+
+        _ = await FolderLauncher.TryOpenFolderAsync(cacheDirectory).ConfigureAwait(false);
     }
 
     private static string FormatBytes(long bytes)
@@ -75,4 +151,28 @@
         if (bytes < 1024L * 1024 * 1024) return $"{bytes / (1024.0 * 1024):F1} MB";
         return $"{bytes / (1024.0 * 1024 * 1024):F2} GB";
     }
+
+    private static string GetSummaryBadgeClass(ExecutionProviderDiagnosticStatus status) =>
+        status switch
+        {
+            ExecutionProviderDiagnosticStatus.Available => "llm-ok",
+            ExecutionProviderDiagnosticStatus.Unknown => "llm-warn",
+            _ => "llm-dim"
+        };
+
+    private static string GetDetailBadgeClass(ExecutionProviderDiagnosticStatus status) =>
+        status switch
+        {
+            ExecutionProviderDiagnosticStatus.Available => "llm-ok",
+            ExecutionProviderDiagnosticStatus.Unknown => "llm-warn",
+            _ => "llm-warn"
+        };
+
+    private static string GetBadgeIcon(ExecutionProviderDiagnosticStatus status) =>
+        status switch
+        {
+            ExecutionProviderDiagnosticStatus.Available => "✅",
+            ExecutionProviderDiagnosticStatus.Unknown => "❓",
+            _ => "❌"
+        };
 }
