@@ -259,6 +259,10 @@ internal sealed class OnnxVisionModel : IVisionGenerationModel
             var inputTokenCount = imagePaths.Length > 0
                 ? ResolveVisionInputTokenCount(runtime, prompt, inputs, probeMaxLength, logger)
                 : runtime.CountPromptTokens(prompt);
+            logger?.LogDebug(
+                "Vision input token count resolved to {InputTokenCount} using probe max length {ProbeMaxLength}.",
+                inputTokenCount,
+                probeMaxLength);
 
             using var searchOptions = runtime.CreateSearchOptions();
             ApplyParameters(searchOptions, parameters, inputTokenCount);
@@ -319,6 +323,10 @@ internal sealed class OnnxVisionModel : IVisionGenerationModel
             var inputTokenCount = imagePaths.Length > 0
                 ? ResolveVisionInputTokenCount(runtime, prompt, inputs, probeMaxLength, logger)
                 : runtime.CountPromptTokens(prompt);
+            logger?.LogDebug(
+                "Vision input token count resolved to {InputTokenCount} using probe max length {ProbeMaxLength}.",
+                inputTokenCount,
+                probeMaxLength);
 
             using var searchOptions = runtime.CreateSearchOptions();
             ApplyParameters(searchOptions, parameters, inputTokenCount);

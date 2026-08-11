@@ -221,6 +221,31 @@ var response = await client.CompleteAsync(messages);
 Console.WriteLine(response);
 ```
 
+### Fara image resolution
+
+The published `processor_config.json` contains `width: 540` and `height: 360`, but native
+inference verification shows that these values do not clamp every image to 540x360 when
+`smart_resize` is enabled. The processor preserves the source aspect ratio and scales within
+the configured pixel limits, aligning dimensions for the Qwen3-VL patch and merge sizes.
+
+Measurements against `elbruno/Fara1.5-9B-onnx` with ONNX Runtime GenAI 0.15.1 on CPU:
+
+| Source image | Resolved multimodal input tokens | Approximate processed image |
+|---|---:|---:|
+| 1920x1080 | 2043 image tokens (2100 total, including a 57-token prompt) | 1920x1088 |
+| 800x2000 | 1578 image tokens (1635 total, including a 57-token prompt) | 800x2016 |
+
+The approximation uses Qwen3-VL's `patch_size: 16` and `merge_size: 2`, so vision tokens are
+approximately `processed_width * processed_height / 1024`. The observed values are consistent
+with smart resize and inconsistent with a fixed 540x360 input, which would produce roughly 187
+vision tokens regardless of source aspect ratio.
+
+The library logs the resolved multimodal input-token count at debug level. Consumers that map
+coordinates back to the source image should use the same 32-pixel alignment rule
+(`patch_size * merge_size`) and the source aspect ratio; the current ONNX Runtime GenAI managed
+API does not expose the processor's internal `image_grid_thw` tensor or a runtime resize
+configuration surface. Therefore no speculative `MaxImagePixels` option is added here.
+
 ### NuGet Package Selection
 
 | Execution Provider | NuGet Package |
@@ -260,4 +285,3 @@ A validated community GGUF conversion is available at `prithivMLmods/Fara1.5-9B-
 - [getting-started.md](getting-started.md) — Using converted models in C#
 - [microsoft/Fara1.5-9B](https://huggingface.co/microsoft/Fara1.5-9B) — Official model card
 - [elbruno/Fara1.5-9B-onnx](https://huggingface.co/elbruno/Fara1.5-9B-onnx) — Published ONNX conversion
-
