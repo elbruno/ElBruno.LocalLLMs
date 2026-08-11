@@ -1,5 +1,6 @@
 @using ElBruno.LocalLLMs.BlazorComponents.Services
 @inject ModelStateService ModelState
+@inject IHostFolderLauncher FolderLauncher
 @implements IDisposable
 
 <div class="llm-model-card @StatusClass">
@@ -81,7 +82,7 @@
         }
         else if (_status.State == ModelDownloadState.Downloaded)
         {
-            <button class="llm-btn llm-btn-secondary" @onclick="OpenFolderAsync" title="Open model folder">
+            <button class="llm-btn llm-btn-secondary" @onclick="OpenFolderAsync" disabled="@(!CanOpenFolder)" title="@OpenFolderTitle">
                 📂 Folder
             </button>
             <button class="llm-btn llm-btn-danger" @onclick="DeleteAsync" disabled="@_busy">
@@ -161,20 +162,7 @@
     private async Task OpenFolderAsync()
     {
         var path = _status.LocalPath ?? ModelState.GetModelDirectory(Model);
-        if (!Directory.Exists(path)) return;
-
-        try
-        {
-            if (OperatingSystem.IsWindows())
-                System.Diagnostics.Process.Start("explorer.exe", path);
-            else if (OperatingSystem.IsMacOS())
-                System.Diagnostics.Process.Start("open", path);
-            else
-                System.Diagnostics.Process.Start("xdg-open", path);
-        }
-        catch { /* not critical */ }
-
-        await Task.CompletedTask;
+        _ = await FolderLauncher.TryOpenFolderAsync(path).ConfigureAwait(false);
     }
 
     private void SelectModel() => OnModelSelected.InvokeAsync(Model);
@@ -194,6 +182,17 @@
         ModelDownloadState.Error       => "llm-model-card--error",
         _                              => "llm-model-card--pending"
     };
+
+    private bool CanOpenFolder =>
+        FolderLauncher.CanOpenFolders &&
+        Directory.Exists(_status.LocalPath ?? ModelState.GetModelDirectory(Model));
+
+    private string OpenFolderTitle =>
+        CanOpenFolder
+            ? "Open the model folder on the host machine."
+            : FolderLauncher.CanOpenFolders
+                ? "The model folder is not available on the host yet."
+                : FolderLauncher.UnavailableReason;
 
     private static string FormatBytes(long bytes)
     {

@@ -28,7 +28,7 @@ public sealed class LocalLLMsOptions
     public bool EnsureModelDownloaded { get; set; } = true;
 
     /// <summary>
-    /// Execution provider selection. Default: Auto (CUDA, then DirectML, then CPU).
+    /// Execution provider selection. Default: Auto (DirectML, then CUDA, then CPU on Windows; CUDA, then CPU on Linux).
     /// </summary>
     public ExecutionProvider ExecutionProvider { get; set; } = ExecutionProvider.Auto;
 
@@ -66,3 +66,4 @@ public sealed class LocalLLMsOptions
     /// </summary>
     public bool CaptureTelemetryContent { get; set; }
 }
+

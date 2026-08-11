@@ -209,9 +209,9 @@ public class KnownModelsAllPropertiesTests
             HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Gemma4E2BIT,
-            "gemma-4-e2b-it", "elbruno/Gemma-4-E2B-IT-onnx",
+            "gemma-4-e2b-it", "google/gemma-4-E2B-it",
             OnnxModelType.GenAI, ChatTemplateFormat.Gemma, ModelTier.Tiny,
-            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
+            HasNativeOnnx: false, ToolCalling: true, VisionCapable: false),
 
         new(KnownModels.StableLM2_16BChat,
             "stablelm-2-1.6b-chat", "elbruno/StableLM-2-1.6B-Chat-onnx",
@@ -240,9 +240,9 @@ public class KnownModelsAllPropertiesTests
             HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Gemma4E4BIT,
-            "gemma-4-e4b-it", "elbruno/Gemma-4-E4B-IT-onnx",
+            "gemma-4-e4b-it", "google/gemma-4-E4B-it",
             OnnxModelType.GenAI, ChatTemplateFormat.Gemma, ModelTier.Small,
-            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
+            HasNativeOnnx: false, ToolCalling: true, VisionCapable: false),
 
         // ── Medium tier ────────────────────────────────────────────────────────
         new(KnownModels.Qwen25_7BInstruct,
@@ -286,9 +286,9 @@ public class KnownModelsAllPropertiesTests
             HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Gemma4_12BIT,
-            "gemma-4-12b-it", "elbruno/Gemma-4-12B-IT-onnx",
+            "gemma-4-12b-it", "google/gemma-4-12B-it",
             OnnxModelType.GenAI, ChatTemplateFormat.Gemma, ModelTier.Medium,
-            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
+            HasNativeOnnx: false, ToolCalling: true, VisionCapable: false),
 
         new(KnownModels.Fara15_9B,
             "fara1.5-9b", "elbruno/Fara1.5-9B-onnx",
@@ -327,14 +327,14 @@ public class KnownModelsAllPropertiesTests
             HasNativeOnnx: true, ToolCalling: false, VisionCapable: false),
 
         new(KnownModels.Gemma4_26BA4BIT,
-            "gemma-4-26b-a4b-it", "elbruno/Gemma-4-26B-A4B-IT-onnx",
+            "gemma-4-26b-a4b-it", "google/gemma-4-26B-A4B-it",
             OnnxModelType.GenAI, ChatTemplateFormat.Gemma, ModelTier.Large,
-            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
+            HasNativeOnnx: false, ToolCalling: true, VisionCapable: false),
 
         new(KnownModels.Gemma4_31BIT,
-            "gemma-4-31b-it", "elbruno/Gemma-4-31B-IT-onnx",
+            "gemma-4-31b-it", "google/gemma-4-31B-it",
             OnnxModelType.GenAI, ChatTemplateFormat.Gemma, ModelTier.Large,
-            HasNativeOnnx: true, ToolCalling: true, VisionCapable: false),
+            HasNativeOnnx: false, ToolCalling: true, VisionCapable: false),
 
         // ── Agentic ────────────────────────────────────────────────────────────
         new(KnownModels.Qwen3_14BInstruct,

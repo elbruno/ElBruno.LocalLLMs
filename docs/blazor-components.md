@@ -28,6 +28,17 @@ builder.Services.AddLocalLLMs(options =>
 builder.Services.AddLocalLLMsBlazorComponents();
 ```
 
+Folder-open actions stay disabled by default for Blazor Server safety. If your app
+is a local-only host scenario and you want the built-in model/cache folder buttons,
+opt in explicitly:
+
+```csharp
+builder.Services.AddLocalLLMsBlazorComponents(options =>
+{
+    options.EnableHostFolderActions = true;
+});
+```
+
 Add the `@using` directive in `_Imports.razor`:
 
 ```razor
@@ -70,6 +81,10 @@ during active downloads, and action buttons.
 | Downloading | ✕ Cancel, progress bar |
 | Downloaded | 📂 Open Folder, 🗑 Delete, ▶ Use |
 | Error | ⬇ Retry |
+
+> `📂 Open Folder` is disabled until `EnableHostFolderActions` is explicitly
+> enabled. This keeps Blazor Server hosts from opening folders on the server by
+> accident.
 
 ---
 
@@ -150,7 +165,7 @@ A fully functional streaming chat UI backed by any `IChatClient`.
 
 ### EnvironmentDashboard
 
-Shows execution providers, .NET version, OS, and cache information.
+Shows execution-provider readiness, `.NET` version, OS, and cache information.
 
 ```razor
 <!-- Full dashboard (default) -->
@@ -158,15 +173,26 @@ Shows execution providers, .NET version, OS, and cache information.
 
 <!-- Compact mode for nav-bars / sidebars -->
 <EnvironmentDashboard Compact="true" />
+
+<!-- Show the cache-folder button (still disabled unless host folder actions are enabled) -->
+<EnvironmentDashboard ShowOpenFolderButton="true" />
 ```
 
 **Parameters**
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `Client` | `LocalChatClient?` | `null` | Optional — used for cache-size info |
+| `Client` | `LocalChatClient?` | `null` | Optional — used to show the currently selected/configured provider summary |
 | `Compact` | `bool` | `false` | Single-line badge layout |
 | `ShowCacheInfo` | `bool` | `true` | Show cache path and size section |
+| `ShowOpenFolderButton` | `bool` | `false` | Render the cache-folder button (still disabled until host folder actions are enabled) |
+
+**Provider readiness notes**
+- The full dashboard shows the provider `ExecutionProvider.Auto` can safely predict from preflight, or reports the result as unknown when a higher-priority provider still needs real model initialization (for example, DirectML on Windows).
+- Each provider row includes the preflight reason when it is unavailable.
+- When you pass an initialized `LocalChatClient`, the active provider row is overlaid as runtime-confirmed available even if preflight alone was still unknown.
+- Readiness checks do **not** enumerate GPUs or inspect driver versions; the UI only
+  reports what the library can confirm safely from provider preflight. Unknown means the provider might work, but diagnostics could not prove it yet.
 
 ---
 
@@ -190,6 +216,8 @@ A compact, colour-coded status indicator designed for top navigation bars.
 | `ShowLabel` | `bool` | `true` | Show text label next to dot |
 
 **States:** 🟢 Ready · 🔴 Not available · ⚫ Checking
+
+When the badge receives an initialized `LocalChatClient`, its tooltip reports the runtime-selected provider as available instead of repeating a stale preflight-unknown status.
 
 ---
 
@@ -282,6 +310,7 @@ Then open `https://localhost:5001` in your browser.
 |---------|----------|-------|
 | `IModelDownloader` | Singleton | Shared download manager |
 | `ModelStateService` | Singleton | Application-wide state; circuit teardown does not cancel downloads |
+| `IHostFolderLauncher` | Singleton | Host-side folder open actions; disabled by default until `EnableHostFolderActions` is enabled |
 
 Your app must also call `AddLocalLLMs()` (or `AddLocalVisionLLM()`) to register
 `IChatClient` before calling `AddLocalLLMsBlazorComponents()`.

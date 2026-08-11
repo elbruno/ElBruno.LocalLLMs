@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using ElBruno.HuggingFace;
 using ElBruno.LocalLLMs.Diagnostics;
 using ElBruno.LocalLLMs.Internal;
@@ -142,19 +141,9 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
     /// <summary>
     /// Diagnoses the current environment for local LLM execution capabilities.
     /// </summary>
-    public static EnvironmentDiagnostics DiagnoseEnvironment()
+    public static EnvironmentDiagnostics DiagnoseEnvironment(string? cacheDirectory = null)
     {
-        return new EnvironmentDiagnostics
-        {
-            CpuAvailable = true,
-            CudaAvailable = CheckProviderAvailability(ExecutionProvider.Cuda),
-            DirectMLAvailable = CheckProviderAvailability(ExecutionProvider.DirectML),
-            DotNetVersion = RuntimeInformation.FrameworkDescription,
-            ProcessorCount = Environment.ProcessorCount,
-            OSDescription = RuntimeInformation.OSDescription,
-            CacheDirectory = GetDefaultCacheDirectory(),
-            CacheSizeBytes = GetCacheSize(GetDefaultCacheDirectory())
-        };
+        return EnvironmentDiagnosticsBuilder.Create(cacheDirectory);
     }
 
     /// <summary>
@@ -653,35 +642,4 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
         return new ChatMessage(ChatRole.Assistant, contents);
     }
 
-    private static bool CheckProviderAvailability(ExecutionProvider provider)
-    {
-        try
-        {
-            return provider switch
-            {
-                ExecutionProvider.Cuda => OperatingSystem.IsWindows() || OperatingSystem.IsLinux(),
-                ExecutionProvider.DirectML => OperatingSystem.IsWindows(),
-                _ => true
-            };
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private static string GetDefaultCacheDirectory()
-    {
-        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".cache", "elbruno-local-llms");
-    }
-
-    private static long GetCacheSize(string? path)
-    {
-        if (string.IsNullOrEmpty(path) || !Directory.Exists(path)) return 0;
-        try
-        {
-            return new DirectoryInfo(path).EnumerateFiles("*", SearchOption.AllDirectories).Sum(f => f.Length);
-        }
-        catch { return 0; }
-    }
 }

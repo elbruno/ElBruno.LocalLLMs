@@ -268,9 +268,9 @@ public class KnownModelsTests
         Assert.Equal("gemma-4-e2b-it", model.Id);
         Assert.Equal("Gemma-4-E2B-IT", model.DisplayName);
         Assert.Equal(ChatTemplateFormat.Gemma, model.ChatTemplate);
-        Assert.True(model.HasNativeOnnx);
+        Assert.False(model.HasNativeOnnx);
         Assert.True(model.SupportsToolCalling);
-        Assert.False(string.IsNullOrWhiteSpace(model.HuggingFaceRepoId));
+        Assert.Equal("google/gemma-4-E2B-it", model.HuggingFaceRepoId);
     }
 
     [Fact]
@@ -281,9 +281,9 @@ public class KnownModelsTests
         Assert.Equal("gemma-4-e4b-it", model.Id);
         Assert.Equal("Gemma-4-E4B-IT", model.DisplayName);
         Assert.Equal(ChatTemplateFormat.Gemma, model.ChatTemplate);
-        Assert.True(model.HasNativeOnnx);
+        Assert.False(model.HasNativeOnnx);
         Assert.True(model.SupportsToolCalling);
-        Assert.False(string.IsNullOrWhiteSpace(model.HuggingFaceRepoId));
+        Assert.Equal("google/gemma-4-E4B-it", model.HuggingFaceRepoId);
     }
 
     [Fact]
@@ -294,9 +294,9 @@ public class KnownModelsTests
         Assert.Equal("gemma-4-12b-it", model.Id);
         Assert.Equal("Gemma-4-12B-IT", model.DisplayName);
         Assert.Equal(ChatTemplateFormat.Gemma, model.ChatTemplate);
-        Assert.True(model.HasNativeOnnx);
+        Assert.False(model.HasNativeOnnx);
         Assert.True(model.SupportsToolCalling);
-        Assert.False(string.IsNullOrWhiteSpace(model.HuggingFaceRepoId));
+        Assert.Equal("google/gemma-4-12B-it", model.HuggingFaceRepoId);
     }
 
     [Fact]
@@ -307,9 +307,9 @@ public class KnownModelsTests
         Assert.Equal("gemma-4-26b-a4b-it", model.Id);
         Assert.Equal("Gemma-4-26B-A4B-IT", model.DisplayName);
         Assert.Equal(ChatTemplateFormat.Gemma, model.ChatTemplate);
-        Assert.True(model.HasNativeOnnx);
+        Assert.False(model.HasNativeOnnx);
         Assert.True(model.SupportsToolCalling);
-        Assert.False(string.IsNullOrWhiteSpace(model.HuggingFaceRepoId));
+        Assert.Equal("google/gemma-4-26B-A4B-it", model.HuggingFaceRepoId);
     }
 
     [Fact]
@@ -320,9 +320,9 @@ public class KnownModelsTests
         Assert.Equal("gemma-4-31b-it", model.Id);
         Assert.Equal("Gemma-4-31B-IT", model.DisplayName);
         Assert.Equal(ChatTemplateFormat.Gemma, model.ChatTemplate);
-        Assert.True(model.HasNativeOnnx);
+        Assert.False(model.HasNativeOnnx);
         Assert.True(model.SupportsToolCalling);
-        Assert.False(string.IsNullOrWhiteSpace(model.HuggingFaceRepoId));
+        Assert.Equal("google/gemma-4-31B-it", model.HuggingFaceRepoId);
     }
 
     [Theory]
@@ -345,14 +345,14 @@ public class KnownModelsTests
     [InlineData("gemma-4-12b-it")]
     [InlineData("gemma-4-26b-a4b-it")]
     [InlineData("gemma-4-31b-it")]
-    public void Gemma4Models_HaveNativeOnnx_WithToolCallingSupport(string modelId)
+    public void Gemma4Models_RequireManualOnnxConversion_ButKeepToolCallingSupport(string modelId)
     {
         var model = KnownModels.FindById(modelId);
 
         Assert.NotNull(model);
         Assert.Equal(OnnxModelType.GenAI, model!.ModelType);
         Assert.Equal(ChatTemplateFormat.Gemma, model.ChatTemplate);
-        Assert.True(model.HasNativeOnnx);
+        Assert.False(model.HasNativeOnnx);
         Assert.True(model.SupportsToolCalling);
     }
 

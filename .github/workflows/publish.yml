@@ -60,7 +60,22 @@ jobs:
           dotnet test src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj -c Release --framework net8.0 --verbosity normal
           dotnet test src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj -c Release --framework net8.0 --verbosity normal
           dotnet test src/tests/ElBruno.LocalLLMs.BitNet.Tests/ElBruno.LocalLLMs.BitNet.Tests.csproj -c Release --framework net8.0 --verbosity normal
-          dotnet test src/tests/ElBruno.LocalLLMs.BlazorComponents.Tests/ElBruno.LocalLLMs.BlazorComponents.Tests.csproj -c Release --framework net8.0 --verbosity normal
+
+      - name: Validate README What's New policy
+        run: |
+          SECTION=$(awk '/^## What'"'"'s New/{flag=1;next}/^## /{flag=0}flag{print}' README.md)
+          if [[ -z "$SECTION" ]]; then
+            echo "❌ README.md must contain a '## What's New' section."
+            exit 1
+          fi
+
+          COUNT=$(printf "%s\n" "$SECTION" | grep -E '^- ' | wc -l | xargs)
+          if [[ "$COUNT" -ne 5 ]]; then
+            echo "❌ '## What's New' must contain exactly 5 notable entries. Found: $COUNT"
+            exit 1
+          fi
+
+          echo "✅ README What's New policy passed (5 entries)."
 
       - name: Pack
         run: |

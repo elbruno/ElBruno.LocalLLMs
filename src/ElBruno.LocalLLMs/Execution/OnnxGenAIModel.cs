@@ -66,94 +66,21 @@ internal sealed class OnnxGenAIModel : ITextGenerationModel
         ArgumentException.ThrowIfNullOrWhiteSpace(modelPath);
         _logger = logger ?? NullLogger.Instance;
 
-        var selectedProvider = provider;
-        var providerFailures = new List<string>();
-        if (provider == ExecutionProvider.Auto)
-        {
-            var candidates = GetProviderFallbackOrder(provider);
-            for (var i = 0; i < candidates.Count; i++)
-            {
-                var candidate = candidates[i];
-                try
-                {
-                    LogMessages.ProviderAttempt(_logger, candidate);
-                    _model = CreateModel(modelPath, candidate, gpuDeviceId);
-                    selectedProvider = candidate;
-                    goto ModelInitialized;
-                }
-                catch (Exception ex) when (candidate != ExecutionProvider.Cpu && ShouldFallbackToNextProvider(candidate, ex, ExecutionProvider.Auto))
-                {
-                    var reason = BuildProviderFailureReason(candidate, ex);
-                    providerFailures.Add(reason);
-                    var nextProvider = i + 1 < candidates.Count ? candidates[i + 1] : ExecutionProvider.Cpu;
-                    LogMessages.ProviderFallback(_logger, candidate, nextProvider, reason);
-                }
-                catch (Exception ex) when (candidate != ExecutionProvider.Cpu)
-                {
-                    LogMessages.ModelInitError(_logger, $"Hard error with provider {candidate}", ex);
-                    throw new ExecutionProviderException(
-                        $"Failed to initialize model with provider {candidate}. This was treated as a hard error (no fallback).",
-                        candidate,
-                        ex);
-                }
-            }
+        var initialization = ExecutionProviderSelection.InitializeModel(
+            provider,
+            _logger,
+            candidate => CreateModel(modelPath, candidate, gpuDeviceId));
 
-            var details = providerFailures.Count > 0
-                ? " Failures: " + string.Join(" | ", providerFailures)
-                : string.Empty;
-
-            throw new ExecutionProviderException(
-                "Unable to initialize model with any execution provider." + details,
-                ExecutionProvider.Auto);
-        }
-
-        try
-        {
-            LogMessages.ProviderAttempt(_logger, provider);
-            _model = CreateModel(modelPath, provider, gpuDeviceId);
-        }
-        catch (Exception ex) when (provider != ExecutionProvider.Cpu && IsProviderNotInstalledError(provider, ex))
-        {
-            var packageName = provider switch
-            {
-                ExecutionProvider.Cuda => "Microsoft.ML.OnnxRuntimeGenAI.Cuda",
-                ExecutionProvider.DirectML => "Microsoft.ML.OnnxRuntimeGenAI.DirectML",
-                _ => $"Microsoft.ML.OnnxRuntimeGenAI.{provider}"
-            };
-
-            var suggestion = $"Add the '{packageName}' NuGet package to your application project and ensure the required runtime is installed. " +
-                $"Replace 'Microsoft.ML.OnnxRuntimeGenAI' with '{packageName}' — do not reference both packages simultaneously.";
-
-            LogMessages.ModelInitError(_logger, $"Provider {provider} not installed", ex);
-            throw new ExecutionProviderException(
-                $"The {provider} execution provider is not available. " +
-                suggestion +
-                $" Inner error: {ex.Message}",
-                provider,
-                suggestion,
-                ex);
-        }
-
-ModelInitialized:
-        ActiveProvider = selectedProvider;
-    if (provider == ExecutionProvider.Auto && providerFailures.Count > 0)
-    {
-        ProviderSelectionDetails =
-        $"Auto selected {selectedProvider} after provider fallbacks: {string.Join(" | ", providerFailures)}";
-    }
+        _model = initialization.Model;
+        ActiveProvider = initialization.ActiveProvider;
+        ProviderSelectionDetails = initialization.ProviderSelectionDetails;
 
         _tokenizer = new Tokenizer(_model);
         Metadata = GenAIConfigParser.TryParse(modelPath, optionsMaxSequenceLength);
     }
 
     internal static IReadOnlyList<ExecutionProvider> GetProviderFallbackOrder(ExecutionProvider provider) =>
-        provider switch
-        {
-            ExecutionProvider.Auto => OperatingSystem.IsWindows()
-                ? [ExecutionProvider.DirectML, ExecutionProvider.Cuda, ExecutionProvider.Cpu]
-                : [ExecutionProvider.Cuda, ExecutionProvider.Cpu],
-            _ => [provider]
-        };
+        ExecutionProviderSelection.GetProviderFallbackOrder(provider);
 
     /// <summary>
     /// Returns <see langword="true"/> when the exception indicates the requested execution
@@ -162,8 +89,7 @@ ModelInitialized:
     /// </summary>
     internal static bool IsProviderNotInstalledError(ExecutionProvider provider, Exception ex)
     {
-        ArgumentNullException.ThrowIfNull(ex);
-        return ShouldFallbackToNextProvider(provider, ex, provider);
+        return ExecutionProviderSelection.IsProviderNotInstalledError(provider, ex);
     }
 
     /// <summary>
@@ -174,76 +100,10 @@ ModelInitialized:
 
     internal static bool ShouldFallbackToNextProvider(
         ExecutionProvider provider, Exception ex, ExecutionProvider initialProvider)
-    {
-        ArgumentNullException.ThrowIfNull(ex);
-
-        var message = ex.ToString();
-        if (string.IsNullOrWhiteSpace(message))
-        {
-            return false;
-        }
-
-        var normalized = message.ToLowerInvariant();
-
-        // Fast-path: in Auto mode, generic "not supported / not available" messages should trigger fallback
-        // even without a provider-specific token (ONNX Runtime throws generic messages).
-        if (initialProvider == ExecutionProvider.Auto)
-        {
-            // Native runtime/package load failures should always fall back in Auto mode.
-            if (ex is DllNotFoundException or BadImageFormatException or EntryPointNotFoundException)
-            {
-                return true;
-            }
-
-            if (normalized.Contains("is not supported", StringComparison.Ordinal) ||
-                normalized.Contains("not available", StringComparison.Ordinal) ||
-                normalized.Contains("is unavailable", StringComparison.Ordinal) ||
-                normalized.Contains("specified provider", StringComparison.Ordinal))
-            {
-                return true;
-            }
-        }
-
-        // Strict path: require provider-specific token in the error message.
-        var providerToken = provider switch
-        {
-            ExecutionProvider.Cuda => "cuda",
-            ExecutionProvider.DirectML => "dml",
-            _ => provider.ToString().ToLowerInvariant()
-        };
-
-        var hasProviderContext = normalized.Contains(providerToken, StringComparison.Ordinal) ||
-            (provider == ExecutionProvider.DirectML && normalized.Contains("directml", StringComparison.Ordinal));
-
-        if (!hasProviderContext)
-        {
-            return false;
-        }
-
-        return normalized.Contains("failed to load", StringComparison.Ordinal) ||
-               normalized.Contains("not found", StringComparison.Ordinal) ||
-               normalized.Contains("not supported", StringComparison.Ordinal) ||
-               normalized.Contains("is unavailable", StringComparison.Ordinal) ||
-               normalized.Contains("provider is unavailable", StringComparison.Ordinal) ||
-               normalized.Contains("is not enabled", StringComparison.Ordinal) ||
-               normalized.Contains("not been built with", StringComparison.Ordinal) ||
-               normalized.Contains("could not be created", StringComparison.Ordinal) ||
-               normalized.Contains("no available provider", StringComparison.Ordinal) ||
-               normalized.Contains("unable to find", StringComparison.Ordinal) ||
-               normalized.Contains("cannot load", StringComparison.Ordinal) ||
-               normalized.Contains("not available", StringComparison.Ordinal);
-    }
+        => ExecutionProviderSelection.ShouldFallbackToNextProvider(provider, ex, initialProvider);
 
     internal static string BuildProviderFailureReason(ExecutionProvider provider, Exception ex)
-    {
-        var message = ex.Message.Replace(Environment.NewLine, " ", StringComparison.Ordinal).Trim();
-        if (message.Length > 180)
-        {
-            message = message[..180] + "...";
-        }
-
-        return $"{provider}: {ex.GetType().Name}: {message}";
-    }
+        => ExecutionProviderSelection.BuildProviderFailureReason(provider, ex);
 
     private static Model CreateModel(string modelPath, ExecutionProvider provider, int gpuDeviceId)
     {

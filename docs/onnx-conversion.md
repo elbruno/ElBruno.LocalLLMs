@@ -137,7 +137,9 @@ The output directory will contain `.onnx` files plus any associated data files, 
 
 ## Gemma 4 Conversion
 
-> ✅ **Status: Supported with conversion** — Gemma 4 conversion is supported with `onnxruntime-genai` v0.14.1+. Use the dedicated conversion scripts in this repo.
+> ✅ **Status: Conversion/manual path only** — Gemma 4 does not currently ship with validated public `elbruno/*-onnx` artifacts for auto-download. Use the dedicated conversion scripts in this repo and supply a local `ModelPath`.
+
+> ⚠️ **Version gate:** use Python `onnxruntime-genai` **v0.15.1+** for Gemma 4 conversion. A local validation attempt on `v0.14.1` failed with `NotImplementedError` in the GenAI builder.
 
 Google Gemma 4 is a model family with five sizes featuring Per-Layer Embeddings (PLE), unified dense architecture, and Mixture of Experts (MoE). Use the dedicated conversion script for all variants.
 
@@ -198,7 +200,7 @@ The `convert_gemma4.py` script is purpose-built for Gemma 4 and includes:
 - ✅ **Output validation** — Ensures all required files are present after conversion
 - ✅ **Clear progress output** — Shows real-time conversion status
 
-> **Note:** Earlier runtime versions had Gemma 4 architecture blockers (PLE, variable head sizes, KV-sharing), but these are now supported in the current conversion flow.
+> **Note:** Earlier runtime versions had Gemma 4 architecture blockers (PLE, variable head sizes, KV-sharing). Keep the Python conversion environment on `onnxruntime-genai` v0.15.1+ before assuming the current flow is supported.
 
 ### Usage Examples
 

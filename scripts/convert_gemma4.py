@@ -2,20 +2,16 @@
 """
 Convert Google Gemma 4 models to ONNX format for ElBruno.LocalLLMs.
 
-Gemma 4 includes five model sizes:
-- E2B: 2.3B effective (5.1B total) with Per-Layer Embeddings (PLE)
-- E4B: 4.5B effective (8B total) with Per-Layer Embeddings (PLE)
-- 12B: unified dense model (June 2026 release)
-- 26B: 3.8B active / 25.2B total, Mixture of Experts (MoE)
-- 31B: 30.7B dense
+Supports optional public upload to Hugging Face after local validation.
 
-Usage:
-    python convert_gemma4.py --model-size e2b --output-dir ./models/gemma4-e2b
-    python convert_gemma4.py --model-size 26b --output-dir ./models/gemma4-26b --quantize int8
-
-Requirements:
-    pip install onnxruntime-genai huggingface-hub transformers torch
+Examples:
+    python scripts/convert_gemma4.py --model-size e2b --output-dir ./models/gemma4-e2b
+    python scripts/convert_gemma4.py --model-size e2b --output-dir ./models/gemma4-e2b --cache-dir ./hf-cache
+    python scripts/convert_gemma4.py --model-size e2b --output-dir ./models/gemma4-e2b --skip-upload
+    python scripts/convert_gemma4.py --model-size e2b --output-dir ./models/gemma4-e2b --skip-conversion
 """
+
+from __future__ import annotations
 
 import argparse
 import os
@@ -24,60 +20,84 @@ import subprocess
 import sys
 from pathlib import Path
 
+REQUIRED_OUTPUT_FILES = [
+    "genai_config.json",
+    "tokenizer.json",
+    "tokenizer_config.json",
+]
 
-# HuggingFace model IDs for each Gemma 4 size
 GEMMA4_MODELS = {
     "e2b": {
-        "hf_id": "google/gemma-4-E2B-it",
-        "name": "Gemma 4 E2B IT",
+        "source_hf": "google/gemma-4-E2B-it",
+        "target_hf": "elbruno/Gemma-4-E2B-IT-onnx",
+        "known_model": "KnownModels.Gemma4E2BIT",
+        "name": "Gemma-4-E2B-IT",
         "params": "2.3B effective (5.1B total)",
         "architecture": "Dense with Per-Layer Embeddings (PLE)",
+        "context": "128K",
         "min_ram_gb": 12,
         "min_disk_gb": 30,
+        "recommended_inference_ram_gb": 6,
     },
     "e4b": {
-        "hf_id": "google/gemma-4-E4B-it",
-        "name": "Gemma 4 E4B IT",
+        "source_hf": "google/gemma-4-E4B-it",
+        "target_hf": "elbruno/Gemma-4-E4B-IT-onnx",
+        "known_model": "KnownModels.Gemma4E4BIT",
+        "name": "Gemma-4-E4B-IT",
         "params": "4.5B effective (8B total)",
         "architecture": "Dense with Per-Layer Embeddings (PLE)",
+        "context": "128K",
         "min_ram_gb": 20,
         "min_disk_gb": 50,
+        "recommended_inference_ram_gb": 10,
     },
     "12b": {
-        "hf_id": "google/gemma-4-12B-it",
-        "name": "Gemma 4 12B IT (Unified)",
+        "source_hf": "google/gemma-4-12B-it",
+        "target_hf": "elbruno/Gemma-4-12B-IT-onnx",
+        "known_model": "KnownModels.Gemma4_12BIT",
+        "name": "Gemma-4-12B-IT",
         "params": "12B",
         "architecture": "Dense (Unified)",
+        "context": "256K",
         "min_ram_gb": 32,
         "min_disk_gb": 90,
+        "recommended_inference_ram_gb": 16,
     },
     "26b": {
-        "hf_id": "google/gemma-4-26B-A4B-it",
-        "name": "Gemma 4 26B A4B IT",
+        "source_hf": "google/gemma-4-26B-A4B-it",
+        "target_hf": "elbruno/Gemma-4-26B-A4B-IT-onnx",
+        "known_model": "KnownModels.Gemma4_26BA4BIT",
+        "name": "Gemma-4-26B-A4B-IT",
         "params": "3.8B active / 25.2B total",
-        "architecture": "Mixture of Experts (MoE, 8 active / 128 total + 1 shared)",
+        "architecture": "Mixture of Experts (8 active / 128 total + 1 shared)",
+        "context": "256K",
         "min_ram_gb": 64,
         "min_disk_gb": 150,
+        "recommended_inference_ram_gb": 28,
     },
     "31b": {
-        "hf_id": "google/gemma-4-31B-it",
-        "name": "Gemma 4 31B IT",
+        "source_hf": "google/gemma-4-31B-it",
+        "target_hf": "elbruno/Gemma-4-31B-IT-onnx",
+        "known_model": "KnownModels.Gemma4_31BIT",
+        "name": "Gemma-4-31B-IT",
         "params": "30.7B",
         "architecture": "Dense",
+        "context": "256K",
         "min_ram_gb": 80,
         "min_disk_gb": 180,
+        "recommended_inference_ram_gb": 32,
     },
 }
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Convert Google Gemma 4 models to ONNX for ElBruno.LocalLLMs"
     )
     parser.add_argument(
         "--model-size",
         required=True,
-        choices=["e2b", "e4b", "12b", "26b", "31b"],
+        choices=list(GEMMA4_MODELS.keys()),
         help="Gemma 4 model size to convert",
     )
     parser.add_argument(
@@ -98,263 +118,322 @@ def parse_args():
         help="Precision for model builder (overrides --quantize if both specified)",
     )
     parser.add_argument(
+        "--cache-dir",
+        default=None,
+        help="Optional Hugging Face cache directory for model downloads",
+    )
+    parser.add_argument(
         "--skip-validation",
         action="store_true",
         help="Skip output file validation (not recommended)",
     )
+    parser.add_argument(
+        "--skip-upload",
+        action="store_true",
+        help="Convert only; do not upload to Hugging Face",
+    )
+    parser.add_argument(
+        "--skip-conversion",
+        action="store_true",
+        help="Skip conversion and only validate/upload an existing output directory",
+    )
+    parser.add_argument(
+        "--private",
+        action="store_true",
+        help="Create the target Hugging Face repo as private instead of public",
+    )
     return parser.parse_args()
 
 
-def check_dependencies():
-    """Verify required Python packages and tools are installed."""
-    print("🔍 Checking dependencies...")
-    missing = []
-    
-    # Check Python packages
-    try:
-        import onnxruntime_genai  # noqa: F401
-        print("  ✓ onnxruntime-genai")
-    except ImportError:
-        missing.append("onnxruntime-genai")
-        print("  ✗ onnxruntime-genai (missing)")
-    
-    try:
-        import transformers  # noqa: F401
-        print("  ✓ transformers")
-    except ImportError:
-        missing.append("transformers")
-        print("  ✗ transformers (missing)")
-    
-    try:
-        import torch  # noqa: F401
-        print("  ✓ torch")
-    except ImportError:
-        missing.append("torch")
-        print("  ✗ torch (missing)")
-    
-    try:
-        import huggingface_hub  # noqa: F401
-        print("  ✓ huggingface-hub")
-    except ImportError:
-        missing.append("huggingface-hub")
-        print("  ✗ huggingface-hub (missing)")
+def check_dependencies() -> None:
+    print("Checking dependencies...")
+    missing: list[str] = []
+    ort_version: str | None = None
+
+    for module_name in ("onnxruntime_genai", "transformers", "torch", "huggingface_hub"):
+        try:
+            module = __import__(module_name)
+            if module_name == "onnxruntime_genai":
+                ort_version = getattr(module, "__version__", "unknown")
+                print(f"  OK {module_name} {ort_version}")
+            else:
+                print(f"  OK {module_name}")
+        except ImportError:
+            missing.append(module_name)
+            print(f"  MISSING {module_name}")
 
     if missing:
-        print(f"\n❌ ERROR: Missing dependencies: {', '.join(missing)}")
+        print(f"\nERROR: Missing dependencies: {', '.join(missing)}")
         print("Install them with:")
         print("  pip install onnxruntime-genai huggingface-hub transformers torch")
         sys.exit(1)
-    
-    print("✅ All dependencies installed\n")
+
+    if ort_version is not None and tuple(int(part) for part in ort_version.split(".")[:3]) < (0, 15, 1):
+        print(f"\nERROR: onnxruntime_genai {ort_version} is too old for the repo's Gemma 4 flow.")
+        print("Upgrade Python onnxruntime-genai to 0.15.1+ before attempting Gemma 4 conversion.")
+        sys.exit(1)
+
+    print("All required dependencies are installed.\n")
 
 
-def check_disk_space(output_dir: str, required_gb: int):
-    """Check if sufficient disk space is available."""
-    output_path = Path(output_dir).resolve()
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    stat = shutil.disk_usage(output_path.parent)
+def check_disk_space(output_dir: Path, required_gb: int) -> None:
+    output_dir.parent.mkdir(parents=True, exist_ok=True)
+    stat = shutil.disk_usage(output_dir.parent)
     available_gb = stat.free / (1024 ** 3)
-    
-    print(f"💾 Disk space check:")
-    print(f"  Required: ~{required_gb} GB")
+
+    print("Disk space check:")
+    print(f"  Required : ~{required_gb} GB")
     print(f"  Available: {available_gb:.1f} GB")
-    
+
     if available_gb < required_gb:
-        print(f"\n⚠️  WARNING: Low disk space!")
-        print(f"  You may run out of space during conversion.")
-        response = input("  Continue anyway? [y/N]: ")
-        if response.lower() != 'y':
-            print("Aborted.")
-            sys.exit(0)
+        print("\nWARNING: Available disk space is below the recommended threshold.")
+        print("Conversion may fail if temporary files exceed the estimate.")
     else:
-        print("  ✓ Sufficient disk space\n")
+        print("  OK sufficient disk space\n")
 
 
-def check_ram(required_gb: int):
-    """Check if sufficient RAM is available (best-effort)."""
+def check_ram(required_gb: int) -> None:
     try:
         import psutil
-        available_gb = psutil.virtual_memory().available / (1024 ** 3)
-        total_gb = psutil.virtual_memory().total / (1024 ** 3)
-        
-        print(f"🧠 RAM check:")
-        print(f"  Required: ~{required_gb} GB")
-        print(f"  Total: {total_gb:.1f} GB")
-        print(f"  Available: {available_gb:.1f} GB")
-        
-        if available_gb < required_gb * 0.8:  # Allow 20% margin
-            print(f"\n⚠️  WARNING: Low RAM!")
-            print(f"  Conversion may fail or swap heavily.")
-            response = input("  Continue anyway? [y/N]: ")
-            if response.lower() != 'y':
-                print("Aborted.")
-                sys.exit(0)
-        else:
-            print("  ✓ Sufficient RAM\n")
     except ImportError:
-        print("🧠 RAM check: (install psutil for RAM checks)\n")
+        print("RAM check skipped (install psutil for best-effort RAM checks).\n")
+        return
+
+    available_gb = psutil.virtual_memory().available / (1024 ** 3)
+    total_gb = psutil.virtual_memory().total / (1024 ** 3)
+
+    print("RAM check:")
+    print(f"  Required : ~{required_gb} GB")
+    print(f"  Total    : {total_gb:.1f} GB")
+    print(f"  Available: {available_gb:.1f} GB")
+
+    if available_gb < required_gb * 0.8:
+        print("\nWARNING: Available RAM is below the recommended threshold.")
+        print("The machine may swap heavily or fail during conversion.\n")
+    else:
+        print("  OK sufficient available RAM\n")
 
 
-def convert_model(model_size: str, output_dir: str, precision: str):
-    """
-    Convert Gemma 4 model using onnxruntime_genai.models.builder.
-    
-    This generates genai_config.json and proper tokenizer setup for C# compatibility.
-    """
+def check_hf_auth() -> str:
+    token = os.getenv("HF_TOKEN")
+    if not token:
+        print("ERROR: HF_TOKEN is not set. Upload requires a Hugging Face token.")
+        sys.exit(1)
+
+    try:
+        from huggingface_hub import HfApi
+        info = HfApi(token=token).whoami()
+    except Exception as exc:
+        print(f"ERROR: Hugging Face authentication failed: {exc}")
+        sys.exit(1)
+
+    username = info.get("name") or info.get("fullname") or "unknown-user"
+    print(f"Hugging Face authentication OK: {username}\n")
+    return token
+
+
+def run_preflight(output_dir: Path, model_size: str, skip_upload: bool) -> str | None:
     model_info = GEMMA4_MODELS[model_size]
-    hf_id = model_info["hf_id"]
-    
-    print(f"🚀 Converting {model_info['name']}")
-    print(f"   HuggingFace: {hf_id}")
-    print(f"   Architecture: {model_info['architecture']}")
-    print(f"   Parameters: {model_info['params']}")
-    print(f"   Precision: {precision}")
-    print(f"   Output: {output_dir}\n")
-    
-    # Build the command for onnxruntime_genai model builder
+    check_dependencies()
+    check_ram(model_info["min_ram_gb"])
+    check_disk_space(output_dir, model_info["min_disk_gb"])
+    if skip_upload:
+        return None
+    return check_hf_auth()
+
+
+def convert_model(model_size: str, output_dir: Path, precision: str, cache_dir: Path | None) -> None:
+    model_info = GEMMA4_MODELS[model_size]
+
+    print("Starting conversion...")
+    print(f"  Source model : {model_info['source_hf']}")
+    print(f"  Output dir   : {output_dir}")
+    print(f"  Precision    : {precision}")
+    if cache_dir is not None:
+        print(f"  Cache dir    : {cache_dir}")
+    print()
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    if cache_dir is not None:
+        cache_dir.mkdir(parents=True, exist_ok=True)
+
     cmd = [
         sys.executable,
         "-m",
         "onnxruntime_genai.models.builder",
-        "-m", hf_id,
-        "-o", output_dir,
+        "-m", model_info["source_hf"],
+        "-o", str(output_dir),
         "-p", precision,
-        "-e", "cpu",  # Target CPU execution provider
-        "--extra_options", "trust_remote_code=True",  # Required for Gemma 4
+        "-e", "cpu",
+        "--extra_options", "trust_remote_code=True",
     ]
-    
-    print(f"📋 Running command:")
-    print(f"   {' '.join(cmd)}\n")
-    
-    try:
-        # Run the conversion
-        result = subprocess.run(
-            cmd,
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-        )
-        print(result.stdout)
-        print(f"\n✅ Conversion complete!")
-        
-    except subprocess.CalledProcessError as e:
-        print(f"\n❌ Conversion failed!")
-        print(f"Exit code: {e.returncode}")
-        print(f"Output:\n{e.stdout}")
-        sys.exit(1)
-    except Exception as e:
-        print(f"\n❌ Unexpected error during conversion:")
-        print(f"{type(e).__name__}: {e}")
-        sys.exit(1)
+
+    if cache_dir is not None:
+        cmd.extend(["--cache_dir", str(cache_dir)])
+
+    print("Running command:")
+    print("  " + " ".join(cmd))
+    print()
+
+    result = subprocess.run(cmd)
+    if result.returncode != 0:
+        print(f"ERROR: Conversion failed with exit code {result.returncode}.")
+        sys.exit(result.returncode)
+
+    print("Conversion completed successfully.\n")
 
 
-def validate_output(output_dir: str, model_size: str):
-    """Validate that the conversion produced the required files."""
-    print(f"\n🔍 Validating output files...")
-    
-    output_path = Path(output_dir)
-    required_files = [
-        "genai_config.json",
-        "tokenizer_config.json",
-    ]
-    
-    # Check for at least one model file
-    model_files = list(output_path.glob("*.onnx")) + list(output_path.glob("*.onnx.data"))
-    
-    errors = []
-    
-    for filename in required_files:
-        filepath = output_path / filename
-        if filepath.exists():
-            print(f"  ✓ {filename}")
+def validate_output(output_dir: Path) -> None:
+    print("Validating output...")
+    errors: list[str] = []
+
+    for filename in REQUIRED_OUTPUT_FILES:
+        path = output_dir / filename
+        if path.exists():
+            size_mb = path.stat().st_size / (1024 ** 2)
+            print(f"  OK {filename} ({size_mb:.1f} MB)")
         else:
-            print(f"  ✗ {filename} (missing)")
+            print(f"  MISSING {filename}")
             errors.append(filename)
-    
+
+    model_files = sorted(output_dir.glob("*.onnx"))
+    data_files = sorted(output_dir.glob("*.onnx.data"))
+
     if model_files:
-        print(f"  ✓ Model files ({len(model_files)} found)")
-        for mf in model_files[:3]:  # Show first 3
-            print(f"    - {mf.name}")
-        if len(model_files) > 3:
-            print(f"    ... and {len(model_files) - 3} more")
+        for path in model_files:
+            size_mb = path.stat().st_size / (1024 ** 2)
+            print(f"  OK {path.name} ({size_mb:.1f} MB)")
     else:
-        print(f"  ✗ No .onnx model files found")
-        errors.append("model.onnx")
-    
+        print("  MISSING ONNX model files")
+        errors.append("*.onnx")
+
+    for path in data_files:
+        size_gb = path.stat().st_size / (1024 ** 3)
+        print(f"  OK {path.name} ({size_gb:.2f} GB)")
+
     if errors:
-        print(f"\n⚠️  WARNING: Missing required files: {', '.join(errors)}")
-        print(f"The converted model may not work correctly with ElBruno.LocalLLMs.")
-        return False
-    else:
-        print(f"\n✅ All required files present!")
-        return True
+        print(f"\nERROR: Validation failed. Missing: {', '.join(errors)}")
+        sys.exit(1)
+
+    print("Output validation passed.\n")
 
 
-def print_usage_instructions(output_dir: str, model_size: str):
-    """Print instructions for using the converted model."""
+def build_model_card(model_size: str, precision: str) -> str:
     model_info = GEMMA4_MODELS[model_size]
-    
-    print(f"\n{'=' * 70}")
-    print(f"✅ CONVERSION COMPLETE: {model_info['name']}")
-    print(f"{'=' * 70}")
-    print(f"\n📂 Model files: {output_dir}")
-    print(f"\n📖 Usage in C#:")
+    return f"""# {model_info['name']} ONNX
+
+Public ONNX Runtime GenAI export of `{model_info['source_hf']}` for use with **ElBruno.LocalLLMs**.
+
+## Details
+
+- Source model: `{model_info['source_hf']}`
+- Conversion pipeline: `python scripts/convert_gemma4.py --model-size {model_size} --precision {precision}`
+- Precision: `{precision}`
+- Architecture: {model_info['architecture']}
+- Parameters: {model_info['params']}
+- Context length: {model_info['context']}
+- Recommended inference RAM: ~{model_info['recommended_inference_ram_gb']} GB
+
+## Usage
+
+```csharp
+using var client = await LocalChatClient.CreateAsync(new LocalLLMsOptions
+{{
+    Model = {model_info['known_model']},
+    EnsureModelDownloaded = true
+}});
+```
+
+> Note: this package is intended for ONNX Runtime GenAI / ElBruno.LocalLLMs scenarios.
+"""
+
+
+def upload_to_huggingface(output_dir: Path, model_size: str, precision: str, token: str, private: bool) -> None:
+    model_info = GEMMA4_MODELS[model_size]
+    target_repo = model_info["target_hf"]
+
+    print(f"Preparing Hugging Face upload to {target_repo}...")
+
+    readme_path = output_dir / "README.md"
+    readme_path.write_text(build_model_card(model_size, precision), encoding="utf-8")
+    print("  README.md written")
+
+    try:
+        from huggingface_hub import HfApi, create_repo
+    except ImportError:
+        print("ERROR: huggingface-hub is not installed.")
+        sys.exit(1)
+
+    api = HfApi(token=token)
+
+    create_repo(
+        repo_id=target_repo,
+        repo_type="model",
+        exist_ok=True,
+        private=private,
+        token=token,
+    )
+    print(f"  Repo ready ({'private' if private else 'public'})")
+
+    api.upload_folder(
+        folder_path=str(output_dir),
+        repo_id=target_repo,
+        repo_type="model",
+        commit_message=f"Add {model_info['name']} ONNX export ({precision})",
+    )
+
+    print(f"Upload complete: https://huggingface.co/{target_repo}\n")
+
+
+def print_usage_instructions(output_dir: Path, model_size: str) -> None:
+    model_info = GEMMA4_MODELS[model_size]
+
+    print("=" * 72)
+    print(f"DONE: {model_info['name']}")
+    print("=" * 72)
+    print(f"Output: {output_dir}")
+    print()
+    print("C# usage:")
     print(f"""
 using var client = await LocalChatClient.CreateAsync(new LocalLLMsOptions
 {{
-    ModelPath = @"{output_dir}",
+    ModelPath = @\"{output_dir}\",
     MaxTokens = 1024,
     Temperature = 0.7f
 }});
-
-var response = await client.CompleteAsync("Hello, how are you?");
-Console.WriteLine(response);
 """)
-    print(f"\n💡 Tips:")
-    print(f"  • Context length: {model_info.get('context', '128K')} tokens")
-    print(f"  • Architecture: {model_info['architecture']}")
-    if model_size == "26b":
-        print(f"  • This is a MoE model - only ~3.8B params are active during inference")
-    print(f"  • Recommended RAM: {model_info['min_ram_gb']}+ GB for inference")
-    print(f"\n{'=' * 70}\n")
-
-
-def main():
-    args = parse_args()
-    
-    # Determine precision (--precision overrides --quantize)
-    if args.precision:
-        precision = args.precision
-    else:
-        precision = args.quantize
-    
-    model_info = GEMMA4_MODELS[args.model_size]
-    
-    print("=" * 70)
-    print("🤖 Gemma 4 ONNX Conversion")
-    print("=" * 70)
     print()
-    
-    # Pre-flight checks
-    check_dependencies()
-    check_ram(model_info["min_ram_gb"])
-    check_disk_space(args.output_dir, model_info["min_disk_gb"])
-    
-    # Create output directory
-    output_path = Path(args.output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
-    
-    # Convert the model
-    convert_model(args.model_size, args.output_dir, precision)
-    
-    # Validate output
+
+
+def main() -> None:
+    args = parse_args()
+    precision = args.precision or args.quantize
+    output_dir = Path(args.output_dir).resolve()
+    cache_dir = Path(args.cache_dir).resolve() if args.cache_dir else None
+
+    print("=" * 72)
+    print("Gemma 4 ONNX Conversion")
+    print("=" * 72)
+    print()
+
+    token = run_preflight(output_dir, args.model_size, args.skip_upload)
+
+    if not args.skip_conversion:
+        convert_model(args.model_size, output_dir, precision, cache_dir)
+    else:
+        print("Skipping conversion as requested (--skip-conversion).\n")
+
     if not args.skip_validation:
-        validate_output(args.output_dir, args.model_size)
-    
-    # Print usage instructions
-    print_usage_instructions(args.output_dir, args.model_size)
+        validate_output(output_dir)
+    else:
+        print("Skipping output validation as requested (--skip-validation).\n")
+
+    if not args.skip_upload:
+        upload_to_huggingface(output_dir, args.model_size, precision, token, args.private)
+    else:
+        print("Skipping Hugging Face upload as requested (--skip-upload).\n")
+
+    print_usage_instructions(output_dir, args.model_size)
 
 
 if __name__ == "__main__":

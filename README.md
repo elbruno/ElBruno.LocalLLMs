@@ -15,25 +15,13 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 
 ## What's New
 
-- 🛡️ **`v0.20.10`** — Blazor Server model downloads now survive SignalR circuit disconnects, with one coordinated in-flight operation per model (Issue #42).
+> The last 5 notable additions to the library. Updated with each NuGet release.
+
+- 🚀 **`v0.20.11`** — Blazor downloads now survive Server circuit churn, vision `MaxOutputTokens` now respects multimodal input length, and provider diagnostics now surface safer GPU readiness plus opt-in cache-folder actions.
 - ⬆️ **`v0.20.9`** — Upgraded `onnxruntime-genai` to **0.15.1** and `Microsoft.Extensions.AI.Abstractions` to **10.8.3** across all projects. No API changes.
 - 🧩 **`ElBruno.LocalLLMs.BlazorComponents`** — new Razor Class Library with 7 ready-to-use Blazor components: `ModelStatusCard` (download progress bar + actions), `ModelGallery` (filterable grid), `ModelSelector` (two-way-bindable dropdown), `ChatBox` (streaming token display), `EnvironmentDashboard` (CPU/CUDA/DirectML badges), `LocalLLMHealthBadge` (nav-bar status dot), and `RagPlayground`. Call `services.AddLocalLLMsBlazorComponents()` to register. See the [Blazor Components Guide](docs/blazor-components.md) and the [BlazorDemo sample](src/samples/BlazorDemo/).
-- 📦 **9 more models now support auto-download** (`v0.20.4`) — StableLM-2-1.6B-Chat, Gemma-4-E2B-IT, Gemma-4-E4B-IT, Gemma-4-12B-IT, Gemma-4-26B-A4B-IT, Gemma-4-31B-IT, Mixtral-8x7B-Instruct-v0.1, DeepSeek-R1-Distill-Llama-70B, and Command-R (35B) are now `HasNativeOnnx=true` with ONNX weights hosted at `elbruno/*-onnx` on HuggingFace. Set `EnsureModelDownloaded = true` to auto-download.
+- 📦 **4 more models now support auto-download** (`v0.20.4`) — StableLM-2-1.6B-Chat, Mixtral-8x7B-Instruct-v0.1, DeepSeek-R1-Distill-Llama-70B, and Command-R (35B) are `HasNativeOnnx=true` with ONNX weights hosted at `elbruno/*-onnx` on HuggingFace. Gemma 4 remains a conversion/manual-path family until validated public artifacts are published.
 - 🔍 **`ModelDefinition.IsVisionCapable`** — new computed property. Consumer apps can now check `model.IsVisionCapable` instead of comparing `ModelType == OnnxModelType.VisionGenAI`. Fara1.5-9B returns `true`; all text models return `false`.
-- 🛑 **Fail-fast for non-downloadable models** — `OptionsValidator` now throws an `InvalidOperationException` with actionable text when `EnsureModelDownloaded = true` is paired with a model that has `HasNativeOnnx = false` and no `ModelPath`. Eliminates the confusing "auto-download enabled" UX that previously gave no guidance.
-- 📄 **[Auto-download guide](docs/auto-download.md)** — new doc covering the auto-download flow, cache path, vision model usage, and first-run examples for MagenticBrain and Fara.
-- 📋 **`ListCachedModels()` + `GetModelCacheSize(model)`** — new cache inspection APIs on both `LocalChatClient` and `LocalVisionChatClient`. List all cached model directories with sizes, or get the byte count for a specific model. Delegates to `ElBruno.HuggingFace.Downloader 1.4.4`.
-- 🗑️ **`DeleteModelFromCacheAsync`** — now delegates to `HuggingFaceDownloader.DeleteCachedFilesAsync` (was a direct `Directory.Delete`). Available on both `LocalChatClient` and `LocalVisionChatClient`.
-- 🤖 **MagenticBrain + Fara native ONNX ready** — Both published ONNX repos now auto-download via `EnsureModelDownloaded = true`. Fara uses the validated multimodal package produced by `scripts/convert_fara_multimodal.py`.
-- 👁️ **`LocalVisionChatClient` auto-download** — Vision models with `HasNativeOnnx=true` now download automatically, just like text models.
-- 🧪 **E2E lifecycle tests for all 35 models** — 3-phase lifecycle (download → cache hit → delete) with automated markdown reports written to `docs/tests/` after each run. Phases 1 and 3 also assert cache size and list membership.
-- 📦 **Transitive native runtime fix** (`v0.20.1`) — `buildTransitive` packaging so `onnxruntime-genai.dll` is copied for downstream consumers (Issue #24).
-- 🤖 **Qwen3 & MagenticBrain support** (`v0.20.0`) — New `ChatTemplateFormat.Qwen3` formatter and `KnownModels.Qwen3_14BInstruct` for agentic multi-agent orchestration loops.
-- 👁️ **Fara 1.5-9B vision-language model** (`v0.20.0`) — Run Microsoft's Fara VLM locally via the new `LocalVisionChatClient`, `IVisionGenerationModel`, and `VisionChatOptions` with image paths.
-- 🌐 **[ElBruno.MagenticUI](https://github.com/elbruno/ElBruno.MagenticUI) reference app** — Full Blazor Server multi-agent app (FileSurfer, WebFetcher, Coder, UserProxy) powered by this library.
-- 📡 **OpenTelemetry diagnostics** (`v0.19.0`) — Generation lifecycle activities and metrics (`gen_ai.client.*`) via `ActivitySource` + `Meter` both named `ElBruno.LocalLLMs`.
-- ✅ **Gemma 4 family active** — `E2B`, `E4B`, `12B Unified`, `26B-A4B`, `31B` all supported.
-- ⬆️ **ONNX Runtime GenAI `0.14.1`** — upgraded across library, tests, samples, and benchmarks.
 
 ## Features
 
@@ -85,7 +73,7 @@ dotnet add package Microsoft.ML.OnnxRuntimeGenAI.DirectML
 > `<ElBrunoLocalLLMsDisableCpuNativeCopy>true</ElBrunoLocalLLMsDisableCpuNativeCopy>`
 > in your application `.csproj`.
 
-> 🚀 The library defaults to `ExecutionProvider.Auto` — it tries GPU first and falls back to CPU automatically. No code changes needed.
+> 🚀 The library defaults to `ExecutionProvider.Auto` — on Windows it tries DirectML → CUDA → CPU, and on Linux it tries CUDA → CPU. No code changes needed.
 
 ## Quick Start
 
@@ -154,7 +142,7 @@ await foreach (var update in client.GetStreamingResponseAsync([
 
 ## GPU Acceleration
 
-By default, `ExecutionProvider.Auto` tries GPU first (CUDA → DirectML) and falls back to CPU automatically:
+By default, `ExecutionProvider.Auto` tries GPU first and falls back to CPU automatically:
 
 ```csharp
 // Use explicit GPU provider (fails if CUDA not installed; use Auto to fallback to CPU)
@@ -172,9 +160,12 @@ var options2 = new LocalLLMsOptions
 ```
 
 **Auto fallback behavior:**
-- **CUDA available** → uses NVIDIA GPU
-- **CUDA unavailable, DirectML available** → uses AMD/Intel Arc GPU
+- **Windows + DirectML available** → uses a Windows GPU through DirectML
+- **Windows + DirectML unavailable, CUDA available** → uses NVIDIA GPU
+- **Linux + CUDA available** → uses NVIDIA GPU
 - **GPU unavailable** → falls back to CPU (no errors, just slower)
+
+> ⚠️ **CUDA note:** ONNX Runtime GenAI `0.15.x` expects CUDA `13.*`, cuDNN `9.*`, and the latest Microsoft Visual C++ 2015-2022 runtime. When those native libraries are missing, provider diagnostics now surface the exact DLL mismatch or missing dependency instead of entering the failing native path.
 
 See [Troubleshooting: GPU Setup](docs/troubleshooting-guide.md#gpu-setup-validation) for debugging GPU issues.
 
@@ -320,19 +311,19 @@ For detailed troubleshooting, see [docs/troubleshooting-guide.md](docs/troublesh
 | ⚪ Tiny | Qwen2.5-0.5B-Instruct | 0.5B | ✅ Native | `qwen2.5-0.5b-instruct` |
 | ⚪ Tiny | Qwen2.5-1.5B-Instruct | 1.5B | ✅ Native | `qwen2.5-1.5b-instruct` |
 | ⚪ Tiny | Gemma-2B-IT | 2B | ✅ Native | `gemma-2b-it` |
-| ⚪ Tiny | Gemma-4-E2B-IT | 5.1B (2B active) | ✅ Native | `gemma-4-e2b-it` |
+| ⚪ Tiny | Gemma-4-E2B-IT | 5.1B (2B active) | 🔄 Convert | `gemma-4-e2b-it` |
 | ⚪ Tiny | StableLM-2-1.6B-Chat | 1.6B | ✅ Native | `stablelm-2-1.6b-chat` |
 | 🟢 Small | Phi-3.5 mini instruct | 3.8B | ✅ Native | `phi-3.5-mini-instruct` |
 | 🟢 Small | Qwen2.5-3B-Instruct | 3B | ✅ Native | `qwen2.5-3b-instruct` |
 | 🟢 Small | Llama-3.2-3B-Instruct | 3B | ✅ Native | `llama-3.2-3b-instruct` |
 | 🟢 Small | Gemma-2-2B-IT | 2B | ✅ Native | `gemma-2-2b-it` |
-| 🟢 Small | Gemma-4-E4B-IT | 8B (4B active) | ✅ Native | `gemma-4-e4b-it` |
+| 🟢 Small | Gemma-4-E4B-IT | 8B (4B active) | 🔄 Convert | `gemma-4-e4b-it` |
 | 🟡 Medium | Qwen2.5-7B-Instruct | 7B | ✅ Native | `qwen2.5-7b-instruct` |
 | 🟡 Medium | Qwen2.5-Coder-7B-Instruct | 7B | ✅ Native | `qwen2.5-coder-7b-instruct` |
 | 🟡 Medium | Llama-3.1-8B-Instruct | 8B | ✅ Native | `llama-3.1-8b-instruct` |
 | 🟡 Medium | Mistral-7B-Instruct-v0.3 | 7B | ✅ Native | `mistral-7b-instruct-v0.3` |
 | 🟡 Medium | Gemma-2-9B-IT | 9B | ✅ Native | `gemma-2-9b-it` |
-| 🟡 Medium | Gemma-4-12B-IT | 12B | ✅ Native | `gemma-4-12b-it` |
+| 🟡 Medium | Gemma-4-12B-IT | 12B | 🔄 Convert | `gemma-4-12b-it` |
 | 🟡 Medium | Phi-4 | 14B | ✅ Native | `phi-4` |
 | 🟡 Medium | DeepSeek-R1-Distill-Qwen-14B | 14B | ✅ Native | `deepseek-r1-distill-qwen-14b` |
 | 🟡 Medium | Mistral-Small-24B-Instruct | 24B | ✅ Native | `mistral-small-24b-instruct` |
@@ -342,8 +333,8 @@ For detailed troubleshooting, see [docs/troubleshooting-guide.md](docs/troublesh
 | 🔴 Large | Mixtral-8x7B-Instruct-v0.1 | 8x7B | ✅ Native | `mixtral-8x7b-instruct-v0.1` |
 | 🔴 Large | DeepSeek-R1-Distill-Llama-70B | 70B | ✅ Native | `deepseek-r1-distill-llama-70b` |
 | 🔴 Large | Command-R (35B) | 35B | ✅ Native | `command-r-35b` |
-| 🔴 Large | Gemma-4-26B-A4B-IT | 25.2B (3.8B active) | ✅ Native | `gemma-4-26b-a4b-it` |
-| 🔴 Large | Gemma-4-31B-IT | 30.7B | ✅ Native | `gemma-4-31b-it` |
+| 🔴 Large | Gemma-4-26B-A4B-IT | 25.2B (3.8B active) | 🔄 Convert | `gemma-4-26b-a4b-it` |
+| 🔴 Large | Gemma-4-31B-IT | 30.7B | 🔄 Convert | `gemma-4-31b-it` |
 | 🟣 Next-Gen | Qwen3-14B-Instruct | 14.77B | ✅ Native | `qwen3-14b-instruct` |
 | 🤖 Agentic | MagenticBrain | ~14.77B | ✅ Native | `magentic-brain` |
 | 👁️ VLM | Fara 1.5-9B | ~9.4B | ✅ Native | `fara-1.5-9b` |

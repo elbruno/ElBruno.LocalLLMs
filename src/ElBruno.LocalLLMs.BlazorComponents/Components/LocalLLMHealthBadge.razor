@@ -1,7 +1,7 @@
 @implements IDisposable
 
-<span class="llm-health-badge llm-health-@_state" title="@_tooltip">
-    @_icon @_label
+<span class="llm-health-badge llm-health-@_viewModel.State" title="@_viewModel.Tooltip">
+    @_viewModel.Icon @_viewModel.Label
 </span>
 
 @code {
@@ -16,10 +16,7 @@
     /// </summary>
     [Parameter] public TimeSpan RefreshInterval { get; set; } = TimeSpan.FromSeconds(30);
 
-    private string _state = "unknown";
-    private string _icon  = "◌";
-    private string _label = "LLM…";
-    private string _tooltip = string.Empty;
+    private LocalLLMHealthBadgeViewModel _viewModel = new("unknown", "◌", "LLM…", string.Empty);
     private Timer? _timer;
 
     protected override void OnParametersSet() => Refresh();
@@ -35,22 +32,12 @@
     {
         if (Client is null)
         {
-            _state   = "unknown";
-            _icon    = "◌";
-            _label   = "LLM not configured";
-            _tooltip = "No LocalChatClient provided.";
+            _viewModel = LocalLLMHealthBadgePresenter.CreateNotConfigured();
             return;
         }
 
-        var diags = LocalChatClient.DiagnoseEnvironment();
-        var modelId = Client.Metadata.DefaultModelId ?? "unknown";
-        var provider = Client.ActiveExecutionProvider.ToString();
-
-        _state   = "ok";
-        _icon    = "●";
-        _label   = $"LLM Ready ({modelId} · {provider})";
-        _tooltip = $"CPU: {diags.CpuAvailable}  CUDA: {diags.CudaAvailable}  DirectML: {diags.DirectMLAvailable}\n"
-                 + $".NET: {diags.DotNetVersion}  Cores: {diags.ProcessorCount}";
+        var diagnostics = LocalChatClient.DiagnoseEnvironment();
+        _viewModel = LocalLLMHealthBadgePresenter.Create(diagnostics, Client);
     }
 
     public void Dispose() => _timer?.Dispose();

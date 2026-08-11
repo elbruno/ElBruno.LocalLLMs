@@ -16,7 +16,11 @@ builder.Services.AddLocalLLMs(options =>
 
 // Register all BlazorComponents services; ModelStateService is application-wide
 // so a disconnected Blazor circuit does not cancel an active model download.
-builder.Services.AddLocalLLMsBlazorComponents();
+// Host folder actions are explicit opt-in because they execute on the server host.
+builder.Services.AddLocalLLMsBlazorComponents(options =>
+{
+    options.EnableHostFolderActions = true;
+});
 
 var app = builder.Build();
 
