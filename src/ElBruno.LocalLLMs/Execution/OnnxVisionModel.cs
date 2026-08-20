@@ -191,7 +191,16 @@ internal sealed class OnnxVisionModel : IVisionGenerationModel
     private static void ApplyParameters(IVisionSearchOptions searchOptions, GenerationParameters parameters, int inputTokenCount = 0)
     {
         searchOptions.SetSearchOption("max_length", ResolveMaxLength(parameters.MaxLength, inputTokenCount, parameters.MaxOutputTokens));
-        searchOptions.SetSearchOption("temperature", parameters.Temperature);
+
+        // See OnnxGenAIModel.ApplyParameters — ORT-GenAI's native runtime crashes with
+        // an integer divide-by-zero if "temperature" is set to exactly 0 (or any
+        // non-positive value), even when do_sample is false. Greedy decoding must be
+        // achieved by omitting the search option entirely.
+        if (parameters.Temperature > 0)
+        {
+            searchOptions.SetSearchOption("temperature", parameters.Temperature);
+        }
+
         searchOptions.SetSearchOption("top_p", parameters.TopP);
 
         if (parameters.TopK.HasValue)

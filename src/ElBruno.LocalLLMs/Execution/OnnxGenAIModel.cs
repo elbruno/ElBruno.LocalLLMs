@@ -141,7 +141,7 @@ internal sealed class OnnxGenAIModel : ITextGenerationModel
         var inputTokenCount = sequences[0].Length;
 
         using var genParams = new GeneratorParams(_model);
-        ApplyParameters(genParams, parameters, inputTokenCount);
+        ApplyParameters(new OnnxGenerationSearchOptions(genParams), parameters, inputTokenCount);
 
         using var generator = new Generator(_model, genParams);
         generator.AppendTokenSequences(sequences);
@@ -158,9 +158,7 @@ internal sealed class OnnxGenAIModel : ITextGenerationModel
             ct.ThrowIfCancellationRequested();
             generator.GenerateNextToken();
 
-            var seq = generator.GetSequence(0);
-            var tokenId = seq[^1];
-            var decoded = tokenizerStream.Decode(tokenId);
+            var decoded = tokenizerStream.Decode(generator.GetNextTokens()[0]);
             outputText.Append(decoded);
             outputTokenCount++;
 
@@ -205,7 +203,7 @@ internal sealed class OnnxGenAIModel : ITextGenerationModel
         var streamInputTokenCount = sequences[0].Length;
 
         using var genParams = new GeneratorParams(_model);
-        ApplyParameters(genParams, parameters, streamInputTokenCount);
+        ApplyParameters(new OnnxGenerationSearchOptions(genParams), parameters, streamInputTokenCount);
 
         using var generator = new Generator(_model, genParams);
         generator.AppendTokenSequences(sequences);
@@ -218,9 +216,9 @@ internal sealed class OnnxGenAIModel : ITextGenerationModel
             generator.GenerateNextToken();
             ct.ThrowIfCancellationRequested();
 
-            var seq = generator.GetSequence(0);
-            var tokenId = seq[^1];
-            var tokenText = tokenizerStream.Decode(tokenId);
+            // GetNextTokens() returns the token just produced. Reading GetSequence(0)[^1]
+            // instead re-reads the previous token on the final iteration, duplicating it.
+            var tokenText = tokenizerStream.Decode(generator.GetNextTokens()[0]);
             if (!string.IsNullOrEmpty(tokenText))
             {
                 ct.ThrowIfCancellationRequested();
@@ -244,7 +242,12 @@ internal sealed class OnnxGenAIModel : ITextGenerationModel
         CancellationToken ct)
         => GenerateStreamingAsync(prompt, parameters, ct);
 
-    private static void ApplyParameters(GeneratorParams genParams, GenerationParameters parameters, int inputTokenCount = 0)
+    /// <summary>
+    /// Internal (rather than private) so it can be exercised directly by
+    /// <c>OnnxGenAIModelTemperatureTests</c> via a recording <see cref="IGenerationSearchOptions"/>
+    /// fake, without constructing a real ONNX <see cref="Model"/>.
+    /// </summary>
+    internal static void ApplyParameters(IGenerationSearchOptions searchOptions, GenerationParameters parameters, int inputTokenCount = 0)
     {
         // When MaxOutputTokens is specified, compute effective max_length as
         // min(MaxLength, inputTokenCount + MaxOutputTokens) so that the limit applies to
@@ -254,21 +257,32 @@ internal sealed class OnnxGenAIModel : ITextGenerationModel
             ? Math.Min(parameters.MaxLength, inputTokenCount + parameters.MaxOutputTokens.Value)
             : parameters.MaxLength;
 
-        genParams.SetSearchOption("max_length", Math.Max(effectiveMaxLength, inputTokenCount + 1));
-        genParams.SetSearchOption("temperature", parameters.Temperature);
-        genParams.SetSearchOption("top_p", parameters.TopP);
+        searchOptions.SetSearchOption("max_length", Math.Max(effectiveMaxLength, inputTokenCount + 1));
+
+        // ORT-GenAI's native runtime crashes with an integer divide-by-zero if
+        // "temperature" is set to exactly 0 (or any non-positive value), even when
+        // do_sample is false. Greedy decoding (Temperature <= 0, per this record's own
+        // "0 = greedy" contract) must be achieved by omitting the search option
+        // entirely rather than passing 0 through — do_sample=false is sufficient on
+        // its own to select greedy decoding.
+        if (parameters.Temperature > 0)
+        {
+            searchOptions.SetSearchOption("temperature", parameters.Temperature);
+        }
+
+        searchOptions.SetSearchOption("top_p", parameters.TopP);
 
         if (parameters.TopK.HasValue)
         {
-            genParams.SetSearchOption("top_k", parameters.TopK.Value);
+            searchOptions.SetSearchOption("top_k", parameters.TopK.Value);
         }
 
         if (parameters.RepetitionPenalty != 1.0f)
         {
-            genParams.SetSearchOption("repetition_penalty", parameters.RepetitionPenalty);
+            searchOptions.SetSearchOption("repetition_penalty", parameters.RepetitionPenalty);
         }
 
-        genParams.SetSearchOption("do_sample", parameters.Temperature > 0);
+        searchOptions.SetSearchOption("do_sample", parameters.Temperature > 0);
     }
 
     public void Dispose()
@@ -279,4 +293,30 @@ internal sealed class OnnxGenAIModel : ITextGenerationModel
         _tokenizer.Dispose();
         _model.Dispose();
     }
+}
+
+/// <summary>
+/// Test seam mirroring <c>IVisionSearchOptions</c> (see <see cref="OnnxVisionModel"/>): abstracts
+/// the native ORT-GenAI <c>GeneratorParams.SetSearchOption</c> family of calls
+/// so that <c>OnnxGenAIModel.ApplyParameters</c> — in particular the ORT-GenAI native
+/// divide-by-zero guard around <c>"temperature"</c> — can be unit-tested with a recording fake,
+/// without constructing a real ONNX <see cref="Model"/>.
+/// </summary>
+internal interface IGenerationSearchOptions
+{
+    void SetSearchOption(string name, int value);
+    void SetSearchOption(string name, float value);
+    void SetSearchOption(string name, bool value);
+}
+
+/// <summary>
+/// Default <see cref="IGenerationSearchOptions"/> implementation: delegates straight to the real
+/// ORT-GenAI <see cref="GeneratorParams"/>. Used by every real (non-test) call site so runtime
+/// behavior is unchanged by the seam.
+/// </summary>
+file sealed class OnnxGenerationSearchOptions(GeneratorParams genParams) : IGenerationSearchOptions
+{
+    public void SetSearchOption(string name, int value) => genParams.SetSearchOption(name, value);
+    public void SetSearchOption(string name, float value) => genParams.SetSearchOption(name, value);
+    public void SetSearchOption(string name, bool value) => genParams.SetSearchOption(name, value);
 }
