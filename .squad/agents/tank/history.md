@@ -8,6 +8,108 @@
 - **Target models:** Phi-3.5-mini, Qwen2.5-3B, Llama-3.2-3B (small); Qwen2.5-7B, Phi-4 (medium)
 - **Created:** 2026-03-17
 
+## ⚠️ ALERT: S1-mini Feature Repo Placement Under Active Reconsideration
+
+**2026-08-19 (repository boundary review):** The `TranscriptNormalizer` API placement is under re-evaluation. The original recommendation was to keep it in LocalLLMs (STAY). After Bruno's pushback citing the model card ("text normalizer for speech-to-text output"), parallel re-analysis by Morpheus and Fact Checker have reversed that recommendation. The decision now rests between MOVE (relocate impl to Space.Normalization) or SPLIT (interface in Space.Abstractions, impl stays in LocalLLMs). **All s1-mini implementation code in LocalLLMs (tests, samples, KnownModels, ORT-GenAI fix) remains committed as-is and will not change unless Bruno selects MOVE.** Awaiting Bruno's decision. See Decision 38 in `.squad/decisions.md` for full analysis.
+
+## Latest: S1-mini follow-up — End-to-end verification + cross-team seam closure (2026-08-19)
+
+**2026-08-19 (follow-up):** Completed Decision 37: Closed Tank's s1-mini end-to-end verification + Trinity's test seam work. Tank's live run against real `elbruno/s1-mini-onnx` INT4 reproduced all 6 of Dozer's Python-validated outputs exactly (byte-for-byte), prompts traced as byte-identical, all 4 hazards confirmed safe. Trinity introduced `IGenerationSearchOptions` test seam for `OnnxGenAIModel` (mirroring `IVisionSearchOptions` pattern), added 12 tests pinning `Temperature <= 0` guard. Test suite: 1575 passed / 0 failed. Both tasks merged into `.squad/decisions.md` (Decision 37). Orchestration logs: `2026-08-19T16-51-27-tank.md`, `2026-08-19T16-51-27-trinity.md`. Session log: `2026-08-19T16-51-27-s1-mini-e2e-and-seam.md`.
+
+**2026-08-19 (original s1-mini test work):** Closed the last open risk on s1-mini: nobody had ever run the
+real C# `TranscriptNormalizer` path against the real published
+`elbruno/s1-mini-onnx` (INT4) model — Dozer validated quality from Python
+with a hand-built prompt, and I had only validated the C# path against fake
+`IChatClient` doubles. Ran both halves together.
+
+- **Prompt-parity check (static trace, no diff needed):** Traced
+  `KnownModels.S1Mini.ChatTemplate = Qwen3` → `Qwen3Formatter.FormatMessages`
+  and compared byte-for-byte against `scripts/eval_s1_mini.py`'s hand-built
+  prompt string. **Identical** — same system prompt text, same control-line
+  wire values, same trailing `<|im_start|>assistant\n<think>\n\n</think>\n\n`
+  block (also confirmed against the model's own `chat_template.jinja`).
+- **Live run:** Built a throwaway console harness
+  (`_tank_e2e_harness/`, deleted after use — not committed) referencing
+  `ElBruno.LocalLLMs.csproj` + an explicit `Microsoft.ML.OnnxRuntimeGenAI`
+  package reference (required because the library marks its own reference
+  `PrivateAssets="native"` — same pattern the `TranscriptNormalizer` sample
+  already uses). Pointed `LocalLLMsOptions.ModelPath` at Dozer's existing
+  local copy (`converted_models/s1-mini-onnx/int4`) with
+  `EnsureModelDownloaded = false` — no redundant download.
+- **Result: all 6 of Dozer's test cases reproduced his Python output
+  character-for-character** (model-card reference, email+phone, pure filler
+  → empty, long dictation, `[Context: email]`, `[Structure: lists]`).
+- **All 4 hazards confirmed safe:** no `<think>` tag leakage in any output;
+  the pure-filler case returns `string.Empty` cleanly with no throw (first
+  real proof of the incremental-decoder safety claim); `Temperature = 0`
+  never crashed across 8 live calls (first real proof of
+  `OnnxGenAIModel.ApplyParameters` skipping the native `temperature` search
+  option); the model-card prompt run twice produced identical output
+  (determinism confirmed for greedy decoding).
+- **No bugs found.** Full report:
+  `.squad/decisions/inbox/tank-s1-mini-e2e.md`.
+
+## Latest: S1-mini transcript normalizer test coverage (2026-08-19)
+
+**2026-08-19:** Added unit tests for Trinity's new `superwhisper/s1-mini` ASR
+transcript normalizer support. **4 new/updated files**, all offline against a
+new `FakeChatClient` test double (no ONNX model, no network — `elbruno/s1-mini-onnx`
+does not exist on HF yet per Trinity's decision log):
+
+1. **TestDoubles/FakeChatClient.cs** — minimal `IChatClient` fake recording
+   call count, last messages/options/cancellation token, with queued/default
+   response text. Reused nowhere previously (existing `ScriptedTextGenerationModel`
+   operates at the `ITextGenerationModel` seam, one layer below `IChatClient`).
+2. **Normalization/TranscriptNormalizerBuildPromptTests.cs** (10 tests) —
+   control-line construction: default `[Styling: semi-formal] [Structure: prose]
+   [Context: general]`, each enum's wire-value mapping, Lists+Email combo,
+   verbatim (untrimmed/uncased) transcript passthrough, null-options guard.
+3. **Normalization/TranscriptNormalizerTests.cs** (20 tests) — empty/whitespace/
+   null short-circuit (chat client never invoked), default vs. custom
+   `DefaultSystemPrompt`, `Temperature == 0`, default/custom `MaxOutputTokens`,
+   exactly-2-messages-in-order, response trimming, pure-filler → empty string,
+   cancellation token propagation, disposal ownership semantics for both the
+   public ctor (`ownsChatClient: false`) and the internal ctor
+   (`ownsChatClient: true`), double-dispose safety, `ObjectDisposedException`
+   after dispose, null-chat-client guard.
+4. **Normalization/TranscriptNormalizerChunkingTests.cs** (9 tests) —
+   `SplitIntoChunks`: single-chunk short input, chunk-size ceiling on long
+   input, lossless reassembly, unbreakable-run-longer-than-limit doesn't hang;
+   `NormalizeChunkedAsync`: empty short-circuit, one-call-per-chunk, join
+   behavior, empty-chunk-result omission.
+5. **KnownModelsTests.cs** — added `S1Mini`/`S1MiniFp16` property tests
+   (id/repo/subpath/tier/ChatTemplate=Qwen3/SupportsToolCalling=false/
+   HasNativeOnnx=true/IsVisionCapable=false), shared-repo/distinct-subpath
+   check, `FindById` incl. case-insensitive, `All`/static-field membership.
+6. **LocalLLMsServiceExtensionsTests.cs** — `AddTranscriptNormalizer`
+   registration tests (TranscriptNormalizer + IModelDownloader singletons,
+   deliberately NOT registered as IChatClient, default model is S1Mini,
+   fluent return, null-services guard). Followed the existing pattern of
+   asserting on `ServiceDescriptor`s directly rather than building a
+   provider, since the test project only references
+   `Microsoft.Extensions.DependencyInjection.Abstractions` (no
+   `BuildServiceProvider` extension available) — same constraint the
+   existing `AddLocalLLMs` tests already work around.
+
+**Result:** `dotnet test ... --framework net8.0` → **1563 passed, 0 failed**
+(up from 1515 pre-existing). Ran final validation only after confirming
+Trinity's ORT-GenAI divide-by-zero fix had landed (waited ~7 min, polling
+production files). Coordinator's mid-task correction confirmed: Trinity fixed
+the crash at the Execution layer (`OnnxGenAIModel`/`OnnxVisionModel.ApplyParameters`
+now omit the native `"temperature"` search option when `Temperature <= 0`), NOT
+by unsetting `ChatOptions.Temperature` in `TranscriptNormalizer` — that still
+sends `Temperature = 0f` intentionally, as documented, and my original
+assertion for it was correct all along. Added one extra regression test on
+the normalizer ("exactly 0f, never a positive epsilon") plus 4 new
+Execution-layer tests in `Execution/OnnxVisionModelTemperatureTests.cs`
+pinning the systemic fix (temperature omitted + do_sample=false for
+Temperature<=0; temperature set + do_sample=true for Temperature>0) via the
+existing `IVisionGenerationRuntime` test seam. `OnnxGenAIModel.ApplyParameters`
+(text-generation path) has no equivalent seam and is flagged as an
+acknowledged integration-test gap, not force-tested. `S1MiniFp16` and
+`TranscriptContext.Message`/`.Notes` were both kept (not dropped) — existing
+tests for them stand unchanged. No bugs found in the final landed code.
+
 ## Latest: DX Implementation Test Coverage (2026-03-29)
 
 **2026-03-29:** Delivered comprehensive unit tests for DX wave (Waves 1–4). **94 new tests** across 7 files:
@@ -33,180 +135,14 @@
 
 **Commits:** All tests merged in PR #8 (squash-merged to main).
 
-## Architecture Status & RAG Plan
 
-**2026-03-17:** Morpheus completed full solution architecture. Blueprint in `docs/architecture.md`. 9 decisions merged to `.squad/decisions.md`. Tank should write unit test stubs mapping to interfaces defined in architecture (IModelDefinition, IChatTemplateFormatter, etc.).
+## Previous Work Summary
 
-**2026-03-27:** RAG tool routing plan approved (`docs/plan-rag-tool-routing.md`). Tank is owner for **Phase 1** (benchmark framework). Deliverable: `benchmarks/ElBruno.LocalLLMs.ToolRoutingBenchmarks/` project with benchmark scenarios for 6 models × 3 catalog sizes × 5 prompt categories. Measures accuracy, latency, memory. Data drives Phase 3 optimization decisions.
+Delivered across 20+ sessions since 2026-03-17:
+- Magentic-ui Phase 3A (2026-07-23): 3-project ASP.NET Core orchestration, 40 tests passing
+- VLM support (Fara1.5-9B, bitnet, Qwen3, Phi-4, GPT-OSS-20B)
+- Conversion pipelines for ONNX, quantization strategies (INT4/FP16)
+- Test coverage, CI/CD workflows, documentation standards
+- DI patterns, chat template formats, model registry architecture
 
-## Learnings
-
-<!-- Append new learnings below. Each entry is something lasting about the project. -->
-
-- **2026-04-17:** Native library loader + package validation tests delivered: **58 new tests** across 2 files. Total suite: 229/229 passing on net8.0. Files: NativeLibraryLoaderTests.cs (24 tests — candidate path probing via `GetCandidateLibraryPathsForTesting()` internal method, OS-correct library names, RID validation, NuGet runtimes path construction/detection, error message format with `dotnet add package` suggestion, RID→package mapping for win-x64/linux-x64/osx-arm64/fallback, path absoluteness, integration test stubs gated by `RUN_NATIVE_INTEGRATION_TESTS` env var), NativePackageValidationTests.cs (34 tests — on-disk directory structure for all 3 native packages, `.csproj` existence and content validation including NoBuild/IncludeBuildOutput/Pack/nuget_logo/binary references, runtimes/{rid}/native/ consistency, slnx inclusion). Trinity's `GetCandidateLibraryPathsForTesting()` enables direct unit testing of path probing without loading actual native binaries. Package validation tests gracefully skip csproj content checks when files don't exist yet.
-
-- **2026-03-30:**BitNet test suite delivered: **155 tests** across 7 files + GlobalUsings.cs. All passing on net8.0. Files: BitNetOptionsTests (31 tests — defaults, custom, null, mutation), BitNetModelDefinitionTests (24 tests — record equality, immutability, defaults, enum coverage), BitNetKnownModelsTests (30 tests — catalog completeness, FindById case-insensitive, property checks for all 5 models), BitNetKernelTypeTests (6 tests — enum values, count), BitNetServiceExtensionsTests (12 tests — DI registration, null guards, options propagation), BitNetExceptionsTests (12 tests — both exception types, messages, type hierarchy), BitNetChatClientTests (6 tests — constructor null checks, type interface checks). Added `Microsoft.Extensions.DependencyInjection 10.0.5` to test csproj for DI tests. BitNetChatClient constructor calls native lib immediately via `EnsureInitializedAsync`, so only null-guard and type checks are possible as unit tests — integration tests need [Trait("Category", "Integration")] gating.
-
-- **2026-03-29:**Qwen2.5-Coder-7B-Instruct test coverage added: 8 new tests (1 All_Contains, 1 FindById dedicated, 1 InlineData addition to Theory, 5 property checks for ChatTemplate/Tier/SupportsToolCalling/HasNativeOnnx/HuggingFaceRepoId) plus StaticFields assertion update. Tests reference `KnownModels.Qwen25Coder_7BInstruct` — will compile once Trinity adds the model definition. Build fails with expected CS0117 until then. Pattern: non-native ONNX model (HasNativeOnnx=false) with tool calling support, Qwen chat template, Medium tier.
-
-- **2026-03-19:** Tool calling test suite created with 41 tests across 3 files: `JsonToolCallParserTests` (29 tests), `ChatMLFormatterToolTests` (12 tests), `FunctionCallContentIntegrationTests` (20 tests). 24 tests pass, 17 require Trinity's parser implementation. All tests compile successfully with stub implementations.
-- **2026-03-19:** Microsoft.Extensions.AI v10.4.0 FunctionCallContent API: constructor takes (callId, name, arguments). FunctionResultContent constructor takes (callId, result) — no "name" parameter. ChatResponseUpdate requires (role, contents) in constructor, not an object initializer with Contents property.
-- **2026-03-19:** Trinity has already implemented partial tool support in ChatMLFormatter.FormatMessages with tool definitions injected into system message, plus FunctionCallContent/FunctionResultContent handling in message formatting. AIFunction properties are Name and Description (not Metadata.Name).
-- **2026-03-19:** Tool calling test patterns: parse tests cover happy path (single/multiple calls), edge cases (malformed JSON, empty args, missing keys), format-specific tests (Qwen tags, ChatML plain JSON, arrays), and null handling. Formatter tests verify backwards compatibility (null/empty tools), tool description inclusion, and output structure.
-- **2026-03-19:** `scripts/manage-models.ps1` is now the primary operator workflow (list/locations/report/delete with parameter sets); QA should keep safety assertions aligned across both `manage-models.ps1` and legacy `delete-models.ps1` paths.
-- **2026-03-19:** `scripts/delete-models.ps1` should use native `SupportsShouldProcess` (`-WhatIf`/`-Confirm`) instead of a custom `-WhatIf` switch; in list mode, use `Format-Table | Out-Host` before returning `-PassThru` objects so automation receives clean JSON/object output.
-- **2026-03-19:** Post-initialization fallback state (`Auto` resolving to `Cpu` after GPU provider failures) is not unit-testable without a model creation seam; a future model-factory/provider-probe abstraction would enable deterministic fallback-state tests without downloading models.
-- **2026-03-19:** Provider selection defaults changed to `ExecutionProvider.Auto` with deterministic runtime fallback `Cuda -> DirectML -> Cpu`. Tests should assert both requested provider and resolved active provider behavior, including explicit-provider no-fallback paths.
-- **2026-03-19:** Console sample progress output now uses single-line carriage-return rendering (`\r`) with one trailing newline; output assertions or snapshot-style checks should avoid expecting multi-line incremental logs.
-- **2026-03-17:** MEAI v10.4.0 uses renamed API: `GetResponseAsync`/`GetStreamingResponseAsync` (not `CompleteAsync`), `ChatResponse` (not `ChatCompletion`), `ChatResponseUpdate` (not `StreamingChatCompletionUpdate`), `DefaultModelId` (not `ModelId`), `GetService(Type, object?)` (not generic). Tests must align with these names.
-- **2026-03-17:** Created 14 test files (11 unit + 3 integration) covering 210 passing unit tests. All template formatters tested with exact output strings. LocalChatClient tested with NSubstitute-mocked IModelDownloader via internal constructor. Integration tests gated by `RUN_INTEGRATION_TESTS=true` env var.
-- **2026-03-17:** QwenFormatter output is identical to ChatMLFormatter (both use `<|im_start|>/<|im_end|>`). MistralFormatter folds system prompt into first `[INST]` block with `\n\n` separator.
-- **2026-03-17:** `InternalsVisibleTo` on core project allows tests to access internal types: `IChatTemplateFormatter`, `ChatTemplateFactory`, `ChatMLFormatter`, `Phi3Formatter`, `Llama3Formatter`, `QwenFormatter`, `MistralFormatter`, `OnnxGenAIModel`, and the internal `LocalChatClient(options, downloader)` constructor.
-- **2026-03-17:** `KnownModels.FindById()` is case-insensitive (`StringComparison.OrdinalIgnoreCase`). Tests verify both exact and uppercase lookups succeed.
-- **2026-03-19:** `ProviderSelectionTests.cs` expanded from 7 to 62 tests covering all 8 fallback message patterns for CUDA/DirectML, case sensitivity, null/missing-context edge cases, inner exceptions, CPU provider behavior, and `BuildProviderFailureReason` formatting/truncation/newline tests. `BuildProviderFailureReason` changed from `private` to `internal static` to enable direct testing. Total suite: 318 tests, all passing.
-- **2026-03-19:** `ShouldFallbackToNextProvider` uses `ex.ToString()` (not `ex.Message`), so inner exception text is included in the match. This means a provider keyword in an inner exception can trigger fallback — tested and verified.
-- **2026-03-19:** `LocalChatClientTests.cs` extended with `ProviderSelectionDetails_BeforeInitialization_IsNull` and parameterized `ActiveExecutionProvider_BeforeInitialization_MatchesConfigured` covering all explicit provider values.
-- **2026-03-27:** Phase 4a tool calling test suite delivered: 41 comprehensive tests across JsonToolCallParserTests.cs (29), ChatMLFormatterToolTests.cs (12), FunctionCallContentIntegrationTests.cs (20). All 41 tests passing. Tests cover all 3 output formats (Qwen tags, raw JSON, arrays), edge cases (malformed JSON, empty args, missing keys), backward compatibility, MEAI compliance, and round-trip integration.
-- **2026-03-27:** Tool calling test patterns: parser tests validate format detection, nested arguments, CallId generation, RawText capture; formatter tests verify backward compatibility (null tools), tool schema injection, result formatting; integration tests ensure FunctionCallContent/FunctionResultContent API correctness and multi-turn conversations.
-- **2026-03-27:** Coordination with Trinity via Coordinator: Tank's proactive test stubs (with TODOs) enabled Trinity to implement parser logic while tests compiled; discovered API quirks early (MEAI v10.4.0 FunctionCallContent constructor); all tests now passing after Trinity's implementation.
-- **2026-03-27:** Total test suite: 359 tests passing (24 existing + 41 new tool calling). Backward compatibility verified — non-tool tests and samples unchanged. All 11 Phase 4 architectural decisions merged to canonical decisions.md. Tool calling ready for MVP release and Phase 4b (RAG pipeline) work.
-- **2026-03-27:** Phase 4b RAG pipeline test implementation: 25 new tests added to ElBruno.LocalLLMs.Rag.Tests project. Tests cover: SlidingWindowChunker (split logic, overlap, edge cases), InMemoryDocumentStore (CRUD, similarity search, ranking), SqliteDocumentStore (persistence, querying), LocalRagPipeline (indexing, retrieval, ranking). All 25 tests passing, 100% coverage. Tank should now begin Phase 1 benchmark framework for tool routing (per RAG tool routing plan) — benchmark suite will measure accuracy/latency/memory for 6 SLM candidates across 3 catalog sizes and 5 prompt categories.
-- **2026-03-29:** Phase 5 fine-tune evaluation test suite delivered: 48 tests across 4 files in `ElBruno.LocalLLMs.FineTuneEval` project. ToolCallingFormatTests (14 tests): parser validation, QwenFormatter tool output, FunctionCallContent/FunctionResultContent formatting, round-trip formatter→parser, multi-tool system prompts. RagFormatTests (6 tests): citation markers [N], context injection parsing, refusal responses, multi-citation validation. TrainingDataValidationTests (10 tests): ShareGPT format structure, role/value validation, tool call tag format, deduplication, train/val split ratios, file-based validation (2 skipped — training-data/ not yet created per Phase 1). ChatTemplateAdherenceTests (9 tests): ChatML token structure, start/end pairing, multi-turn ordering, trailing assistant prompt, tool-aware template compliance. 46 passing, 2 skipped. Used xUnit (matching existing test conventions), added InternalsVisibleTo for new project, added project to .slnx.
-- **2026-03-29:** Training data file-based tests use `[SkippableFact]` with `Skip.If(!Directory.Exists(...))` to gracefully handle Phase 1 not yet delivering `training-data/` files. When Phase 1 (Mouse) delivers the training data, these tests will automatically activate and validate file existence, JSON validity, and example counts.
-- **2026-03-29:** McpToolRouting distillation benchmark suite created at `src/samples/McpToolRouting/docs/distillation-benchmarks.md`. Contains 36 test prompts across 5 categories (simple, multi-intent, verbose, ambiguous, edge cases) with expected distilled outputs, expected top-3 tool matches against 8 reference tools, evaluation criteria (intent preservation, conciseness ≤30 words, safety), quality metric targets (Top-1 ≥80%, Top-3 recall ≥90%, latency <500ms CPU), empty results tables for actual run data, and regression tracking. Companion `tool-description-guide.md` provides best practices for writing tool descriptions that produce good embedding matches (action verbs first, 10–25 words, include synonyms, avoid jargon/negations).
-- **2026-03-29:** Gemma 4 model test coverage added: 10 new tests in `KnownModelsTests.cs` and `GemmaFormatterTests.cs` for the 4 new Gemma 4 models (gemma-4-e2b-it, gemma-4-e4b-it, gemma-4-26b-a4b-it, gemma-4-31b-it). All models use ChatTemplateFormat.Gemma, have HasNativeOnnx=false, and SupportsToolCalling=true. Tests verify model properties, FindById lookup, presence in KnownModels.All collection, and tool-calling formatter compatibility with system message injection.
-- **2026-03-29:** GemmaFormatter tool calling behavior: tools are injected into the system message content (similar to ChatMLFormatter). Tests for tool calling MUST include a System message for tools to be added to the prompt — without a system message, tools passed to FormatMessages are ignored. FunctionResultContent should be in ChatRole.User messages (not ChatRole.Tool) to be properly formatted via FormatUserMessage().
-
-### 2026-04-07: Gemma 4 Blocker Monitor Workflow QA Review
-
-- **Reviewed:** `.github/workflows/monitor-gemma4-blocker.yml`
-- **YAML syntax:** Valid (confirmed via PyYAML safe_load)
-- **Critical fix — Expression injection:** The `evaluate` job's github-script step was interpolating all job outputs directly via `${{ }}` into JavaScript string literals. The `latestComment` output (sourced from upstream issue comments — untrusted user content) was a real injection vector. Fixed by passing ALL outputs through step-level `env:` block and reading via `process.env.*`. Also replaced `${{ github.* }}` with `context.*` API in github-script for consistency.
-- **Medium fix — NuGet API error handling:** Added `set -eo pipefail` and null/empty validation to the NuGet fetch step. Without this, a NuGet API failure could produce an empty or `null` version string that would compare as "new version" and trigger false positives.
-- **Medium fix — Shell injection hardening:** Moved `${{ steps.nuget.outputs.latest_version }}` references in shell `run:` blocks to step-level `env:` variables, preventing shell metacharacter injection from external API data.
-- **Note — KNOWN_BLOCKED_VERSION stale:** Currently set to `0.12.2` but NuGet already has `0.13.0`. Workflow will trigger immediately on first run with score ≥ 20. Switch should verify this is intentional or update to `0.13.0`.
-- **Note — Generic keyword:** "architecture" in keyword list is broad and could cause false positives on unrelated release notes. Acceptable for monitoring but worth watching.
-- **Verified correct:** NuGet API URL, confidence scoring (+20/+40/+30 = 90 max), issue dedup logic, label creation, permission scope, workflow_dispatch trigger, `needs:` declarations, `release_notes.txt` lifecycle.
-
-### 2026-04-04: Qwen2.5-Coder-7B-Instruct Test Coverage
-- Added 8 comprehensive tests to KnownModelsTests.cs for Qwen25Coder_7BInstruct
-- Tests: All_Contains, FindById (dedicated + InlineData), ChatTemplate (Qwen), Tier (Medium), ToolCalling (true), HasNativeOnnx (false), HuggingFaceRepoId
-- Updated StaticFields_AreSameInstanceesAsInAll assertion to include new model field
-- All 705 tests pass (390 existing + 315 from DX wave), zero regressions
-- Tests validated Trinity's model definition matches expected contract
-- Next: Dozer to convert model to ONNX GenAI format
-
-### 2026-04-04: Comprehensive RAG Pipeline & Zero-Cloud RAG Test Coverage
-- Added 24 new tests across 3 files for RAG pipeline testing:
-  1. **LocalRagPipelineTests.cs** (10 tests, MSTest): IndexDocuments empty/single/multi, progress reporting, retrieve after indexing, empty index, topK limiting, minSimilarity filtering, clear index, cancellation token, chunk content verification
-  2. **RagPipelineIntegrationTests.cs** (4 tests, MSTest): Full E2E pipeline, multi-query retrieval, large document set scale (15 docs), clear-and-reindex cycle. All gated by `[TestCategory("Integration")]` + `RUN_INTEGRATION_TESTS` env var
-  3. **RagDocumentTests.cs** (13 tests, xUnit): Document/DocumentChunk/RagContext/RagIndexProgress record creation, metadata handling, record equality, empty content validation
-- Created `MockEmbeddingGenerator` (384-dim deterministic vectors via `Random(text.GetHashCode())`) and `SynchronousProgress<T>` helper to avoid `Progress<T>` thread-pool ordering issues in tests
-- Key learning: mock embedding generator produces essentially random cosine similarities; tests that need guaranteed retrieval must use `minSimilarity: -1.0f` to bypass filtering
-- Test results: RAG project 39/39 passing (25 existing + 10 new unit + 4 integration), xUnit project 718/718 passing (705 existing + 13 new)
-- Phi35MiniInstruct `HasNativeOnnx = true` test already existed in KnownModelsTests.cs line 171 — verified, no changes needed
-
-### 2026-04-04: RAG Pipeline Test Suite — 27 New Tests
-
-- Wrote **10 pipeline unit tests** (MSTest, LocalRagPipelineTests.cs): Index → Retrieve → Clear orchestration, error conditions, progress events
-- Wrote **4 integration tests** (MSTest, gated by RUN_INTEGRATION_TESTS=true env var): Full 15+ document workflows, reindexing, scale validation
-- Wrote **13 record type tests** (xUnit, shared type validation): Score bounds, chunk validation, embedding vector invariants
-- **Key Pattern:** SynchronousProgress<T> for deterministic callback ordering (not Progress<T> async)
-- **Mock embedding strategy:** Set minSimilarity: -1.0f for guaranteed retrieval (hash-based random vectors have unpredictable cosine similarities)
-- **Integration gating:** Use [TestCategory("Integration")] + env var to skip real-model tests in CI
-- **Decision:** RAG Pipeline Test Strategy approved; documented in decisions.md
-- **Result:** 757 total passing (730 existing + 27 new), zero regressions
-- Reusable patterns: mock embedding generator, SynchronousProgress model, integration test gating
-
-### 2026-04-04: RAG Package Public API Test Coverage — Issue #11
-
-- **Task:** Comprehensive unit tests for `ElBruno.LocalLLMs.Rag` package public API
-- **Created 4 new test files:** 60 new unit tests (95 total RAG tests, all passing)
-  1. **RagRecordTests.cs** (30 tests): Document, DocumentChunk, RagContext, RagIndexProgress, RagOptions record types — construction, equality, immutability, default values, metadata handling
-  2. **SqliteDocumentStoreTests.cs** (16 tests): SqliteDocumentStore persistence — schema creation, CRUD operations, similarity search ordering, topK/minSimilarity filtering, in-memory SQLite (`Data Source=:memory:`), disposal
-  3. **RagServiceExtensionsTests.cs** (14 tests): DI registration — AddLocalRagPipeline with/without options, embedding generator registration, AddSqliteDocumentStore, singleton lifetime, service resolution (IRagPipeline, IDocumentStore, IDocumentChunker, RagOptions)
-  4. **LocalRagPipelineConstructorTests.cs** (6 tests): Constructor validation — null parameter checks for chunker/store/embeddingGenerator (ArgumentNullException with correct ParamName)
-- **Key patterns:**
-  - DI tests require embedding generator (AddLocalRagPipeline overload without generator doesn't register IEmbeddingGenerator, so LocalRagPipeline can't resolve)
-  - SQLite tests use in-memory database (`Data Source=:memory:`) for fast, isolated tests
-  - Reused existing MockEmbeddingGenerator from LocalRagPipelineTests.cs (avoided duplicate definitions)
-  - Added `Microsoft.Extensions.DependencyInjection` v9.0.3 package reference to test project
-- **Coverage:** All public record types, SqliteDocumentStore, RagServiceExtensions, LocalRagPipeline constructor validation
-- **Test results:** 99 total tests (95 passing, 4 skipped integration tests) — 60 new + 25 existing + 10 pipeline + 4 integration
-- **Zero regressions:** All existing tests still pass
-- **Pattern:** MSTest framework, same as existing RAG test suite
-
-## RAG Test Suite & API Coverage (2026-04-04)
-
-**2026-04-04:** RAG package test coverage completed. Created 60 new unit tests across 4 test files achieving 100% API coverage of RAG package public types. Test breakdown: RagRecordTests (30 tests), SqliteDocumentStoreTests (16 tests), RagServiceExtensionsTests (14 tests), LocalRagPipelineConstructorTests (6 tests). All follow MSTest framework conventions. Results: 95 passing, 4 skipped integration tests (optional), 0 regressions. Added Microsoft.Extensions.DependencyInjection v9.0.3 to test project for DI validation. Tests serve as usage examples and validate Trinity's implementations. Coordinator released as v0.11.0.
-
-**Key Patterns:**
-- DI Registration: AddLocalRagPipeline requires explicit embedding generator in tests
-- In-Memory SQLite: Use Data Source=:memory: for fast, isolated persistence tests
-- Mock Reuse: Leveraged existing MockEmbeddingGenerator from LocalRagPipelineTests
-- MSTest Framework: Consistent with existing codebase convention
-
-## 2026-04-07: Gemma 4 Blocker Monitoring Workflow — Security Audit
-
-**Session:** Gemma4-Monitor-Impl (orchestration)
-
-Conducted comprehensive security audit of Switch's `.github/workflows/monitor-gemma4-blocker.yml` workflow.
-
-**Findings: 3 Security Bugs**
-
-1. **Expression Injection (CRITICAL)**
-   - Location: evaluate job, `actions/github-script@v7`
-   - Issue: Untrusted upstream issue comments interpolated via `${{ }}` literals
-   - Risk: Malicious comment could execute arbitrary code in workflow
-   - Fix: Moved all external data to step-level `env:` blocks, read via `process.env.*`
-
-2. **NuGet API Error Handling (MEDIUM)**
-   - Location: check-release job, curl/jq pipeline
-   - Issue: No error handling; null/empty response treated as new version
-   - Fix: Added `set -eo pipefail`, explicit validation (`-z`, `== "null"` checks), error annotations
-
-3. **Shell Injection via External Data (MEDIUM)**
-   - Location: release-notes, evaluate-release steps
-   - Issue: Direct interpolation of untrusted `${{ steps.nuget.outputs.latest_version }}`
-   - Fix: Env var indirection pattern in all shell steps
-
-**Operational Issue:**
-- KNOWN_BLOCKED_VERSION was 0.12.2, but NuGet has 0.13.0
-- First run would trigger false positive (score ≥ 20)
-- Fixed by bumping to 0.13.0
-
-**Verified Correct:**
-- ✅ NuGet flat container API URL and version extraction
-- ✅ Confidence scoring (max 90 = +20 new + 40 keyword + 30 closed)
-- ✅ Issue dedup (checks existing open issues with `gemma4` label)
-- ✅ Label auto-creation (idempotent try/catch)
-- ✅ Permission scope (contents: read, issues: write)
-- ✅ Job dependencies correctly declared
-- ✅ File lifecycle safety (`release_notes.txt` guarded)
-- ✅ GitHub API endpoints and Octokit patterns
-
-**Commits:**
-- Switch initial: 5adb604
-- Coordinator fixes: e85743f (security + version bump)
-
-**Recommendation:** All fixes merged. Workflow ready for production.
-
-## 2026-07-23: Phase 3A — MagenticUIServer.Agents Tests
-
-**2026-07-23T16:38:** Delivered 40 unit tests for `MagenticUIServer.Agents` Phase 3A components. All 40 passing.
-
-**Test files (4):**
-
-| File | Tests | Focus |
-|------|-------|-------|
-| `FileSurferToolTests.cs` | 14 | Sandbox enforcement — path traversal blocking (`../`), absolute path outside `WorkingDirectory`, symlink escape via `FileInfo.LinkTarget`; ReadFile/WriteFile/ListDirectory happy paths; error cases |
-| `WebFetchToolTests.cs` | 9 | Content-length cap at 50k chars; HTML→Markdown routing through `MarkItDownTool`; non-200 response handling; mock `HttpMessageHandler` |
-| `CodeExecutorToolTests.cs` | 6 | Stub returns `{ Success=false }`; output contains `[STUB]` message; `ILogger.LogWarning` captured; no `Process.Start` invocation confirmed |
-| `AgentMessageTests.cs` | 10 | All 15 `metadata.type` discriminator values representable in `AgentMessage` model; record construction; equality |
-
-**Testing patterns used:**
-- `NSubstitute` for `IChatClient` and `ILogger<T>` mocking
-- Custom `HttpMessageHandler` mock for `WebFetchTool` HTTP isolation
-- `Path.GetTempPath()` + unique subdirectory for `FileSurferTool` sandbox tests (cleaned up in `Dispose`)
-- `Assert.Throws<UnauthorizedAccessException>` for sandbox violation tests
-- `Assert.DoesNotContain("Process.Start", ...)` pattern for stub safety validation (source code reflection test)
+See decision archive for full records.
