@@ -23,6 +23,11 @@ public enum ChatTemplateFormat
     Fara,
     /// <summary>DeepSeek format.</summary>
     DeepSeek,
+    /// <summary>
+    /// OpenAI Harmony format (GPT-OSS) — &lt;|start|&gt;role&lt;|message|&gt;…&lt;|end|&gt; with
+    /// analysis/commentary/final channels. GPT-OSS models only work with this format.
+    /// </summary>
+    Harmony,
     /// <summary>Custom user-defined format.</summary>
     Custom
 }

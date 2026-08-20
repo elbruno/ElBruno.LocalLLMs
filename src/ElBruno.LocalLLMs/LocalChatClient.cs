@@ -23,6 +23,12 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
     private readonly ITextGenerationModelFactory _modelFactory;
     private readonly ILogger _logger;
 
+    /// <summary>
+    /// True for GPT-OSS models, whose output is split into analysis/commentary/final
+    /// channels and must be filtered before being surfaced to callers.
+    /// </summary>
+    private readonly bool _usesHarmonyChannels;
+
     private ITextGenerationModel? _model;
     private string? _resolvedModelPath;
     private bool _disposed;
@@ -63,8 +69,9 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _downloader = downloader ?? throw new ArgumentNullException(nameof(downloader));
-        _formatter = ChatTemplateFactory.Create(options.Model.ChatTemplate);
+        _formatter = ChatTemplateFactory.Create(options.Model.ChatTemplate, options.ReasoningEffort);
         _toolCallParser = ToolCallParserFactory.Create(options.Model.ChatTemplate);
+        _usesHarmonyChannels = options.Model.ChatTemplate == ChatTemplateFormat.Harmony;
         _modelFactory = modelFactory ?? new OnnxGenAIModelFactory();
         _logger = loggerFactory?.CreateLogger<LocalChatClient>() ?? NullLogger<LocalChatClient>.Instance;
 
@@ -236,12 +243,20 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
                 activity.AddCompletionEvent(trimmedResponse);
             }
 
-            // Parse for tool calls if tools are available
+            // Parse for tool calls if tools are available.
+            // Harmony tool calls live on the commentary channel, so parse the raw text
+            // before the analysis/commentary channels are filtered out.
             var toolCalls = tools is { Count: > 0 }
                 ? _toolCallParser.Parse(trimmedResponse)
                 : [];
 
-            var responseMessage = BuildResponseMessage(trimmedResponse, toolCalls);
+            // Surface only the user-facing text. For Harmony this drops the
+            // chain-of-thought, which the model card says must not be shown to users.
+            var visibleText = _usesHarmonyChannels
+                ? HarmonyChannelFilter.ExtractFinal(trimmedResponse).Trim()
+                : trimmedResponse;
+
+            var responseMessage = BuildResponseMessage(visibleText, toolCalls);
 
             sw.Stop();
             activity.AddCompletedEvent(result.InputTokenCount, result.OutputTokenCount);
@@ -335,6 +350,7 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
 
             var fullText = new System.Text.StringBuilder();
             var firstTokenSeen = false;
+            var channelFilter = _usesHarmonyChannels ? new HarmonyChannelFilter() : null;
 
             var enumerator = _model!.GenerateStreamingAsync(prompt, genParams, cancellationToken)
                 .GetAsyncEnumerator(cancellationToken);
@@ -375,11 +391,45 @@ public sealed class LocalChatClient : IChatClient, IAsyncDisposable
                     outputTokenCount++;
                     fullText.Append(token);
                     cancellationToken.ThrowIfCancellationRequested();
+
+                    // Harmony: buffer through the channel filter so only final-channel
+                    // text reaches the caller. The filter may withhold a chunk until a
+                    // marker split across token boundaries can be resolved.
+                    if (channelFilter is not null)
+                    {
+                        var visible = channelFilter.Push(token);
+                        if (visible.Length == 0)
+                        {
+                            continue;
+                        }
+
+                        yield return new ChatResponseUpdate(ChatRole.Assistant, visible)
+                        {
+                            ModelId = _options.Model.Id,
+                            CreatedAt = DateTimeOffset.UtcNow,
+                        };
+                        continue;
+                    }
+
                     yield return new ChatResponseUpdate(ChatRole.Assistant, token)
                     {
                         ModelId = _options.Model.Id,
                         CreatedAt = DateTimeOffset.UtcNow,
                     };
+                }
+
+                // Emit anything the filter was still holding back at end of stream.
+                if (channelFilter is not null)
+                {
+                    var tail = channelFilter.Flush();
+                    if (tail.Length > 0)
+                    {
+                        yield return new ChatResponseUpdate(ChatRole.Assistant, tail)
+                        {
+                            ModelId = _options.Model.Id,
+                            CreatedAt = DateTimeOffset.UtcNow,
+                        };
+                    }
                 }
             }
             finally

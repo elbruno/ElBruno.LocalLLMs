@@ -38,6 +38,7 @@
     <Project Path="src/samples/OpenAiServer/OpenAiServer.csproj" />
     <Project Path="src/samples/MagenticBrainAgent/MagenticBrainAgent.csproj" />
     <Project Path="src/samples/FaraVisionAgent/FaraVisionAgent.csproj" />
+    <Project Path="src/samples/GptOssChat/GptOssChat.csproj" />
     <Project Path="src/samples/MagenticUIServer/MagenticUIServer/MagenticUIServer.csproj" />
     <Project Path="src/samples/MagenticUIServer/MagenticUIServer.Agents/MagenticUIServer.Agents.csproj" />
   </Folder>

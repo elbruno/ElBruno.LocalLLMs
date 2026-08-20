@@ -347,8 +347,19 @@ public class GenerationLifecycleDiagnosticsTests
     private sealed class ActivityCapture : IDisposable
     {
         private readonly ActivityListener _listener;
+        private readonly object _sync = new();
+        private readonly List<ActivitySnapshot> _completedActivities = [];
 
-        public List<ActivitySnapshot> CompletedActivities { get; } = [];
+        public IReadOnlyList<ActivitySnapshot> CompletedActivities
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return [.. _completedActivities];
+                }
+            }
+        }
 
         public ActivityCapture()
         {
@@ -356,7 +367,13 @@ public class GenerationLifecycleDiagnosticsTests
             {
                 ShouldListenTo = source => source.Name == LocalLLMsInstrumentation.ActivitySourceName,
                 Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-                ActivityStopped = activity => CompletedActivities.Add(ActivitySnapshot.Create(activity))
+                ActivityStopped = activity =>
+                {
+                    lock (_sync)
+                    {
+                        _completedActivities.Add(ActivitySnapshot.Create(activity));
+                    }
+                }
             };
             ActivitySource.AddActivityListener(_listener);
         }

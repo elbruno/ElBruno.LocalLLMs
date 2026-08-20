@@ -7,12 +7,17 @@ internal static class ToolCallParserFactory
 {
     /// <summary>
     /// Creates a parser appropriate for the given chat template format.
-    /// Currently all formats use JSON parsing.
     /// </summary>
     public static IToolCallParser Create(ChatTemplateFormat format)
     {
-        // For now, all formats use JSON-based tool calling
-        // Future: could have format-specific parsers (e.g., ChatML-specific, Llama3-specific)
+        // Harmony (GPT-OSS) emits tool calls on the commentary channel with a
+        // to=functions.NAME recipient, which the JSON parser cannot read.
+        if (format == ChatTemplateFormat.Harmony)
+        {
+            return new HarmonyToolCallParser();
+        }
+
+        // All other formats use JSON-based tool calling
         return new JsonToolCallParser();
     }
 }

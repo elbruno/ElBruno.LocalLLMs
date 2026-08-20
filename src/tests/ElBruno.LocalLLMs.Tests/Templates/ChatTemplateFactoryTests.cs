@@ -21,6 +21,7 @@ public class ChatTemplateFactoryTests
     [InlineData(ChatTemplateFormat.Mistral)]
     [InlineData(ChatTemplateFormat.DeepSeek)]
     [InlineData(ChatTemplateFormat.Gemma)]
+    [InlineData(ChatTemplateFormat.Harmony)]
     [InlineData(ChatTemplateFormat.Custom)]
     public void Create_KnownFormat_ReturnsNonNull(ChatTemplateFormat format)
     {
@@ -112,6 +113,61 @@ public class ChatTemplateFactoryTests
         Assert.Contains("<|im_start|>", result);
     }
 
+    [Fact]
+    public void Create_Harmony_ReturnsHarmonyFormatter()
+    {
+        var formatter = ChatTemplateFactory.Create(ChatTemplateFormat.Harmony);
+        var result = FormatSimple(formatter);
+
+        Assert.Contains("<|start|>system<|message|>", result);
+        Assert.Contains("# Valid channels:", result);
+        Assert.EndsWith("<|start|>assistant", result);
+    }
+
+    [Theory]
+    [InlineData(ReasoningEffort.Low, "Reasoning: low")]
+    [InlineData(ReasoningEffort.High, "Reasoning: high")]
+    public void Create_Harmony_HonoursReasoningEffort(ReasoningEffort effort, string expected)
+    {
+        var formatter = ChatTemplateFactory.Create(ChatTemplateFormat.Harmony, effort);
+        var result = FormatSimple(formatter);
+
+        Assert.Contains(expected, result);
+    }
+
+    [Fact]
+    public void Create_Harmony_DefaultOverload_UsesMediumReasoning()
+    {
+        var formatter = ChatTemplateFactory.Create(ChatTemplateFormat.Harmony);
+
+        Assert.Contains("Reasoning: medium", FormatSimple(formatter));
+    }
+
+    /// <summary>
+    /// Reasoning effort is GPT-OSS-specific: it must be inert for every other format.
+    /// </summary>
+    [Theory]
+    [InlineData(ChatTemplateFormat.ChatML)]
+    [InlineData(ChatTemplateFormat.Phi3)]
+    [InlineData(ChatTemplateFormat.Llama3)]
+    [InlineData(ChatTemplateFormat.Qwen)]
+    [InlineData(ChatTemplateFormat.Qwen3)]
+    [InlineData(ChatTemplateFormat.Mistral)]
+    [InlineData(ChatTemplateFormat.DeepSeek)]
+    [InlineData(ChatTemplateFormat.Gemma)]
+    [InlineData(ChatTemplateFormat.Custom)]
+    public void Create_NonHarmonyFormats_IgnoreReasoningEffort(ChatTemplateFormat format)
+    {
+        var messages = new List<ChatMessage> { new(ChatRole.User, "Hello") };
+
+        var low = ChatTemplateFactory.Create(format, ReasoningEffort.Low).FormatMessages(messages);
+        var high = ChatTemplateFactory.Create(format, ReasoningEffort.High).FormatMessages(messages);
+        var legacy = ChatTemplateFactory.Create(format).FormatMessages(messages);
+
+        Assert.Equal(low, high);
+        Assert.Equal(low, legacy);
+    }
+
     // ──────────────────────────────────────────────
     // Different formats produce different output
     // ──────────────────────────────────────────────
@@ -156,6 +212,7 @@ public class ChatTemplateFactoryTests
     [InlineData(ChatTemplateFormat.Mistral)]
     [InlineData(ChatTemplateFormat.DeepSeek)]
     [InlineData(ChatTemplateFormat.Gemma)]
+    [InlineData(ChatTemplateFormat.Harmony)]
     [InlineData(ChatTemplateFormat.Custom)]
     public void Create_SameFormatSameInput_ProducesSameOutput(ChatTemplateFormat format)
     {
@@ -186,6 +243,7 @@ public class ChatTemplateFactoryTests
     [InlineData(ChatTemplateFormat.Mistral)]
     [InlineData(ChatTemplateFormat.DeepSeek)]
     [InlineData(ChatTemplateFormat.Gemma)]
+    [InlineData(ChatTemplateFormat.Harmony)]
     [InlineData(ChatTemplateFormat.Custom)]
     public void Create_AllFormatters_ImplementInterface(ChatTemplateFormat format)
     {

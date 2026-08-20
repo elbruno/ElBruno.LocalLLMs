@@ -1,6 +1,6 @@
 # Supported Models Reference
 
-ElBruno.LocalLLMs supports **35 models** across 6 tiers. This guide details each model, its capabilities, and how to use it.
+ElBruno.LocalLLMs supports **36 models** across 6 tiers. This guide details each model, its capabilities, and how to use it.
 
 ---
 
@@ -44,6 +44,40 @@ ElBruno.LocalLLMs supports **35 models** across 6 tiers. This guide details each
 | 🟣 Next-Gen | Gemma-3-12B-IT | 12B | google/gemma-3-12b-it | 🔄 Convert | ChatML | — | 12–16 GB | ⚡ |
 | 🟣 Next-Gen | DeepSeek-V3 | 671B (MoE) | deepseek-ai/DeepSeek-V3 | 🔄 Convert | ChatML | — | 128+ GB | 🐢 |
 | 🟣 Next-Gen | Qwen3-14B-Instruct | 14.77B | onnx-community/Qwen3-14B-ONNX | ✅ Native | **Qwen3** | ✅ | 16–24 GB | ⚡ |
+
+### 🧠 GPT-OSS (OpenAI open-weight MoE)
+
+OpenAI's Apache-2.0 open-weight models, packaged for ONNX Runtime GenAI by the ONNX Runtime team.
+They use the **Harmony** prompt format and are the only models in the library that support
+`LocalLLMsOptions.ReasoningEffort`.
+
+| Tier | Model | Params | Repo / Sub-path | ONNX | Template | Tools | RAM | Speed |
+|------|-------|--------|-----------------|------|----------|-------|-----|-------|
+| 🔴 Large | GPT-OSS 20B (CPU INT4) | 21B (3.6B active) | onnxruntime/gpt-oss-20b-onnx → `cpu_and_mobile/cpu-int4-rtn-block-32-acc-level-4` | ✅ Native | **Harmony** | ✅ | 16–24 GB | 🐢 |
+| 🔴 Large | GPT-OSS 20B (CUDA INT4) | 21B (3.6B active) | onnxruntime/gpt-oss-20b-onnx → `cuda/cuda-int4-kquant-block-32-mixed` | ✅ Native | **Harmony** | ✅ | 16 GB VRAM | ⚡ |
+
+**Before you use these, know that:**
+
+- The download is **~12 GB** per variant.
+- GPT-OSS is a **mixture-of-experts** model. CPU inference is genuinely slow; use the CUDA
+  variant with `Microsoft.ML.OnnxRuntimeGenAI.Cuda` for an interactive experience.
+- GPT-OSS **reasons before it answers**. That chain-of-thought is emitted on a separate
+  Harmony channel and is **filtered out by the library** — the model card states it is not
+  intended to be shown to end users. You only ever receive the final answer.
+- The CUDA variant requires a CUDA-capable GPU; the library will not silently fall back.
+
+```csharp
+var options = new LocalLLMsOptions
+{
+    Model = KnownModels.GptOss20B,          // or KnownModels.GptOss20BCuda
+    ReasoningEffort = ReasoningEffort.Low,  // Low | Medium | High
+};
+
+await using var client = await LocalChatClient.CreateAsync(options);
+var response = await client.GetResponseAsync([new ChatMessage(ChatRole.User, "Hello")]);
+```
+
+See the [GptOssChat sample](../src/samples/GptOssChat/) for chat, streaming, and tool calling.
 
 ### 🤖 Agentic Models (MagenticLite)
 
@@ -293,8 +327,43 @@ Each model family uses a different **prompt format**. The library handles this a
 | **Llama3** | Llama-3.x, Llama-4 | `<\|start_header_id\|>user<\|end_header_id\|>` | Meta's modern format |
 | **Qwen** | Qwen series | `<\|im_start\|>user\nQuestion<\|im_end\|>` | Alibaba's format |
 | **Mistral** | Mistral-7B+ | `[INST] Question [/INST]` | Mistral's format |
+| **Harmony** | GPT-OSS 20B | `<\|start\|>user<\|message\|>Question<\|end\|>` | OpenAI's format. Roles are `system`/`developer`/`user`/`assistant`; replies are split into `analysis`, `commentary`, and `final` channels. |
 
 **You don't need to worry about these** — the library applies the correct format automatically when you pass messages through `GetResponseAsync()`.
+
+### Harmony channels (GPT-OSS only)
+
+GPT-OSS does not answer in a single stream of text. It writes its reasoning to an `analysis`
+channel, tool calls to a `commentary` channel, and the user-facing answer to a `final` channel:
+
+```
+<|channel|>analysis<|message|>Need answer: Paris.<|end|>
+<|start|>assistant<|channel|>final<|message|>The capital of France is Paris.<|return|>
+```
+
+The library surfaces **only the `final` channel**, in both buffered and streaming responses.
+The chain-of-thought is discarded and never reaches your application — the GPT-OSS model card
+is explicit that it "is not intended to be shown to end users". Tool calls are recovered from
+the `commentary` channel and surfaced as normal `FunctionCallContent`.
+
+Two further Harmony-specific details:
+
+- Your system prompt is rendered as a **`developer`** message. The Harmony `system` message is
+  reserved for model metadata (reasoning level, valid channels).
+- Tool definitions are rendered as a **TypeScript-style namespace**, not JSON:
+
+  ```
+  ## functions
+
+  namespace functions {
+
+  // Get the current weather for a city.
+  type get_weather = (_: {
+  city: string,
+  }) => any;
+
+  } // namespace functions
+  ```
 
 ---
 

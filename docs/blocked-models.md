@@ -28,6 +28,8 @@ Use `Llama-3.1-8B-Instruct` (already converted, native ONNX) or `Llama-3.2-3B-In
 | **Codestral-22B-v0.1** | 22B | MNPL license (non-production only) | ⛔ Blocked | Use Devstral Small 2 (Apache 2.0) or Qwen2.5-Coder-7B-Instruct instead |
 | **Devstral-Small-2-24B** | 24B | No ONNX conversion path exists | ⛔ Blocked | Wait for onnxruntime-genai support or use GGUF via llama.cpp |
 | **Inkling** | 975B (MoE, multimodal) | MoE + massive size + multimodal (text/image/audio) | 🔴 Not Viable | Use a hosted API (Tinker / 3rd-party inference) or a small local model |
+| **Muse Glimmer 30B** | 30B (2B ViT + 28B text) | Gated GQA (`self_attn.gate_proj`) + multimodal wrapper prefix not dispatched by builder | ⛔ Blocked | Use GGUF via llama.cpp/DFlash or Gemma-2-9B-IT for local ONNX |
+| **Nemotron 3.5 Lightning 30B-A3B** | 30B total / 3B active | `nemotron_h` (Mamba-2 + MoE + MTP hybrid) not dispatched; OpenMDW-1.1 license | ⛔ Blocked | Use GGUF via llama.cpp/vLLM or Qwen2.5-32B-Instruct for local ONNX |
 
 ---
 
@@ -533,6 +535,94 @@ These models are in the `team.md` roadmap but haven't been added to the library 
 
 ---
 
+### Meta Muse Glimmer 30B
+
+#### Muse Glimmer 30B (Dense 30B, Gated-Attention Multimodal)
+
+**Model:** meta-models/Muse-Glimmer-30B
+**Parameters:** 30B total — 2B ViT "Perception Encoder" + 28B text decoder
+**Config:** https://huggingface.co/meta-models/Muse-Glimmer-30B/resolve/main/config.json (verified 2026-08-12)
+**Architecture:** `architectures: ["MuseGlimmerForConditionalGeneration"]`, `model_type: "muse_glimmer"`, text `model_type: "muse_glimmer_text"`, vision `model_type: "muse_glimmer_vision"`
+**License:** Apache 2.0 (open, no gating)
+**Status:** ⛔ Blocked — architecture not dispatched by the ONNX Runtime GenAI model builder
+
+#### Why It's Blocked
+
+Muse Glimmer splits cleanly into a part the builder's precedent already covers and a part it does not.
+
+**1. The attention *pattern* is SmolLM3-compatible (not the blocker).** The verified `text_config` shows 52 layers alternating `layer_types: ["sliding_attention","sliding_attention","sliding_attention","full_attention"] × 13`, with `layer_rope_theta` set to `500000.0` on sliding layers and `0` on every 4th (full-attention) layer — i.e. NoPE on full attention, exactly the per-layer conditional-RoPE + sliding/full window pattern that `onnxruntime_genai/models/builders/smollm.py`'s `SmolLM3Model.make_attention` already implements via `config.layer_types` and `config.no_rope_layers` (temporarily toggling `attention_attrs["use_rope_in_attn"]` and `window_size` per layer, then restoring). `text_config.head_dim` is a **uniform 128** across all 52 layers — unlike Gemma 4's variable 256/512 split, so this alone would **not** trigger the single-valued-`head_size` failure class that blocked Gemma 4. This part of the model has a real precedent to extend.
+
+**2. Gated attention has a builder precedent, but not one that fits Muse Glimmer's tensor layout (the actual blocker).** `model.safetensors.index.json` (https://huggingface.co/meta-models/Muse-Glimmer-30B/resolve/main/model.safetensors.index.json, verified 2026-08-12) shows each decoder layer's attention block has `self_attn.gate_proj.weight` alongside the usual `q_proj`/`k_proj`/`v_proj`/`o_proj` — a fourth, separate learned projection. This is *not* a novel operation for the builder: `src/python/py/models/builders/qwen.py`'s `Qwen35TextModel._make_full_attention` (`onnxruntime-genai` v0.15.1/`main`) already implements output gating for full-attention layers — it splits a doubled Q projection into `Q` and a `gate` signal per head, runs `GroupQueryAttention`, then multiplies the attention output by `Sigmoid(gate)` before `o_proj`. The gap is that Qwen3.5's gate is folded into the existing Q projection (no separate weight tensor), whereas Muse Glimmer exposes gating as its own `self_attn.gate_proj` tensor. Adapting the existing gated-attention subgraph — reading `gate_proj` directly instead of splitting a doubled Q output, then reusing the same `Sigmoid`/`Mul` pattern — is an implementation gap requiring new `make_attention` wiring and a `genai_config.json` attribute, not the invention of a new operation.
+
+**3. Weights sit behind the same multimodal prefix that blocked Gemma 4.** The same safetensors index shows every decoder tensor under `model.language_model.*` (e.g. `model.language_model.layers.0.self_attn.gate_proj.weight`), identical in shape to the Gemma 4 blocker documented above. A text-only extraction is possible in principle (the vision tower is a separate `vision_config` sub-tree) but has not been attempted or validated here.
+
+**4. Dispatch findings — v0.15.1 (pinned by this repo) and `main` (checked 2026-08-12).** Neither `src/python/py/models/builder.py` on the `v0.15.1` tag nor on `main` contains a case for `"MuseGlimmerForConditionalGeneration"` or a `model_type == "muse_glimmer*"` branch, and no `MuseGlimmer*` class exists anywhere under `src/python/py/models/builders/`. `main` differs from `v0.15.1` only in adding `GraniteMoeHybridForCausalLM` (see the Nemotron section below) — irrelevant to Muse Glimmer's architecture string.
+
+**5. Video and vision are out of scope regardless.** The `-assistant` DFlash drafter, the 2 fps / 96-frame video path, and the 2D-RoPE + pixel-shuffle vision tower are all downstream of the two blockers above; none were evaluated further because the text decoder itself does not dispatch.
+
+#### What Would Unblock It
+
+1. `onnxruntime-genai` adding a `MuseGlimmerForConditionalGeneration` (or `muse_glimmer_text`) builder case with a gated-attention op, following the `SmolLM3Model` per-layer RoPE/window pattern for the SWA/NoPE alternation.
+2. A community ONNX export of the text decoder validated against GenAI's external KV-cache contract (not just an `optimum`/transformers.js export — see the Gemma 4 lesson above).
+3. Confirmation that `model.language_model.*` weights can be extracted text-only, the same open question Gemma 4 left unresolved.
+
+#### Recommended Alternatives
+
+- **GGUF via llama.cpp** — Muse Glimmer ships day-0 GGUF (Meta-calibrated k-quants) with full DFlash drafter support; see `docs/plans/gguf-sibling-package-proposal.md` for the costed sibling-package proposal.
+- **Gemma-2-9B-IT** (9B) — ✅ converted, closest same-family text-only alternative already in ONNX.
+- **Phi-4** (14B) — ✅ native ONNX, strong general-purpose reasoning.
+
+---
+
+### NVIDIA Nemotron 3.5 Lightning 30B-A3B
+
+#### Nemotron 3.5 Lightning 30B-A3B (Mamba-2 + MoE + MTP Hybrid)
+
+**Model:** nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16
+**Parameters:** 30B total, 3B active per token
+**Config:** https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16/resolve/main/config.json (verified 2026-08-12)
+**Architecture:** `architectures: ["NemotronHForCausalLM"]`, `model_type: "nemotron_h"`
+**License:** **OpenMDW-1.1** (not Apache/MIT — a new license class for this catalog; see below)
+**Status:** ⛔ Blocked — architecture not dispatched by the ONNX Runtime GenAI model builder
+
+#### Why It's Blocked
+
+The verified `config.json` confirms this is a fundamentally different architecture from anything the builder currently maps, and from the plain "Nemotron" name already in its dispatch table:
+
+| Feature | Verified config field | Why It Breaks GenAI |
+|---------|-----------------------|----------------------|
+| **Mamba-2 SSM layers** | `mamba_head_dim: 64`, `mamba_num_heads: 64`, `ssm_state_size: 128`, `conv_kernel: 4`, `use_mamba_kernels: true`, `mamba_ssm_cache_dtype: "float32"` | No Mamba/SSM state-cache handling exists anywhere in the builder. A search of the installed v0.14.1 build and the `main` branch's `src/python/py/models/builders/base.py` plus every model in `builders/__init__.py` (checked 2026-08-12) found **zero** occurrences of `mamba`, `ssm`, or `conv1d`. GenAI's cache manager only knows transformer KV cache, not SSM recurrent state. |
+| **Sparse MoE routing** | `n_routed_experts: 128`, `num_experts_per_tok: 6`, `n_shared_experts: 1`, `moe_shared_expert_intermediate_size: 3712`, `moe_shared_expert_overlap: true` | Real QMoE routing exists in the builder (`GPTOSSModel`, via `moe_attrs`/QMoE op in `base.py`), but it is CUDA-only and forces `--precision int4`. More importantly, the closest-*named* MoE-Hybrid precedent doesn't apply — see the Granite MoE Hybrid finding below. |
+| **Mixed layer schedule** | `layers_block_type`: an explicit 52-entry array interleaving `"mamba"`, `"moe"`, and `"attention"` (only 6 of 52 layers are plain attention) | `genai_config.json` has no per-layer block-type field; the builder assumes every layer is the same kind of block. |
+| **Multi-Token Prediction (MTP)** | `num_nextn_predict_layers: 1`, `mtp_layers_block_type: ["attention", "moe"]` | No MTP head export path exists in the builder; would need to be stripped before any conversion attempt (per the repo's standing rule to document exactly which tensors are dropped). |
+
+**Dispatch findings — v0.15.1 (pinned by this repo) and `main` (checked 2026-08-12).** Both `src/python/py/models/builder.py` versions dispatch **only** `config.architectures[0] == "NemotronForCausalLM"` to `NemotronModel` (a thin `LlamaModel` subclass in `builders/nemotron.py` that just sets `layernorm_attrs["add_offset"] = 1` and a custom MLP — dense, uniform-attention, no Mamba, no MoE). This model's real architecture string, `"NemotronHForCausalLM"`, and its `model_type`, `"nemotron_h"`, do not appear anywhere in either version's dispatch table or class list. The two "Nemotron" names are unrelated architectures that happen to share a vendor prefix — the plan's assumption that "Nemotron" being in the README implies partial precedent for Nemotron 3.5 Lightning **does not hold** and should be treated as disproven.
+
+**The `main`-branch "Granite MoE Hybrid" precedent does not transfer either.** `main` (not yet in a released version; absent from `v0.15.1`) adds `GraniteMoeHybridForCausalLM` → `GraniteMoeHybridModel` (`builders/granite.py`). Inspecting that class shows it overrides `make_layer` to route through `layer.shared_mlp` — Granite Hybrid's **always-on dense MLP** — and does not touch the actual conditionally-routed experts or any Mamba/SSM state; it inherits `make_attention` unmodified from `GraniteModel`/`MistralModel`, i.e. it assumes every layer is standard attention. It is a MoE model in name only, from the builder's point of view. It provides no Mamba-2 or genuine per-token-routing precedent for Nemotron 3.5 Lightning.
+
+#### License: OpenMDW-1.1 — new obligations for this catalog
+
+Verified from https://raw.githubusercontent.com/OpenMDW/OpenMDW/main/1.1/LICENSE.OpenMDW-1.1 (fetched 2026-08-12). OpenMDW-1.1 is permissive (no copyleft, no field-of-use restriction on outputs) but, unlike every other license currently in this catalog (Apache 2.0 / MIT / Llama gated), it imposes an explicit **redistribution notice requirement**:
+
+> "If you distribute any portion of the Model Materials, you shall retain in your distribution (1) a copy of this agreement, and (2) all copyright notices and other notices of origin included in the Model Materials that are applicable to your distribution."
+
+**Practical effect:** if a converted `elbruno/*-onnx` repo for this model is ever published, it must ship a copy of the OpenMDW-1.1 license text plus NVIDIA's original copyright/origin notices alongside the weights — a `LICENSE` + `NOTICE` file pair this repo has not previously needed. No upload should happen before this is scoped, and it does not change the ONNX dispatch blocker above, which is the binding constraint today.
+
+#### What Would Unblock It
+
+1. `onnxruntime-genai` adding a `NemotronHForCausalLM` (`nemotron_h`) builder case with Mamba-2 SSM state-cache support and real per-token MoE routing (not the Granite MoE Hybrid dense-only shortcut).
+2. A per-layer `layers_block_type`-aware model type in `genai_config.json`, mirroring the verified `layers_block_type` array above.
+3. A documented MTP-head stripping step, since no MTP export path exists.
+4. Legal sign-off on the OpenMDW-1.1 notice requirements before any `elbruno/*-onnx` publication.
+
+#### Recommended Alternatives
+
+- **GGUF via llama.cpp/vLLM/SGLang/TensorRT-LLM** — Nemotron 3.5 Lightning ships day-0 on all of these; see `docs/plans/gguf-sibling-package-proposal.md` for the costed sibling-package proposal.
+- **Qwen2.5-32B-Instruct** (32B) — ✅ native ONNX, closest dense equivalent in the catalog today.
+- **DeepSeek-R1-Distill-Qwen-14B** (14B) — ✅ native ONNX, if long-context Mamba-2 scaling isn't required.
+
+---
+
 ## Future Outlook
 
 ### Near-Term (2025)
@@ -549,8 +639,12 @@ These models are in the `team.md` roadmap but haven't been added to the library 
 - ❌ StableLM-2-1.6B-Chat (unsupported architecture — requires builder update)
 - ❌ DeepSeek-V3 (671B + MoE + impractical for local)
 - ❌ Inkling (975B + MoE + multimodal — data-center only)
+- ❌ Muse Glimmer 30B (gated GQA + multimodal wrapper — requires new builder attention op)
+- ❌ Nemotron 3.5 Lightning 30B-A3B (`nemotron_h` Mamba-2 + MoE + MTP — requires new builder architecture, plus OpenMDW-1.1 notice compliance before any republish)
 
 > **Note:** Gemma 4 family (E2B, E4B, 12B, 26B-A4B, 31B) was previously listed here as blocked (PLE architecture). The blocker monitor is retired because the architecture path is understood, but the family remains **manual conversion only** until public ONNX artifacts are actually validated and published. See the Gemma 4 section above.
+
+> **Note:** Muse Glimmer 30B and Nemotron 3.5 Lightning 30B-A3B are tracked as one upstream issue each (see `docs/plans/muse-glimmer-genai-issue-draft.md` and `docs/plans/nemotron-3.5-lightning-genai-issue-draft.md`). Following the Gemma 4 lesson, **no scheduled/polling GitHub Actions monitor is planned for either model** — terminal-state tracking only, no daily comment spam.
 
 ### Mid-Term (2025–2026)
 
@@ -560,9 +654,11 @@ These models are in the `team.md` roadmap but haven't been added to the library 
 - ⚠️ Llama-4-Maverick (128-expert — very heavy, still impractical)
 - ⚠️ DeepSeek-V3 (would help, but 671B still too large)
 - ⚠️ Inkling (would help, but 975B + multimodal still data-center only)
+- ⚠️ Nemotron 3.5 Lightning 30B-A3B (MoE support alone is not enough — still needs Mamba-2 SSM cache support and a `nemotron_h`-aware builder case)
 
 **If ONNX Runtime GenAI adds architecture support:**
 - ✅ StableLM-2-1.6B-Chat (custom architecture)
+- ✅ Muse Glimmer 30B (gated-attention builder op + multimodal text-only extraction)
 
 ### Long-Term Verdict
 
@@ -582,6 +678,8 @@ These models are in the `team.md` roadmap but haven't been added to the library 
 | Llama-4-Maverick | 2026+ | 🔴 Very High (complex MoE, rarely practical) |
 | DeepSeek-V3 | 2026+ | 🔴 Impractical (even with MoE, too large) |
 | Inkling | Not viable | 🔴 Impractical (975B MoE + multimodal, data-center only) |
+| Muse Glimmer 30B | 2026+ | 🔴 High (new gated-attention builder op + multimodal text-only extraction unresolved) |
+| Nemotron 3.5 Lightning 30B-A3B | 2026+ | 🔴 High (new `nemotron_h` builder architecture: Mamba-2 SSM cache + real MoE routing + MTP, plus OpenMDW-1.1 notice compliance) |
 
 ---
 
@@ -638,3 +736,6 @@ Include:
 - 🔧 [ONNX Conversion Guide](onnx-conversion.md) — how to convert models yourself
 - 📝 [Contributing](CONTRIBUTING.md) — add a new model to the library
 - 🐍 [Conversion Scripts](../scripts/README.md) — detailed script reference
+- 📋 [Muse Glimmer 30B issue draft](plans/muse-glimmer-genai-issue-draft.md) — upstream `onnxruntime-genai` feature request (draft)
+- 📋 [Nemotron 3.5 Lightning 30B-A3B issue draft](plans/nemotron-3.5-lightning-genai-issue-draft.md) — upstream `onnxruntime-genai` feature request (draft)
+- 📦 [GGUF sibling package proposal](plans/gguf-sibling-package-proposal.md) — evaluated fallback for models that ship GGUF but not ONNX

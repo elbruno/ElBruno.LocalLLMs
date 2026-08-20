@@ -1,3 +1,5 @@
+using Microsoft.Extensions.AI;
+
 namespace ElBruno.LocalLLMs;
 
 /// <summary>
@@ -56,6 +58,19 @@ public sealed class LocalLLMsOptions
     /// Optional system prompt prepended to conversations.
     /// </summary>
     public string? SystemPrompt { get; set; }
+
+    /// <summary>
+    /// Reasoning effort for models that expose a configurable chain-of-thought budget.
+    /// Default: <see cref="ReasoningEffort.Medium"/>.
+    /// </summary>
+    /// <remarks>
+    /// Only honoured by GPT-OSS models (<see cref="ChatTemplateFormat.Harmony"/>), where it is
+    /// rendered into the Harmony system message as <c>Reasoning: low|medium|high</c>.
+    /// Ignored by all other models. GPT-OSS defines only low/medium/high, so
+    /// <see cref="ReasoningEffort.None"/> maps to low and
+    /// <see cref="ReasoningEffort.ExtraHigh"/> maps to high.
+    /// </remarks>
+    public ReasoningEffort ReasoningEffort { get; set; } = ReasoningEffort.Medium;
 
     /// <summary>
     /// When <see langword="true"/>, prompt and completion text are attached to

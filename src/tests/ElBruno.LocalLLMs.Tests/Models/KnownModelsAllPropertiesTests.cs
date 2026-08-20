@@ -125,9 +125,9 @@ public class KnownModelsAllPropertiesTests
     public void NativeOnnxModels_HavePublishedRepo(ModelDefinition model)
     {
         // All native ONNX repos should be from a known publisher:
-        // elbruno/, microsoft/, onnx-community/, google/
+        // elbruno/, microsoft/, onnx-community/, google/, onnxruntime/
         var repo = model.HuggingFaceRepoId;
-        var knownPrefixes = new[] { "elbruno/", "microsoft/", "onnx-community/", "google/" };
+        var knownPrefixes = new[] { "elbruno/", "microsoft/", "onnx-community/", "google/", "onnxruntime/" };
         Assert.True(
             knownPrefixes.Any(p => repo.StartsWith(p, StringComparison.OrdinalIgnoreCase)),
             $"Model '{model.Id}' has HasNativeOnnx=true but repo '{repo}' is not from a known ONNX publisher.");

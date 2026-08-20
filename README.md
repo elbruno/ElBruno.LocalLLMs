@@ -17,11 +17,11 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 
 > The last 5 notable additions to the library. Updated with each NuGet release.
 
+- 🧩 **`ElBruno.LocalLLMs.BlazorComponents`** — new Razor Class Library with 7 ready-to-use Blazor components: `ModelStatusCard` (download progress bar + actions), `ModelGallery` (filterable grid), `ModelSelector` (two-way-bindable dropdown), `ChatBox` (streaming token display), `EnvironmentDashboard` (CPU/CUDA/DirectML badges), `LocalLLMHealthBadge` (nav-bar status dot), and `RagPlayground`. Call `services.AddLocalLLMsBlazorComponents()` to register. See the [Blazor Components Guide](docs/blazor-components.md) and the [BlazorDemo sample](src/samples/BlazorDemo/).
+- 🧠 **GPT-OSS 20B support** — OpenAI's open-weight MoE model (Apache-2.0) now runs locally via the official `onnxruntime/gpt-oss-20b-onnx` artifacts. Adds the **Harmony** prompt format, channel-aware output filtering (chain-of-thought is stripped, never shown to users), Harmony tool calling, and a `ReasoningEffort` option. Two model IDs: `gpt-oss-20b` (CPU INT4) and `gpt-oss-20b-cuda`. See the [GptOssChat sample](src/samples/GptOssChat/). Also fixes a token-duplication bug that repeated the final token of every generation.
 - 🔁 **`v0.21.0`** — Clean re-publish after `v0.20.12` failed to propagate on NuGet.org; carries forward the issue #49 assembly-version fix and issue #51 vision-probe hardening.
 - 🚀 **`v0.20.12`** — Corrects sibling-package assembly versions, hardens vision token probing against model context limits, and verifies Fara smart image resizing for screenshot workflows.
 - ⬆️ **`v0.20.9`** — Upgraded `onnxruntime-genai` to **0.15.1** and `Microsoft.Extensions.AI.Abstractions` to **10.8.3** across all projects. No API changes.
-- 🧩 **`ElBruno.LocalLLMs.BlazorComponents`** — new Razor Class Library with 7 ready-to-use Blazor components: `ModelStatusCard` (download progress bar + actions), `ModelGallery` (filterable grid), `ModelSelector` (two-way-bindable dropdown), `ChatBox` (streaming token display), `EnvironmentDashboard` (CPU/CUDA/DirectML badges), `LocalLLMHealthBadge` (nav-bar status dot), and `RagPlayground`. Call `services.AddLocalLLMsBlazorComponents()` to register. See the [Blazor Components Guide](docs/blazor-components.md) and the [BlazorDemo sample](src/samples/BlazorDemo/).
-- 📦 **4 more models now support auto-download** (`v0.20.4`) — StableLM-2-1.6B-Chat, Mixtral-8x7B-Instruct-v0.1, DeepSeek-R1-Distill-Llama-70B, and Command-R (35B) are `HasNativeOnnx=true` with ONNX weights hosted at `elbruno/*-onnx` on HuggingFace. Gemma 4 remains a conversion/manual-path family until validated public artifacts are published.
 
 ## Features
 
@@ -336,6 +336,8 @@ For detailed troubleshooting, see [docs/troubleshooting-guide.md](docs/troublesh
 | 🔴 Large | Gemma-4-26B-A4B-IT | 25.2B (3.8B active) | 🔄 Convert | `gemma-4-26b-a4b-it` |
 | 🔴 Large | Gemma-4-31B-IT | 30.7B | 🔄 Convert | `gemma-4-31b-it` |
 | 🟣 Next-Gen | Qwen3-14B-Instruct | 14.77B | ✅ Native | `qwen3-14b-instruct` |
+| 🧠 GPT-OSS | GPT-OSS 20B (CPU INT4) | 21B (3.6B active, MoE) | ✅ Native | `gpt-oss-20b` |
+| 🧠 GPT-OSS | GPT-OSS 20B (CUDA INT4) | 21B (3.6B active, MoE) | ✅ Native | `gpt-oss-20b-cuda` |
 | 🤖 Agentic | MagenticBrain | ~14.77B | ✅ Native | `magentic-brain` |
 | 👁️ VLM | Fara 1.5-9B | ~9.4B | ✅ Native | `fara-1.5-9b` |
 
@@ -344,6 +346,8 @@ For detailed troubleshooting, see [docs/troubleshooting-guide.md](docs/troublesh
 > **¹ MagenticBrain ONNX:** Native ONNX hosted at `elbruno/MagenticBrain-onnx` (INT4 quantized). Auto-downloads when `EnsureModelDownloaded=true`.
 >
 > **² Fara 1.5-9B ONNX:** `elbruno/Fara1.5-9B-onnx` now includes the validated multimodal package (`qwen3vl-vision.onnx`, `qwen3vl-embedding.onnx`, patched `genai_config.json`, and ORT-compatible `processor_config.json`). See [ONNX Conversion — Fara](docs/onnx-conversion-fara.md).
+>
+> **³ GPT-OSS 20B:** Apache-2.0, from the official `onnxruntime/gpt-oss-20b-onnx` repository. The CPU INT4 variant is a **~12 GB download**, and because GPT-OSS is a mixture-of-experts model, CPU inference is slow — prefer `gpt-oss-20b-cuda` with `Microsoft.ML.OnnxRuntimeGenAI.Cuda` when a GPU is available. GPT-OSS reasons before answering; that chain-of-thought is filtered out and never surfaced, per the model card. Reasoning depth is controlled by `LocalLLMsOptions.ReasoningEffort`.
 
 ### Fine-Tuned Models
 
@@ -373,6 +377,7 @@ See the [Supported Models Guide](docs/supported-models.md) for detailed model ca
 | [BitNetPerformance](src/samples/BitNetPerformance) | Performance benchmark: BitNet vs ONNX models |
 | [MagenticBrainAgent](src/samples/MagenticBrainAgent) | Multi-agent orchestration loop using Qwen3/MagenticBrain |
 | [FaraVisionAgent](src/samples/FaraVisionAgent) | Vision-language model (Fara 1.5-9B) image+text inference |
+| [GptOssChat](src/samples/GptOssChat) | GPT-OSS 20B chat, streaming, reasoning effort, and tool calling |
 | [MagenticUIServer](src/samples/MagenticUIServer) | ASP.NET Core + SignalR multi-agent server (FileSurfer, WebFetcher, Coder) |
 | [ConsoleAppDemo](src/samples/ConsoleAppDemo) | Interactive console application |
 

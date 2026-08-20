@@ -490,6 +490,49 @@ public static class KnownModels
     };
 
     // ────────────────────────────────────────────────────────
+    // 🧠 GPT-OSS — OpenAI open-weight MoE models (Harmony format)
+    // ────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// GPT-OSS 20B (CPU INT4) — OpenAI's open-weight MoE model, 21B total / 3.6B active,
+    /// Apache-2.0. Official ONNX Runtime GenAI artifacts from the ONNX Runtime team.
+    /// Uses the Harmony prompt format; chain-of-thought is filtered out of responses.
+    /// Note: multi-gigabyte download, and MoE inference on CPU is slow — prefer
+    /// <see cref="GptOss20BCuda"/> when a CUDA GPU is available.
+    /// </summary>
+    public static readonly ModelDefinition GptOss20B = new()
+    {
+        Id = "gpt-oss-20b",
+        DisplayName = "GPT-OSS 20B (CPU INT4)",
+        HuggingFaceRepoId = "onnxruntime/gpt-oss-20b-onnx",
+        RequiredFiles = ["cpu_and_mobile/cpu-int4-rtn-block-32-acc-level-4/*"],
+        ModelSubPath = "cpu_and_mobile/cpu-int4-rtn-block-32-acc-level-4",
+        ModelType = OnnxModelType.GenAI,
+        ChatTemplate = ChatTemplateFormat.Harmony,
+        Tier = ModelTier.Large,
+        HasNativeOnnx = true,
+        SupportsToolCalling = true
+    };
+
+    /// <summary>
+    /// GPT-OSS 20B (CUDA INT4) — GPU build of <see cref="GptOss20B"/>, mixed k-quant.
+    /// Requires the Microsoft.ML.OnnxRuntimeGenAI.Cuda package and a CUDA-capable GPU.
+    /// </summary>
+    public static readonly ModelDefinition GptOss20BCuda = new()
+    {
+        Id = "gpt-oss-20b-cuda",
+        DisplayName = "GPT-OSS 20B (CUDA INT4)",
+        HuggingFaceRepoId = "onnxruntime/gpt-oss-20b-onnx",
+        RequiredFiles = ["cuda/cuda-int4-kquant-block-32-mixed/*"],
+        ModelSubPath = "cuda/cuda-int4-kquant-block-32-mixed",
+        ModelType = OnnxModelType.GenAI,
+        ChatTemplate = ChatTemplateFormat.Harmony,
+        Tier = ModelTier.Large,
+        HasNativeOnnx = true,
+        SupportsToolCalling = true
+    };
+
+    // ────────────────────────────────────────────────────────
     // 👁️ Vision — Vision-Language Models (VLMs)
     // ────────────────────────────────────────────────────────
 
@@ -558,6 +601,9 @@ public static class KnownModels
         // Agentic (Qwen3 / MagenticBrain)
         Qwen3_14BInstruct,
         MagenticBrain,
+        // GPT-OSS (Harmony)
+        GptOss20B,
+        GptOss20BCuda,
         // Vision
         Fara15_9B,
     ];

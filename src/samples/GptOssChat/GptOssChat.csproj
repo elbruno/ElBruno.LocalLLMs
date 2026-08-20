@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\ElBruno.LocalLLMs\ElBruno.LocalLLMs.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!--
+    Explicit CPU runtime — required because the library marks its own
+    OnnxRuntimeGenAI reference with PrivateAssets="native".
+    GPT-OSS 20B is a mixture-of-experts model and is slow on CPU. For a
+    usable experience switch to KnownModels.GptOss20BCuda and replace the
+    reference below with:
+      <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI.Cuda" Version="0.15.1" />
+    -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI" Version="0.15.1" />
+  </ItemGroup>
+</Project>

@@ -290,6 +290,60 @@ See sample source:
 
 ---
 
+## GptOssChat — GPT-OSS 20B with Harmony Channels
+
+**What it demonstrates:** Chat, streaming, reasoning-effort selection, and tool calling against
+`KnownModels.GptOss20B` — OpenAI's Apache-2.0 open-weight mixture-of-experts model.
+
+**Run it:**
+
+```bash
+dotnet run --project src/samples/GptOssChat
+```
+
+Reuse an already-downloaded model directory instead of downloading ~12 GB again:
+
+```bash
+$env:GPTOSS_MODEL_PATH = "C:\models\gpt-oss-20b-onnx\cpu_and_mobile\cpu-int4-rtn-block-32-acc-level-4"
+dotnet run --project src/samples/GptOssChat
+```
+
+**Key code:**
+
+```csharp
+var options = new LocalLLMsOptions
+{
+    Model = KnownModels.GptOss20B,          // or KnownModels.GptOss20BCuda
+    ReasoningEffort = ReasoningEffort.Low,  // GPT-OSS only; ignored by other models
+    MaxSequenceLength = 4096
+};
+
+await using var client = await LocalChatClient.CreateAsync(options);
+
+var response = await client.GetResponseAsync(
+[
+    new ChatMessage(ChatRole.User, "What is the capital of France? Answer in one sentence.")
+],
+new ChatOptions { MaxOutputTokens = 128 });
+```
+
+**What happens:**
+
+1. The first run downloads ~12 GB of INT4 weights from `onnxruntime/gpt-oss-20b-onnx`.
+2. Messages are formatted using the **Harmony** template.
+3. GPT-OSS reasons on an `analysis` channel and answers on a `final` channel. The library
+   returns only the `final` channel — the chain-of-thought is filtered out and never shown.
+4. Tool calls arrive on the `commentary` channel and surface as `FunctionCallContent`.
+
+> ⚠️ GPT-OSS is a mixture-of-experts model. On CPU each response can take minutes. Use
+> `KnownModels.GptOss20BCuda` with `Microsoft.ML.OnnxRuntimeGenAI.Cuda` for interactive speed.
+
+See sample source:
+
+- [`src/samples/GptOssChat/Program.cs`](../src/samples/GptOssChat/Program.cs)
+
+---
+
 ## MagenticBrainAgent — Agentic Tool-Calling Loop (Qwen3 Template)
 
 **What it demonstrates:** A round-based OmniAgent pattern with tools, using `KnownModels.MagenticBrain` or `KnownModels.Qwen3_14BInstruct`.

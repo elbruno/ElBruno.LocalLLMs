@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **GPT-OSS 20B support** — OpenAI's Apache-2.0 open-weight MoE model (21B total / 3.6B active), using the official `onnxruntime/gpt-oss-20b-onnx` artifacts. Two registry entries: `gpt-oss-20b` (CPU INT4) and `gpt-oss-20b-cuda` (CUDA INT4). Requires no ONNX Runtime GenAI upgrade — gpt-oss support landed in the already-referenced 0.15.x line.
+- **`ChatTemplateFormat.Harmony`** and `HarmonyFormatter` — the OpenAI Harmony prompt format, implemented against the `chat_template.jinja` shipped in the model repository. Renders the caller's system prompt as a `developer` message and tool definitions as a TypeScript-style `namespace functions { ... }` block.
+- **Harmony channel filtering** — GPT-OSS splits output into `analysis` (chain-of-thought), `commentary` (tool calls), and `final` channels. The library now surfaces only the `final` channel in both buffered and streaming responses; chain-of-thought is never exposed to callers, per the GPT-OSS model card. The streaming filter is resilient to control markers split across token boundaries.
+- **`HarmonyToolCallParser`** — recovers `to=functions.NAME` tool calls from the commentary channel and surfaces them as standard `FunctionCallContent`.
+- **`LocalLLMsOptions.ReasoningEffort`** — reuses `Microsoft.Extensions.AI.ReasoningEffort` and is rendered into the Harmony system message as `Reasoning: low|medium|high`. Ignored by all non-GPT-OSS models. `None` clamps to low and `ExtraHigh` clamps to high, since Harmony defines only three levels.
+- **`GptOssChat` sample** — chat, streaming, reasoning-effort selection, and tool calling against GPT-OSS 20B.
+
+### Fixed
+- **Final token duplicated in every generation** — both `OnnxGenAIModel.Generate` and `GenerateStreamingAsync` read the newest token via `GetSequence(0)[^1]`, which re-reads the previous token on the final iteration and repeated it in the output (for example `Paris..` and `YellowYellow`). Both now use `Generator.GetNextTokens()`. This affected all ONNX GenAI models, not just GPT-OSS, and also corrupted trailing JSON in tool-call arguments.
+
 ## [0.21.0] - 2026-08-11
 ### Fixed
 - Republished as `0.21.0` after `0.20.12` was accepted by the NuGet push API but never propagated to the flat-container/registration/search indexes (issue #49 follow-up). No code changes since `0.20.12`; this is a clean version bump only.
