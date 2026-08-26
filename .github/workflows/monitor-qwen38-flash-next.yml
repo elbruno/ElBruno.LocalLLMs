@@ -1,0 +1,262 @@
+# Qwen3.8-Flash-Next Blocker Monitoring
+#
+# Qwen3.8-Flash-Next (`qwen4_exp` / GGUF `qwen4exp`) is blocked for this library
+# in BOTH formats:
+#   - ONNX: `qwen4_exp` is unrecognized by `transformers` and has no dispatch
+#     entry in `onnxruntime-genai`.
+#   - GGUF: files exist, but loading them requires ggml-org/llama.cpp#27742,
+#     which is NOT merged. Mainline llama.cpp and LLamaSharp cannot load it.
+#
+# The GGUF path is the nearer-term unblock, so this workflow watches that PR.
+# A merge alone does NOT make the model usable from C# -- LLamaSharp pins
+# specific llama.cpp commits and ships its own native binaries -- so the
+# LLamaSharp release is reported as a secondary, explicitly heuristic signal.
+#
+# Behaviour:
+#   - PR still open      -> silent success, run summary only, no issue noise.
+#   - PR merged          -> comment ONCE on the canonical tracking issue.
+#   - PR closed unmerged -> comment ONCE, flag that a new target is needed.
+#
+# Idempotency is marker-based (see MARKER_* below): the workflow scans existing
+# comments on the tracking issue and will not repeat a terminal announcement.
+#
+# Terminal-state pattern (learned from the retired Gemma 4 monitor):
+# once the model is either supported or definitively ruled out, close the
+# tracking issue and reduce this workflow to a manual-only retirement stub so
+# no scheduled job can reopen or duplicate trackers.
+
+name: Monitor Qwen3.8-Flash-Next Blocker
+
+on:
+  schedule:
+    - cron: '0 9 * * *' # Daily at 09:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  UPSTREAM_REPO: 'ggml-org/llama.cpp'
+  UPSTREAM_PR: '27742'
+  TRACKING_ISSUE: '53'
+  LLAMASHARP_REPO: 'SciSharp/LLamaSharp'
+
+concurrency:
+  group: monitor-qwen38-flash-next
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check upstream PR and announce state changes
+        uses: actions/github-script@v7
+        env:
+          UPSTREAM_REPO: ${{ env.UPSTREAM_REPO }}
+          UPSTREAM_PR: ${{ env.UPSTREAM_PR }}
+          TRACKING_ISSUE: ${{ env.TRACKING_ISSUE }}
+          LLAMASHARP_REPO: ${{ env.LLAMASHARP_REPO }}
+        with:
+          script: |
+            // Config is read from env (never interpolated into the script body)
+            // to keep this workflow safe against expression injection -- the
+            // same hardening applied to the Gemma 4 monitor.
+            const [upOwner, upRepo] = (process.env.UPSTREAM_REPO || '').split('/');
+            const prNumber = parseInt(process.env.UPSTREAM_PR, 10);
+            const issueNumber = parseInt(process.env.TRACKING_ISSUE, 10);
+            const [lsOwner, lsRepo] = (process.env.LLAMASHARP_REPO || '').split('/');
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Idempotency markers -- an announcement is made at most once.
+            const MARKER_MERGED = '<!-- qwen38-monitor:merged -->';
+            const MARKER_CLOSED = '<!-- qwen38-monitor:closed-unmerged -->';
+
+            const runUrl =
+              `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const prUrl = `https://github.com/${upOwner}/${upRepo}/pull/${prNumber}`;
+
+            // --- 1. Read upstream PR state -------------------------------
+            let pr;
+            try {
+              ({ data: pr } = await github.rest.pulls.get({
+                owner: upOwner, repo: upRepo, pull_number: prNumber,
+              }));
+            } catch (err) {
+              core.warning(`Could not fetch ${upOwner}/${upRepo}#${prNumber}: ${err.message}`);
+              await core.summary
+                .addHeading('Qwen3.8-Flash-Next Monitor')
+                .addRaw(`⚠️ Could not reach the upstream PR API: ${err.message}`)
+                .write();
+              return;
+            }
+
+            const merged = pr.merged === true;
+            const state = pr.state;
+            console.log(`PR #${prNumber}: state=${state} merged=${merged}`);
+
+            // --- 2. Still open -> silent success --------------------------
+            if (!merged && state === 'open') {
+              console.log('Still open. Nothing to do.');
+              await core.summary
+                .addHeading('Qwen3.8-Flash-Next Monitor')
+                .addRaw([
+                  `✅ No change. [${upOwner}/${upRepo}#${prNumber}](${prUrl}) is still **open** and unmerged.`,
+                  '',
+                  `Last upstream update: \`${pr.updated_at}\``,
+                  `Review activity: ${pr.comments} comments, ${pr.review_comments} review comments.`,
+                  '',
+                  'Qwen3.8-Flash-Next remains blocked for both ONNX and GGUF.',
+                ].join(String.fromCharCode(10)))
+                .write();
+              return;
+            }
+
+            // --- 3. Terminal state reached -- check we have not said so ---
+            const marker = merged ? MARKER_MERGED : MARKER_CLOSED;
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number: issueNumber, per_page: 100 },
+            );
+            if (comments.some((c) => (c.body || '').includes(marker))) {
+              console.log('Terminal state already announced. Skipping.');
+              await core.summary
+                .addHeading('Qwen3.8-Flash-Next Monitor')
+                .addRaw([
+                  `ℹ️ Terminal state (\`${merged ? 'merged' : 'closed-unmerged'}\`) was already announced on issue #${issueNumber}.`,
+                  '',
+                  'This workflow should now be retired to a manual-only stub.',
+                ].join(String.fromCharCode(10)))
+                .write();
+              return;
+            }
+
+            // --- 4. Closed without merging --------------------------------
+            if (!merged) {
+              const body = [
+                MARKER_CLOSED,
+                '## ⚠️ Upstream PR closed without merging',
+                '',
+                `[${upOwner}/${upRepo}#${prNumber}](${prUrl}) was **closed without being merged** (\`${pr.closed_at}\`).`,
+                '',
+                'The GGUF path for Qwen3.8-Flash-Next therefore has no known route to mainline llama.cpp.',
+                'A new upstream tracking target is needed before this model can be reconsidered.',
+                '',
+                '### Next steps',
+                '',
+                '- [ ] Find the superseding llama.cpp PR or issue for `qwen4exp`, if one exists',
+                '- [ ] Repoint `UPSTREAM_PR` in `.github/workflows/monitor-qwen38-flash-next.yml`, or retire the workflow',
+                '- [ ] Update the `GGUF Status` subsection in `docs/blocked-models.md`',
+                '',
+                `_Generated by [monitor-qwen38-flash-next](${runUrl})._`,
+              ].join(String.fromCharCode(10));
+
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: issueNumber, body,
+              });
+              console.log(`Announced closed-unmerged on issue #${issueNumber}`);
+
+              await core.summary
+                .addHeading('Qwen3.8-Flash-Next Monitor — PR closed unmerged')
+                .addRaw(`⚠️ Announced on issue #${issueNumber}. A new upstream target is needed.`)
+                .write();
+              return;
+            }
+
+            // --- 5. Merged -- gather secondary signals --------------------
+            // A merge is necessary but NOT sufficient for C# usability, so
+            // report the llama.cpp release and the LLamaSharp release as
+            // context rather than as a claim of support.
+            let releaseLine =
+              '- llama.cpp release containing the merge: _not yet published at check time_';
+            try {
+              const { data: rel } = await github.rest.repos.getLatestRelease({
+                owner: upOwner, repo: upRepo,
+              });
+              const relAfterMerge =
+                new Date(rel.published_at) > new Date(pr.merged_at);
+              releaseLine = relAfterMerge
+                ? `- Latest llama.cpp release [\`${rel.tag_name}\`](${rel.html_url}) was published \`${rel.published_at}\`, **after** the merge — it likely contains this change.`
+                : `- Latest llama.cpp release [\`${rel.tag_name}\`](${rel.html_url}) predates the merge (\`${rel.published_at}\`) — a newer release is still needed.`;
+            } catch (err) {
+              core.warning(`Could not fetch llama.cpp release: ${err.message}`);
+            }
+
+            let llamaSharpLine =
+              '- LLamaSharp release status: _could not be determined at check time_';
+            try {
+              const { data: ls } = await github.rest.repos.getLatestRelease({
+                owner: lsOwner, repo: lsRepo,
+              });
+              const lsAfterMerge =
+                new Date(ls.published_at) > new Date(pr.merged_at);
+              llamaSharpLine = lsAfterMerge
+                ? `- Latest LLamaSharp release [\`${ls.tag_name}\`](${ls.html_url}) (\`${ls.published_at}\`) postdates the merge. **This is a heuristic, not confirmation** — LLamaSharp pins a specific llama.cpp commit; verify the pinned commit before assuming support.`
+                : `- Latest LLamaSharp release [\`${ls.tag_name}\`](${ls.html_url}) (\`${ls.published_at}\`) **predates** the merge, so it cannot contain this change. C# use via LLamaSharp is still blocked.`;
+            } catch (err) {
+              core.warning(`Could not fetch LLamaSharp release: ${err.message}`);
+            }
+
+            const body = [
+              MARKER_MERGED,
+              '## 🚀 Upstream llama.cpp support has merged',
+              '',
+              `[${upOwner}/${upRepo}#${prNumber}](${prUrl}) — "${pr.title}" — was **merged** at \`${pr.merged_at}\`.`,
+              '',
+              'The GGUF path for Qwen3.8-Flash-Next is now potentially viable. ONNX remains blocked separately (`qwen4_exp` is still not dispatched by `onnxruntime-genai`).',
+              '',
+              '### Distribution status',
+              '',
+              releaseLine,
+              llamaSharpLine,
+              '',
+              '> ⚠️ An upstream merge does **not** by itself make this model usable from C#.',
+              '> LLamaSharp ships its own native binaries pinned to a specific llama.cpp',
+              '> commit, so the pinned commit must be at or after this merge.',
+              '',
+              '### Next steps',
+              '',
+              '- [ ] Confirm the llama.cpp release/tag that first contains the merge',
+              '- [ ] Confirm the llama.cpp commit pinned by the current LLamaSharp backend',
+              '- [ ] Re-evaluate `docs/plans/gguf-sibling-package-proposal.md` — now potentially unblocked',
+              '- [ ] Update the `GGUF Status` subsection and Quick Summary row in `docs/blocked-models.md`',
+              '- [ ] Decide whether Qwen3.8-Flash-Next enters `KnownModels.cs` (note: ~165GiB GGUF, and Qwen Community License 1.0 review still applies)',
+              '- [ ] Retire this workflow to a manual-only stub once resolved',
+              '',
+              `_Generated by [monitor-qwen38-flash-next](${runUrl})._`,
+            ].join(String.fromCharCode(10));
+
+            await github.rest.issues.createComment({
+              owner, repo, issue_number: issueNumber, body,
+            });
+            console.log(`Announced merge on issue #${issueNumber}`);
+
+            // Reopen the tracker if it was closed prematurely -- this is the
+            // signal it was kept open to wait for.
+            try {
+              const { data: issue } = await github.rest.issues.get({
+                owner, repo, issue_number: issueNumber,
+              });
+              if (issue.state === 'closed') {
+                await github.rest.issues.update({
+                  owner, repo, issue_number: issueNumber, state: 'open',
+                });
+                console.log(`Reopened issue #${issueNumber}`);
+              }
+            } catch (err) {
+              core.warning(`Could not check/reopen tracking issue: ${err.message}`);
+            }
+
+            await core.summary
+              .addHeading('Qwen3.8-Flash-Next Monitor — upstream merge detected')
+              .addRaw([
+                `🚀 [${upOwner}/${upRepo}#${prNumber}](${prUrl}) merged at \`${pr.merged_at}\`.`,
+                '',
+                `Announced on issue #${issueNumber}.`,
+                '',
+                releaseLine,
+                llamaSharpLine,
+              ].join(String.fromCharCode(10)))
+              .write();
