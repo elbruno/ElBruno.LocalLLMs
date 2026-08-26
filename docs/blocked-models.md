@@ -30,6 +30,7 @@ Use `Llama-3.1-8B-Instruct` (already converted, native ONNX) or `Llama-3.2-3B-In
 | **Inkling** | 975B (MoE, multimodal) | MoE + massive size + multimodal (text/image/audio) | 🔴 Not Viable | Use a hosted API (Tinker / 3rd-party inference) or a small local model |
 | **Muse Glimmer 30B** | 30B (2B ViT + 28B text) | Gated GQA (`self_attn.gate_proj`) + multimodal wrapper prefix not dispatched by builder | ⛔ Blocked | Use GGUF via llama.cpp/DFlash or Gemma-2-9B-IT for local ONNX |
 | **Nemotron 3.5 Lightning 30B-A3B** | 30B total / 3B active | `nemotron_h` (Mamba-2 + MoE + MTP hybrid) not dispatched; OpenMDW-1.1 license | ⛔ Blocked | Use GGUF via llama.cpp/vLLM or Qwen2.5-32B-Instruct for local ONNX |
+| **Qwen3.8-Flash-Next** | 125B total / 6B active (+51B n-gram embed, +4B MTP) | `qwen4_exp` (novel hybrid: linear attention + QSA + MoE + N-gram embedding + Gated Residual) not dispatched — verified via a live builder run, see below; Qwen Community License 1.0 | ⛔ Blocked | GGUF exists but needs unmerged llama.cpp PR #27742 (no `LLamaSharp`/mainline support yet); use Qwen2.5-32B-Instruct / Qwen3-14B-Instruct for local ONNX |
 
 ---
 
@@ -620,6 +621,71 @@ Verified from https://raw.githubusercontent.com/OpenMDW/OpenMDW/main/1.1/LICENSE
 - **GGUF via llama.cpp/vLLM/SGLang/TensorRT-LLM** — Nemotron 3.5 Lightning ships day-0 on all of these; see `docs/plans/gguf-sibling-package-proposal.md` for the costed sibling-package proposal.
 - **Qwen2.5-32B-Instruct** (32B) — ✅ native ONNX, closest dense equivalent in the catalog today.
 - **DeepSeek-R1-Distill-Qwen-14B** (14B) — ✅ native ONNX, if long-context Mamba-2 scaling isn't required.
+
+---
+
+### Qwen3.8-Flash-Next
+
+#### Qwen3.8-Flash-Next (125B total / 6B active, Multimodal Hybrid MoE)
+
+**Model:** Qwen/Qwen3.8-Flash-Next (canonical safetensors repo; `unsloth/Qwen3.8-Flash-Next-GGUF` is a GGUF-only repackaging of the same weights)
+**Parameters:** 125B total, 6B activated per token, plus 51B dedicated N-gram embedding parameters and a 4B Multi-Token-Prediction (MTP) head
+**Config:** https://huggingface.co/Qwen/Qwen3.8-Flash-Next/raw/main/config.json (verified 2026-08-26)
+**Architecture:** `architectures: ["Qwen4ExpForConditionalGeneration"]`, `model_type: "qwen4_exp"` (text: `"qwen4_exp_text"`, vision: `"qwen4_exp"` sub-config) — an **experimental preview of the Qwen4 architecture**, not a Qwen3 variant despite the "Qwen3.8" name
+**License:** **Qwen Community License 1.0** — permissive but with revenue/MAU-gated commercial notice obligations and a separate "Model as a Service" / "AI Work Assistant" licensing carve-out (verified from the repo's `LICENSE` file, 2026-08-26) — a license class not previously in this catalog (closest precedent: the OpenMDW-1.1 note-requirement class documented for Nemotron 3.5 Lightning above)
+**Status:** ⛔ Blocked — architecture not dispatched by the ONNX Runtime GenAI model builder
+
+#### Why It's Blocked
+
+The verified `config.json` shows a genuinely new hybrid architecture, previewing Qwen4 rather than extending Qwen3:
+
+| Feature | Verified config field | Why It Breaks GenAI |
+|---------|-----------------------|----------------------|
+| **Hybrid linear + sparse attention** | `layer_types`: 48-entry array of `"linear_attention"` / `"full_attention"` in a 3:1 repeating pattern (12 × (3 × linear → 1 × full)); `linear_num_key_heads: 16`, `linear_num_value_heads: 48`, `linear_key_head_dim`/`linear_value_head_dim: 128` (Gated DeltaNet) | Closest existing precedent is `Qwen35TextModel`/`Qwen35MoeTextModel` (dispatched only for `architectures[0] in {"Qwen3_5ForConditionalGeneration", "Qwen3_5MoeForConditionalGeneration"}`), which already implement a linear-attention/full-attention hybrid and an MTP self-speculative head (`enable_mtp` extra option, documented in `builder.py` as "Export the Qwen3.6 MoE MTP self-speculative head"). But `qwen4_exp` is a **different architecture string** with no dispatch entry of its own — the builder doesn't fall back to a "closest" model type. |
+| **Qwen Sparse Attention (QSA) indexer** | `indexer_budget: 2048`, `indexer_compress_ratio: 4`, `indexer_head_dim: 128`, `indexer_kv_heads: 1`, `indexer_n_heads: 4` on `full_attention` layers | No `indexer_*` field appears anywhere in `onnxruntime-genai`'s builder source (verified via GitHub code search on `microsoft/onnxruntime-genai`, 2026-08-26: 0 results for `indexer_budget`). QSA's micro-block sparse indexing is a new op family, not a parameterization of existing GQA/MHA attention. |
+| **Gated Residual** | `hc_count: 4`, `hc_lowrank: 320` (4-branch gated residual with a 320-dim bottleneck, read/write gates per branch) | 0 results for `hc_lowrank` in the builder source (verified via GitHub code search, 2026-08-26). No precedent for a multi-branch gated residual stream in any dispatched model — this is architecturally distinct from every model currently in `builders/*.py`. |
+| **N-gram Embedding** | `ngram_size: 3`, `ngram_vocab_size_base: 20000000`, `heads_per_ngram: 8`, `split_ngram_parts: 128`, `make_ngram_vocab_size_divisible_by: 128` | 0 results for `ngram_vocab_size_base` in the builder source (verified via GitHub code search, 2026-08-26). A 20M-entry n-gram-indexed embedding table has no analog anywhere in the builder — it isn't a bigger version of any existing embedding op, it's a new lookup mechanism keyed on token n-grams rather than single token IDs. |
+| **MoE + shared expert** | `num_experts: 512`, `num_experts_per_tok: 10`, `shared_expert_intermediate_size: 640` | MoE routing exists in the builder for CUDA-only paths (`GPTOSSModel`, `Qwen35MoeTextModel`), so this alone would not block dispatch — it's additive to the blockers above, not a blocker on its own. |
+| **Multimodal wrapper** | `image_token_id`, `video_token_id`, `vision_config` (a `qwen4_exp` vision sub-config, separate `depth`/`hidden_size`/`patch_size` fields) | Same class of issue documented for Gemma 4 / Muse Glimmer: a text-only extraction may be possible in principle but was not attempted here, since the architecture string itself isn't dispatched regardless. |
+
+#### Verified failure (live builder run, 2026-08-26)
+
+Both `transformers==5.14.1` (the newest available at investigation time) and `onnxruntime-genai==0.15.1` (this repo's pinned version) were installed and run live against the real HuggingFace repo — no local weights were downloaded (a `config_only=true` run only needs `config.json`, which is sufficient to reach the same dispatch/config-loading code path a full conversion would hit first):
+
+```
+python -m onnxruntime_genai.models.builder -m Qwen/Qwen3.8-Flash-Next -o ./out -p int4 -e cpu --extra_options config_only=true
+```
+
+Failed with:
+
+```
+ValueError: The checkpoint you are trying to load has model type `qwen4_exp` but Transformers does not
+recognize this architecture. This could be because of an issue with the checkpoint, or because your
+version of Transformers is out of date.
+```
+
+raised from `transformers/models/auto/configuration_auto.py` (`CONFIG_MAPPING["qwen4_exp"]` → `KeyError`) inside `onnxruntime_genai/models/builder.py`'s `get_hf_details()` → `AutoConfig.from_pretrained()` call. The same error occurs with `trust_remote_code=True` — the repository ships no custom `modeling_*.py`/`configuration_*.py` files, so there is no remote-code fallback. **This means the failure happens at the `transformers` config-loading stage, before `onnxruntime-genai`'s own architecture dispatch table (`builder.py`'s `config.architectures[0] ==` chain) is even reached.** A GitHub code search of `microsoft/onnxruntime-genai` (2026-08-26) confirms zero occurrences of `qwen4_exp`, `qwen4`, `hc_lowrank`, `indexer_budget`, or `ngram_vocab_size_base` anywhere in the repository — this is not a partially-supported architecture, it has no footprint in the builder at all.
+
+#### What Would Unblock It
+
+1. `transformers` adding a `Qwen4Exp`/`qwen4_exp` config + model class (a prerequisite `onnxruntime-genai` itself depends on via `AutoConfig`/`AutoModel`).
+2. `onnxruntime-genai` adding a `Qwen4ExpForConditionalGeneration` builder case with: a QSA sparse-attention op (indexer + micro-block routing), a gated-residual op (multi-branch read/write gates), and an n-gram embedding lookup op — three genuinely new op families, not extensions of existing Qwen3.5/GQA/MoE code.
+3. A documented MTP-head export path, extending the existing `enable_mtp`/Qwen3.6 self-speculative-head support to this architecture.
+4. Legal review of the Qwen Community License 1.0's revenue/MAU disclosure and MaaS-licensing clauses before any `elbruno/*-onnx` publication were ever to become possible.
+
+#### GGUF Status (verified 2026-08-26)
+
+`unsloth/Qwen3.8-Flash-Next-GGUF` ships quantized GGUF files (`architecture: "qwen4exp"` in the repo's own GGUF metadata, ~165GiB reported total for the listed quant), but **this is not yet runnable on mainline/released llama.cpp**. The GGUF card itself says: *"To run, please use our [llama.cpp PR](https://github.com/ggml-org/llama.cpp/pull/27742) or use our Unsloth Desktop app."* Verified directly against the GitHub API:
+
+- **PR https://github.com/ggml-org/llama.cpp/pull/27742** — "model: add Qwen3.8-Flash-Next (qwen4exp)" — `state: open`, `merged: false`, `draft: false`, opened 2026-08-26 (same day), 21 files changed (+2560/-9), 32 comments / 6 review comments, `mergeable: true`.
+- No merged support exists in `ggml-org/llama.cpp` main as of this writing. Mainstream distributions of llama.cpp (and anything that bundles/vendors prebuilt llama.cpp binaries, e.g. `LLamaSharp`) will **not** load this GGUF until the PR merges and a new build is cut.
+- The only way to run it today is to build llama.cpp from PR #27742's branch directly (source build), or use Unsloth's standalone Desktop app (not a library — not usable programmatically from C#).
+
+#### Recommended Alternatives
+
+- **GGUF via llama.cpp (pending PR #27742)** — day-0 GGUF is published, but requires building llama.cpp from an unmerged PR branch until it lands in main; not yet consumable via `LLamaSharp` or this repo's GGUF tooling. See `docs/plans/gguf-sibling-package-proposal.md` for the costed sibling-package proposal (would need to pin to this PR's commit the same way `ElBruno.LocalLLMs.BitNet` pins to a `bitnet.cpp` fork) — revisit once PR #27742 merges.
+- **Qwen3-14B-Instruct** (14.77B) — ✅ native ONNX, already in this catalog with the `Qwen3` chat template.
+- **Qwen2.5-32B-Instruct** (32B) — ✅ native ONNX, largest dense Qwen model currently supported.
 
 ---
 
