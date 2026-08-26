@@ -30,7 +30,7 @@ Use `Llama-3.1-8B-Instruct` (already converted, native ONNX) or `Llama-3.2-3B-In
 | **Inkling** | 975B (MoE, multimodal) | MoE + massive size + multimodal (text/image/audio) | 🔴 Not Viable | Use a hosted API (Tinker / 3rd-party inference) or a small local model |
 | **Muse Glimmer 30B** | 30B (2B ViT + 28B text) | Gated GQA (`self_attn.gate_proj`) + multimodal wrapper prefix not dispatched by builder | ⛔ Blocked | Use GGUF via llama.cpp/DFlash or Gemma-2-9B-IT for local ONNX |
 | **Nemotron 3.5 Lightning 30B-A3B** | 30B total / 3B active | `nemotron_h` (Mamba-2 + MoE + MTP hybrid) not dispatched; OpenMDW-1.1 license | ⛔ Blocked | Use GGUF via llama.cpp/vLLM or Qwen2.5-32B-Instruct for local ONNX |
-| **Qwen3.8-Flash-Next** | 125B total / 6B active (+51B n-gram embed, +4B MTP) | `qwen4_exp` (novel hybrid: linear attention + QSA + MoE + N-gram embedding + Gated Residual) not dispatched — verified via a live builder run, see below; Qwen Community License 1.0 | ⛔ Blocked | Use GGUF via llama.cpp/Unsloth or Qwen2.5-32B-Instruct / Qwen3-14B-Instruct for local ONNX |
+| **Qwen3.8-Flash-Next** | 125B total / 6B active (+51B n-gram embed, +4B MTP) | `qwen4_exp` (novel hybrid: linear attention + QSA + MoE + N-gram embedding + Gated Residual) not dispatched — verified via a live builder run, see below; Qwen Community License 1.0 | ⛔ Blocked | GGUF exists but needs unmerged llama.cpp PR #27742 (no `LLamaSharp`/mainline support yet); use Qwen2.5-32B-Instruct / Qwen3-14B-Instruct for local ONNX |
 
 ---
 
@@ -673,9 +673,17 @@ raised from `transformers/models/auto/configuration_auto.py` (`CONFIG_MAPPING["q
 3. A documented MTP-head export path, extending the existing `enable_mtp`/Qwen3.6 self-speculative-head support to this architecture.
 4. Legal review of the Qwen Community License 1.0's revenue/MAU disclosure and MaaS-licensing clauses before any `elbruno/*-onnx` publication were ever to become possible.
 
+#### GGUF Status (verified 2026-08-26)
+
+`unsloth/Qwen3.8-Flash-Next-GGUF` ships quantized GGUF files (`architecture: "qwen4exp"` in the repo's own GGUF metadata, ~165GiB reported total for the listed quant), but **this is not yet runnable on mainline/released llama.cpp**. The GGUF card itself says: *"To run, please use our [llama.cpp PR](https://github.com/ggml-org/llama.cpp/pull/27742) or use our Unsloth Desktop app."* Verified directly against the GitHub API:
+
+- **PR https://github.com/ggml-org/llama.cpp/pull/27742** — "model: add Qwen3.8-Flash-Next (qwen4exp)" — `state: open`, `merged: false`, `draft: false`, opened 2026-08-26 (same day), 21 files changed (+2560/-9), 32 comments / 6 review comments, `mergeable: true`.
+- No merged support exists in `ggml-org/llama.cpp` main as of this writing. Mainstream distributions of llama.cpp (and anything that bundles/vendors prebuilt llama.cpp binaries, e.g. `LLamaSharp`) will **not** load this GGUF until the PR merges and a new build is cut.
+- The only way to run it today is to build llama.cpp from PR #27742's branch directly (source build), or use Unsloth's standalone Desktop app (not a library — not usable programmatically from C#).
+
 #### Recommended Alternatives
 
-- **GGUF via llama.cpp/Unsloth** — `unsloth/Qwen3.8-Flash-Next-GGUF` ships day-0 quantized GGUF; see `docs/plans/gguf-sibling-package-proposal.md` for the costed sibling-package proposal, or the community `LLamaSharp` binding for ad-hoc use outside this library.
+- **GGUF via llama.cpp (pending PR #27742)** — day-0 GGUF is published, but requires building llama.cpp from an unmerged PR branch until it lands in main; not yet consumable via `LLamaSharp` or this repo's GGUF tooling. See `docs/plans/gguf-sibling-package-proposal.md` for the costed sibling-package proposal (would need to pin to this PR's commit the same way `ElBruno.LocalLLMs.BitNet` pins to a `bitnet.cpp` fork) — revisit once PR #27742 merges.
 - **Qwen3-14B-Instruct** (14.77B) — ✅ native ONNX, already in this catalog with the `Qwen3` chat template.
 - **Qwen2.5-32B-Instruct** (32B) — ✅ native ONNX, largest dense Qwen model currently supported.
 
