@@ -681,6 +681,8 @@ raised from `transformers/models/auto/configuration_auto.py` (`CONFIG_MAPPING["q
 - No merged support exists in `ggml-org/llama.cpp` main as of this writing. Mainstream distributions of llama.cpp (and anything that bundles/vendors prebuilt llama.cpp binaries, e.g. `LLamaSharp`) will **not** load this GGUF until the PR merges and a new build is cut.
 - The only way to run it today is to build llama.cpp from PR #27742's branch directly (source build), or use Unsloth's standalone Desktop app (not a library — not usable programmatically from C#).
 
+**Automated tracking:** `.github/workflows/monitor-qwen38-flash-next.yml` polls PR #27742 daily and comments on issue #53 the moment it merges (or is closed unmerged). It also reports whether the current `LLamaSharp` release postdates the merge — a heuristic only, since LLamaSharp pins a specific llama.cpp commit and ships its own native binaries.
+
 #### Recommended Alternatives
 
 - **GGUF via llama.cpp (pending PR #27742)** — day-0 GGUF is published, but requires building llama.cpp from an unmerged PR branch until it lands in main; not yet consumable via `LLamaSharp` or this repo's GGUF tooling. See `docs/plans/gguf-sibling-package-proposal.md` for the costed sibling-package proposal (would need to pin to this PR's commit the same way `ElBruno.LocalLLMs.BitNet` pins to a `bitnet.cpp` fork) — revisit once PR #27742 merges.
