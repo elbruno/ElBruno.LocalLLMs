@@ -498,7 +498,7 @@ My invoice charged me twice for the same subscription month and I want my m…
   angry   : yes  (p = 0.768)
 
   distribution: billing 98%  sales 1%  technical 1%
-  244 input tokens, 664 ms, model 'inferenceprince/laya-onnx'
+  244 input tokens, 664 ms, model 'elbruno/laya-onnx'
 ```
 
 Note the routing line: the sample calls `team.ChoiceOrNull(0.6)` and falls back

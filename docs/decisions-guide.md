@@ -31,9 +31,10 @@ and cached under `%LOCALAPPDATA%\ElBruno\LocalLLMs\decisions`, so the first call
 rest are not.
 
 > Laya's authors publish PyTorch weights only, so every ONNX export of Laya is community-produced.
-> The default, [`inferenceprince/laya-onnx`](https://huggingface.co/inferenceprince/laya-onnx), was
-> verified to reproduce the numbers its own model card reports. Pin a repository you control for
-> anything you depend on:
+> The default, [`elbruno/laya-onnx`](https://huggingface.co/elbruno/laya-onnx), mirrors the
+> [`inferenceprince/laya-onnx`](https://huggingface.co/inferenceprince/laya-onnx) export unmodified
+> and was verified to reproduce the numbers that export's model card reports. Point at a different
+> repository if you would rather pin your own:
 >
 > ```csharp
 > options.ModelRepository = "your-org/your-laya-export";
@@ -161,7 +162,7 @@ mean:
 ```csharp
 builder.Services.AddLocalDecisions(options =>
 {
-    options.ModelRepository = "inferenceprince/laya-onnx";
+    options.ModelRepository = "elbruno/laya-onnx";
     options.DecisionThreshold = 0.7;
 });
 ```
@@ -174,7 +175,7 @@ touch the network — the model is loaded lazily on the first call.
 
 | Option | Default | Notes |
 |---|---|---|
-| `ModelRepository` | `inferenceprince/laya-onnx` | The HuggingFace repository to download from. Every Laya ONNX export is community-produced; pin one you control. |
+| `ModelRepository` | `elbruno/laya-onnx` | The HuggingFace repository to download from. Mirrors the community `inferenceprince/laya-onnx` export unmodified. |
 | `ModelPath` | `null` | A local directory holding the model files. When set, nothing is downloaded. |
 | `CacheDirectory` | `%LOCALAPPDATA%\ElBruno\LocalLLMs\decisions` | Where downloads are cached. |
 | `IntraOpNumThreads` | `null` | Threads used within a single ONNX operator. Worth pinning to a small number under concurrency, since the default fills every core for one call. |

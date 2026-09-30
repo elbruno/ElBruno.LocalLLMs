@@ -23,7 +23,7 @@ public static class DecisionServiceExtensions
     /// <code>
     /// builder.Services.AddLocalDecisions(options =>
     /// {
-    ///     options.ModelRepository = "inferenceprince/laya-onnx";
+    ///     options.ModelRepository = "elbruno/laya-onnx";
     ///     options.DecisionThreshold = 0.7;
     /// });
     /// </code>

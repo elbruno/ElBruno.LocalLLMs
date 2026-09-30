@@ -10,7 +10,7 @@ public class DecisionOptionsTests
     {
         var options = new DecisionOptions();
 
-        Assert.Equal("inferenceprince/laya-onnx", options.ModelRepository);
+        Assert.Equal("elbruno/laya-onnx", options.ModelRepository);
         Assert.Null(options.ModelPath);
         Assert.Null(options.CacheDirectory);
         Assert.Null(options.IntraOpNumThreads);

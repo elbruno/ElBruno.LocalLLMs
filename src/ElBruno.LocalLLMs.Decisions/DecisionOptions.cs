@@ -12,10 +12,10 @@ public sealed class DecisionOptions
     /// </summary>
     /// <remarks>
     /// Laya's authors publish PyTorch weights only, so every ONNX export of Laya is
-    /// community-produced. The default was verified against the numbers its own model card
-    /// reports, but pin a repository you control for anything you depend on.
+    /// community-produced. The default mirrors the <c>inferenceprince/laya-onnx</c> export
+    /// unmodified, and was verified to reproduce the numbers that export's model card reports.
     /// </remarks>
-    public string ModelRepository { get; set; } = "inferenceprince/laya-onnx";
+    public string ModelRepository { get; set; } = "elbruno/laya-onnx";
 
     /// <summary>
     /// Gets or sets a local directory holding the model files. When set, nothing is downloaded
