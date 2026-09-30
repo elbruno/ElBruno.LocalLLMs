@@ -37,6 +37,7 @@
     <Project Path="src/samples/FineTunedToolCalling/FineTunedToolCalling.csproj" />
     <Project Path="src/samples/RagChatbot/RagChatbot.csproj" />
     <Project Path="src/samples/LocalDecisions/LocalDecisions.csproj" />
+    <Project Path="src/samples/DecisionCalibration/DecisionCalibration.csproj" />
     <Project Path="src/samples/ZeroCloudRag/ZeroCloudRag.csproj" />
     <Project Path="src/samples/OpenAiServer/OpenAiServer.csproj" />
     <Project Path="src/samples/MagenticBrainAgent/MagenticBrainAgent.csproj" />

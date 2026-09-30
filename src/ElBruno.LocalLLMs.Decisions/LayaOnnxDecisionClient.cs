@@ -109,9 +109,10 @@ public sealed class LayaOnnxDecisionClient : IDecisionClient, IDisposable
             tokens += sequence.TokenIds.Count;
 
             var temperature = runtime.Config.TemperatureFor(sequence.QuestionType, sequence.Labels.Count);
+            var clamped = runtime.Config.WasClampedFor(sequence.QuestionType, sequence.Labels.Count);
             var probabilities = DecisionMath.Softmax(logits[i], temperature);
 
-            answers[sequence.Name] = Decode(sequence, probabilities);
+            answers[sequence.Name] = Decode(sequence, probabilities, clamped);
         }
 
         return new DecisionResult(
@@ -121,7 +122,7 @@ public sealed class LayaOnnxDecisionClient : IDecisionClient, IDisposable
             answers);
     }
 
-    private object Decode(LayaSequence sequence, double[] probabilities)
+    private object Decode(LayaSequence sequence, double[] probabilities, bool calibrationClamped)
     {
         switch (sequence.Question.Type)
         {
@@ -141,7 +142,8 @@ public sealed class LayaOnnxDecisionClient : IDecisionClient, IDisposable
                 return new ChoiceResult(
                     sequence.Labels[best],
                     map,
-                    DecisionMath.AnswerConfidence(probabilities));
+                    DecisionMath.AnswerConfidence(probabilities),
+                    calibrationClamped);
             }
 
             case DecisionQuestionType.Score:
@@ -156,12 +158,13 @@ public sealed class LayaOnnxDecisionClient : IDecisionClient, IDisposable
                     DecisionMath.ExpectedScore(probabilities),
                     map,
                     sequence.Labels,
-                    DecisionMath.AnswerConfidence(probabilities));
+                    DecisionMath.AnswerConfidence(probabilities),
+                    calibrationClamped);
             }
 
             default:
                 // Noul options are rendered false-then-true, so index 1 is the probability of true.
-                return new ProbabilityResult(probabilities[1], _options.DecisionThreshold);
+                return new ProbabilityResult(probabilities[1], _options.DecisionThreshold, calibrationClamped);
         }
     }
 

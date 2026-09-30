@@ -19,19 +19,25 @@ internal sealed class LayaRuntimeConfig
     public const int MaxOptionTokens = 48;
 
     private readonly double[] _temperatureByType;
+    private readonly bool[] _clampedByType;
     private readonly Dictionary<string, double> _temperatureByOptions;
+    private readonly HashSet<string> _clampedByOptions;
 
     private LayaRuntimeConfig(
         int maxLength,
         int headMaxLength,
         double[] temperatureByType,
+        bool[] clampedByType,
         Dictionary<string, double> temperatureByOptions,
+        HashSet<string> clampedByOptions,
         bool temperaturesWereClamped)
     {
         MaxLength = maxLength;
         HeadMaxLength = headMaxLength;
         _temperatureByType = temperatureByType;
+        _clampedByType = clampedByType;
         _temperatureByOptions = temperatureByOptions;
+        _clampedByOptions = clampedByOptions;
         TemperaturesWereClamped = temperaturesWereClamped;
     }
 
@@ -71,6 +77,7 @@ internal sealed class LayaRuntimeConfig
 
         var clamped = false;
         var byType = new double[3];
+        var clampedByType = new bool[3];
         Array.Fill(byType, 1.0);
 
         if (source.TryGetProperty("temperature", out var temperatures)
@@ -84,21 +91,37 @@ internal sealed class LayaRuntimeConfig
                     break;
                 }
 
-                byType[index++] = ClampTemperature(value, ref clamped);
+                (byType[index], clampedByType[index]) = ClampTemperature(value);
+                clamped |= clampedByType[index];
+                index++;
             }
         }
 
         var byOptions = new Dictionary<string, double>(StringComparer.Ordinal);
+        var clampedByOptions = new HashSet<string>(StringComparer.Ordinal);
         if (source.TryGetProperty("temperature_by_options", out var buckets)
             && buckets.ValueKind == JsonValueKind.Object)
         {
             foreach (var bucket in buckets.EnumerateObject())
             {
-                byOptions[bucket.Name] = ClampTemperature(bucket.Value, ref clamped);
+                var (value, wasClamped) = ClampTemperature(bucket.Value);
+                byOptions[bucket.Name] = value;
+                if (wasClamped)
+                {
+                    clampedByOptions.Add(bucket.Name);
+                    clamped = true;
+                }
             }
         }
 
-        return new LayaRuntimeConfig(maxLength, headMaxLength, byType, byOptions, clamped);
+        return new LayaRuntimeConfig(
+            maxLength,
+            headMaxLength,
+            byType,
+            clampedByType,
+            byOptions,
+            clampedByOptions,
+            clamped);
     }
 
     /// <summary>
@@ -120,6 +143,26 @@ internal sealed class LayaRuntimeConfig
             : 1.0;
     }
 
+    /// <summary>
+    /// Returns whether the temperature used for a question of this kind and size was clamped,
+    /// meaning the checkpoint shipped a value outside its own valid range for that bucket.
+    /// </summary>
+    /// <param name="questionType">The question type index: 0 choice, 1 score, 2 noul.</param>
+    /// <param name="optionCount">The number of options the caller supplied.</param>
+    /// <returns><see langword="true"/> when the applied temperature is not the fitted one.</returns>
+    public bool WasClampedFor(int questionType, int optionCount)
+    {
+        var bucket = TemperatureBucket(questionType, optionCount);
+        if (_temperatureByOptions.ContainsKey(bucket))
+        {
+            return _clampedByOptions.Contains(bucket);
+        }
+
+        return questionType >= 0
+            && questionType < _clampedByType.Length
+            && _clampedByType[questionType];
+    }
+
     private static string TemperatureBucket(int questionType, int optionCount)
     {
         var size = optionCount <= 2 ? "2"
@@ -137,26 +180,19 @@ internal sealed class LayaRuntimeConfig
         return string.Create(CultureInfo.InvariantCulture, $"{name}:{size}");
     }
 
-    private static double ClampTemperature(JsonElement element, ref bool clamped)
+    private static (double Value, bool Clamped) ClampTemperature(JsonElement element)
     {
         if (element.ValueKind != JsonValueKind.Number || !element.TryGetDouble(out var value))
         {
-            clamped = true;
-            return 1.0;
+            return (1.0, true);
         }
 
         if (double.IsNaN(value) || double.IsInfinity(value))
         {
-            clamped = true;
-            return 1.0;
+            return (1.0, true);
         }
 
         var bounded = Math.Clamp(value, MinimumTemperature, MaximumTemperature);
-        if (bounded != value)
-        {
-            clamped = true;
-        }
-
-        return bounded;
+        return (bounded, bounded != value);
     }
 }

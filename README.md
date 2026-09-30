@@ -297,8 +297,10 @@ Console.WriteLine(result.Probability("refund").IsTrue);    // True
 ```
 
 > ⚠️ Laya's public checkpoints report **uncalibrated confidence**. Fit `DecisionThreshold` against
-> your own labelled examples before relying on a boolean verdict — see the
-> [Local Decisions Guide](docs/decisions-guide.md).
+> your own labelled examples before relying on a boolean verdict. Answers whose temperature bucket
+> the checkpoint got wrong are flagged with `CalibrationClamped` — see the
+> [Local Decisions Guide](docs/decisions-guide.md#clamped-calibration-buckets) and the
+> [DecisionCalibration sample](src/samples/DecisionCalibration/).
 
 ## Cache Management
 
@@ -428,6 +430,7 @@ See the [Supported Models Guide](docs/supported-models.md) for detailed model ca
 | [MagenticUIServer](src/samples/MagenticUIServer) | ASP.NET Core + SignalR multi-agent server (FileSurfer, WebFetcher, Coder) |
 | [ConsoleAppDemo](src/samples/ConsoleAppDemo) | Interactive console application |
 | [LocalDecisions](src/samples/LocalDecisions) | Support-ticket triage with a local System One decision model |
+| [DecisionCalibration](src/samples/DecisionCalibration) | Calibration clamping and fp16 batch variance, made visible |
 
 > 🌐 **Reference App:** [ElBruno.MagenticUI](https://github.com/elbruno/ElBruno.MagenticUI) — full Blazor Server port of [microsoft/magentic-ui](https://github.com/microsoft/magentic-ui) running locally with this library.
 

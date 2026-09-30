@@ -115,6 +115,50 @@ public class LayaRuntimeConfigTests : IDisposable
     }
 
     [Fact]
+    public void WasClampedFor_IsTrueOnlyForTheBucketThatWasClamped()
+    {
+        // The public English checkpoint ships a valid choice:3-5 and an invalid choice:11+,
+        // so the flag has to distinguish them rather than condemn the whole checkpoint.
+        LayaRuntimeConfig config = LayaRuntimeConfig.Load(WriteConfig(
+            """
+            {
+              "temperature": [1.6369, 1.2514, 1.9834],
+              "temperature_by_options": { "choice:3-5": 1.7602, "choice:11+": 0.1006 }
+            }
+            """));
+
+        Assert.False(config.WasClampedFor(0, 3));
+        Assert.True(config.WasClampedFor(0, 12));
+        Assert.True(config.TemperaturesWereClamped);
+    }
+
+    [Fact]
+    public void WasClampedFor_FallsBackToTheTypeTemperatureWhenNoBucketMatches()
+    {
+        LayaRuntimeConfig config = LayaRuntimeConfig.Load(WriteConfig(
+            """
+            { "temperature": [0.01, 1.2514, 1.9834] }
+            """));
+
+        // No bucket matches, so the clamped type temperature is what actually gets applied.
+        Assert.True(config.WasClampedFor(0, 7));
+        Assert.False(config.WasClampedFor(1, 7));
+    }
+
+    [Fact]
+    public void WasClampedFor_IsFalseWhenEveryTemperatureIsValid()
+    {
+        LayaRuntimeConfig config = LayaRuntimeConfig.Load(WriteConfig(
+            """
+            { "temperature": [1.6369, 1.2514, 1.9834], "temperature_by_options": { "choice:2": 1.9 } }
+            """));
+
+        Assert.False(config.WasClampedFor(0, 2));
+        Assert.False(config.WasClampedFor(0, 40));
+        Assert.False(config.TemperaturesWereClamped);
+    }
+
+    [Fact]
     public void Load_ClampsTemperaturesAboveTheMaximum()
     {
         LayaRuntimeConfig config = LayaRuntimeConfig.Load(WriteConfig(

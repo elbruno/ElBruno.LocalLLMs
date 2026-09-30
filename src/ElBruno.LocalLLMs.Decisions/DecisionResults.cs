@@ -9,10 +9,17 @@ namespace ElBruno.LocalLLMs.Decisions;
 /// The model's self-reported confidence. Treat as uncalibrated unless you have validated it
 /// on your own labelled data; see <see cref="DecisionOptions.DecisionThreshold"/>.
 /// </param>
+/// <param name="CalibrationClamped">
+/// <see langword="true"/> when the checkpoint's fitted temperature for this question's bucket was
+/// outside its own valid range and had to be clamped, so <paramref name="Confidence"/> and
+/// <paramref name="Probabilities"/> are not the checkpoint's fitted calibration. See
+/// <see href="https://github.com/elbruno/ElBruno.LocalLLMs/blob/main/docs/decisions-guide.md">the guide</see>.
+/// </param>
 public sealed record ChoiceResult(
     string Choice,
     IReadOnlyDictionary<string, double> Probabilities,
-    double Confidence)
+    double Confidence,
+    bool CalibrationClamped = false)
 {
     /// <summary>
     /// Gets the probability assigned to the selected <see cref="Choice"/>.
@@ -39,11 +46,16 @@ public sealed record ChoiceResult(
 /// <param name="Probabilities">Probability of each zero-based rubric level.</param>
 /// <param name="Legend">The rubric levels in their supplied order, echoed by the model.</param>
 /// <param name="Confidence">The model's self-reported confidence. Treat as uncalibrated until validated.</param>
+/// <param name="CalibrationClamped">
+/// <see langword="true"/> when the checkpoint's fitted temperature for this question's bucket was
+/// outside its own valid range and had to be clamped.
+/// </param>
 public sealed record ScoreResult(
     double Score,
     IReadOnlyDictionary<int, double> Probabilities,
     IReadOnlyList<string> Legend,
-    double Confidence)
+    double Confidence,
+    bool CalibrationClamped = false)
 {
     /// <summary>
     /// Gets the zero-based index of the single most likely rubric level.
@@ -67,7 +79,14 @@ public sealed record ScoreResult(
 /// </summary>
 /// <param name="Probability">The probability that the proposition is true, between 0 and 1.</param>
 /// <param name="Threshold">The threshold applied by <see cref="IsTrue"/>.</param>
-public readonly record struct ProbabilityResult(double Probability, double Threshold)
+/// <param name="CalibrationClamped">
+/// <see langword="true"/> when the checkpoint's fitted temperature for this question's bucket was
+/// outside its own valid range and had to be clamped.
+/// </param>
+public readonly record struct ProbabilityResult(
+    double Probability,
+    double Threshold,
+    bool CalibrationClamped = false)
 {
     /// <summary>
     /// Gets a value indicating whether <see cref="Probability"/> meets <see cref="Threshold"/>.
