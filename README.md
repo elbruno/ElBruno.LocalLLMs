@@ -266,7 +266,8 @@ dotnet add package ElBruno.LocalLLMs.Decisions
 ```
 
 The model runs **in-process on ONNX Runtime** — no server to start and no Python. The weights are
-downloaded from HuggingFace on first use (about 800 MB) and cached afterwards.
+downloaded from [`elbruno/laya-onnx`](https://huggingface.co/elbruno/laya-onnx) on first use
+(about 800 MB) and cached afterwards.
 
 Ask several questions at once — they share one forward pass, so four cost about what one costs:
 
