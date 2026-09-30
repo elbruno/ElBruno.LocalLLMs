@@ -52,12 +52,14 @@ jobs:
           dotnet build src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
           dotnet build src/ElBruno.LocalLLMs.BitNet/ElBruno.LocalLLMs.BitNet.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
           dotnet build src/ElBruno.LocalLLMs.BlazorComponents/ElBruno.LocalLLMs.BlazorComponents.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
+          dotnet build src/ElBruno.LocalLLMs.Decisions/ElBruno.LocalLLMs.Decisions.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
 
       - name: Unit Tests
         run: |
           dotnet test src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj -c Release -p:Version=${{ steps.version.outputs.version }} --verbosity normal
           dotnet test src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj -c Release -p:Version=${{ steps.version.outputs.version }} --verbosity normal
           dotnet test src/tests/ElBruno.LocalLLMs.BitNet.Tests/ElBruno.LocalLLMs.BitNet.Tests.csproj -c Release -p:Version=${{ steps.version.outputs.version }} --verbosity normal
+          dotnet test src/tests/ElBruno.LocalLLMs.Decisions.Tests/ElBruno.LocalLLMs.Decisions.Tests.csproj -c Release -p:Version=${{ steps.version.outputs.version }} --verbosity normal
 
       - name: Validate README What's New policy
         run: |
