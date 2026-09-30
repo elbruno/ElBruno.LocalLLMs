@@ -17,7 +17,7 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 
 > The last 5 notable additions to the library. Updated with each NuGet release.
 
-- 🎯 **`ElBruno.LocalLLMs.Decisions`** — new package for local **System One** decision models. Typed `choice`, `score` and yes/no answers with full probability distributions in a single forward pass (~600 ms on CPU), served by [Laya](https://github.com/NandhaKishorM/laya) over loopback. Built for routing, triage, moderation and intent detection, where a chat model is slow and overkill. Call `services.AddLocalDecisions()` and inject `IDecisionClient`. See the [Local Decisions Guide](docs/decisions-guide.md) and the [LocalDecisions sample](src/samples/LocalDecisions/).
+- 🎯 **`ElBruno.LocalLLMs.Decisions`** — new package for local **System One** decision models. Typed `choice`, `score` and yes/no answers with full probability distributions in a single forward pass (~600 ms on CPU), running [Laya](https://github.com/NandhaKishorM/laya) **fully in-process on ONNX Runtime** — no server, no Python. Built for routing, triage, moderation and intent detection, where a chat model is slow and overkill. Call `services.AddLocalDecisions()` and inject `IDecisionClient`. See the [Local Decisions Guide](docs/decisions-guide.md) and the [LocalDecisions sample](src/samples/LocalDecisions/).
 - ⬆️ **.NET 10 only** — every project now single-targets `net10.0`. .NET 8 reaches end of support in November 2026, so multi-targeting was dropped ahead of it. **Breaking:** consumers still on .NET 8 must stay on `v0.21.0` or upgrade to .NET 10.
 - 🧩 **`ElBruno.LocalLLMs.BlazorComponents`** — new Razor Class Library with 7 ready-to-use Blazor components: `ModelStatusCard` (download progress bar + actions), `ModelGallery` (filterable grid), `ModelSelector` (two-way-bindable dropdown), `ChatBox` (streaming token display), `EnvironmentDashboard` (CPU/CUDA/DirectML badges), `LocalLLMHealthBadge` (nav-bar status dot), and `RagPlayground`. Call `services.AddLocalLLMsBlazorComponents()` to register. See the [Blazor Components Guide](docs/blazor-components.md) and the [BlazorDemo sample](src/samples/BlazorDemo/).
 - 🧠 **GPT-OSS 20B support** — OpenAI's open-weight MoE model (Apache-2.0) now runs locally via the official `onnxruntime/gpt-oss-20b-onnx` artifacts. Adds the **Harmony** prompt format, channel-aware output filtering (chain-of-thought is stripped, never shown to users), Harmony tool calling, and a `ReasoningEffort` option. Two model IDs: `gpt-oss-20b` (CPU INT4) and `gpt-oss-20b-cuda`. See the [GptOssChat sample](src/samples/GptOssChat/). Also fixes a token-duplication bug that repeated the final token of every generation.
@@ -265,17 +265,13 @@ single forward pass, fast enough to call on every request.
 dotnet add package ElBruno.LocalLLMs.Decisions
 ```
 
-Start the model, which runs locally over loopback:
-
-```bash
-pip install "laya[serve]"
-python -m laya.serve
-```
+The model runs **in-process on ONNX Runtime** — no server to start and no Python. The weights are
+downloaded from HuggingFace on first use (about 800 MB) and cached afterwards.
 
 Ask several questions at once — they share one forward pass, so four cost about what one costs:
 
 ```csharp
-using var client = new LayaDecisionClient();
+using var client = new LayaOnnxDecisionClient();
 
 DecisionResult result = await client.EvaluateAsync(
     new DecisionRequest("My invoice charged me twice and I want my money back.")

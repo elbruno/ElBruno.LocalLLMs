@@ -1,4 +1,3 @@
-using ElBruno.AI.Jev;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ElBruno.LocalLLMs.Decisions;
@@ -9,16 +8,22 @@ namespace ElBruno.LocalLLMs.Decisions;
 public static class DecisionServiceExtensions
 {
     /// <summary>
-    /// Registers an <see cref="IDecisionClient"/> backed by a local Laya server.
+    /// Registers an <see cref="IDecisionClient"/> that runs a Laya decision model in-process
+    /// through ONNX Runtime.
     /// </summary>
     /// <param name="services">The service collection.</param>
-    /// <param name="configureOptions">Optional action to configure connection and threshold settings.</param>
+    /// <param name="configureOptions">Optional action to configure the model source and threshold.</param>
     /// <returns>The service collection for chaining.</returns>
+    /// <remarks>
+    /// The client is registered as a singleton because loading the model is expensive and the
+    /// loaded session is safe to share. The model is downloaded lazily on first use, so
+    /// registration does not block startup.
+    /// </remarks>
     /// <example>
     /// <code>
     /// builder.Services.AddLocalDecisions(options =>
     /// {
-    ///     options.Endpoint = new Uri("http://127.0.0.1:8000");
+    ///     options.ModelRepository = "inferenceprince/laya-onnx";
     ///     options.DecisionThreshold = 0.7;
     /// });
     /// </code>
@@ -34,33 +39,7 @@ public static class DecisionServiceExtensions
         options.Validate();
 
         services.AddSingleton(options);
-        services.AddSingleton<IDecisionClient>(_ => new LayaDecisionClient(options));
-
-        return services;
-    }
-
-    /// <summary>
-    /// Registers an <see cref="IDecisionClient"/> over a caller-supplied Jev client.
-    /// Useful for tests and for hosts that own the transport.
-    /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <param name="jevClient">The Jev decision client to delegate to.</param>
-    /// <param name="configureOptions">Optional action to configure threshold settings.</param>
-    /// <returns>The service collection for chaining.</returns>
-    public static IServiceCollection AddLocalDecisions(
-        this IServiceCollection services,
-        IJevDecisionClient jevClient,
-        Action<DecisionOptions>? configureOptions = null)
-    {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(jevClient);
-
-        var options = new DecisionOptions();
-        configureOptions?.Invoke(options);
-        options.Validate();
-
-        services.AddSingleton(options);
-        services.AddSingleton<IDecisionClient>(_ => new LayaDecisionClient(jevClient, options));
+        services.AddSingleton<IDecisionClient>(_ => new LayaOnnxDecisionClient(options));
 
         return services;
     }

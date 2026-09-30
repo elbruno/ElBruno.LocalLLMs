@@ -2,18 +2,18 @@ using ElBruno.LocalLLMs.Decisions;
 
 // Triages a support ticket with a local System One decision model.
 //
-// Start the model first:
-//   pip install "laya[serve]"
-//   python -m laya.serve
+// Nothing to install and nothing to start: the model runs in-process on ONNX
+// Runtime. It is downloaded from HuggingFace on first run (about 800 MB) and
+// cached afterwards, so the first run is slow and the rest are not.
+//
+// Pass a local model directory as the first argument to skip the download.
 //
 // Every question below is answered in ONE forward pass, so asking four costs
 // about what asking one costs.
 
-string endpoint = args.Length > 0 ? args[0] : "http://127.0.0.1:8000";
-
-using var client = new LayaDecisionClient(new DecisionOptions
+using var client = new LayaOnnxDecisionClient(new DecisionOptions
 {
-    Endpoint = new Uri(endpoint),
+    ModelPath = args.Length > 0 ? args[0] : null,
     DecisionThreshold = 0.5
 });
 

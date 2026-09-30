@@ -22,29 +22,28 @@ chat model when you actually need prose.
 
 ## Running the model
 
-The package talks to [Laya](https://github.com/NandhaKishorM/laya) (Apache-2.0) over the Jev
-System One wire protocol.
+There is nothing to install and nothing to start. The package runs
+[Laya](https://github.com/NandhaKishorM/laya) (Apache-2.0) **in-process on ONNX Runtime** — no
+Python, no server, no network call at inference time.
 
-```bash
-pip install "laya[serve]"
-python -m laya.serve
-```
+The model weights are downloaded from HuggingFace the first time a client is used (about 800 MB)
+and cached under `%LOCALAPPDATA%\ElBruno\LocalLLMs\decisions`, so the first call is slow and the
+rest are not.
 
-That listens on `http://127.0.0.1:8000` and downloads the English checkpoint on first run.
-Useful environment variables:
+> Laya's authors publish PyTorch weights only, so every ONNX export of Laya is community-produced.
+> The default, [`inferenceprince/laya-onnx`](https://huggingface.co/inferenceprince/laya-onnx), was
+> verified to reproduce the numbers its own model card reports. Pin a repository you control for
+> anything you depend on:
+>
+> ```csharp
+> options.ModelRepository = "your-org/your-laya-export";
+> ```
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `LAYA_HOST` / `LAYA_PORT` | `127.0.0.1` / `8000` | Bind address |
-| `LAYA_MODELS` | all | `english`, `multilingual`, or `typed-decisions` |
-| `LAYA_DEVICE` | auto | `cpu` or `cuda` |
-| `LAYA_API_KEY` | none | Require a bearer token |
-| `LAYA_MAX_CONCURRENT` | 16 | Concurrent request cap |
+To avoid the download entirely, point at a directory you have already populated with the ONNX
+graph, the checkpoint config and the tokenizer:
 
-Check it is alive:
-
-```bash
-curl http://127.0.0.1:8000/health
+```csharp
+options.ModelPath = @"D:\models\laya";
 ```
 
 ## Installation
@@ -58,7 +57,7 @@ dotnet add package ElBruno.LocalLLMs.Decisions
 ```csharp
 using ElBruno.LocalLLMs.Decisions;
 
-using var client = new LayaDecisionClient();
+using var client = new LayaOnnxDecisionClient();
 
 ChoiceResult team = await client.ChooseAsync(
     "My invoice charged me twice and I want my money back.",
@@ -140,11 +139,13 @@ string route = team.ChoiceOrNull(0.6) ?? "human-review";
 **Laya's public checkpoints are not reliably calibrated, and this is the single biggest risk in
 using them.** Concretely, observed on the English checkpoint:
 
-- Laya itself warns at startup that some checkpoints ship temperature values outside the valid
-  range, and explicitly says to treat the affected confidences as uncalibrated.
+- Some checkpoints ship temperature values outside the valid range. The English checkpoint's
+  `choice:11+` bucket is `0.1006`, which sharpens the logits roughly tenfold and would turn a 24%
+  top probability into a reported 99%. This package clamps such values into Laya's own
+  `0.5`–`5.0` range, which keeps the number honest but means it is not a fitted calibration.
 - `Confidence` can be low on an answer whose distribution is actually sharp, and vice versa.
-- The English checkpoint stays confident on non-Latin scripts while being wrong; use the
-  multilingual checkpoint if your input is not English.
+- The English checkpoint stays confident on non-Latin scripts while being wrong; use a
+  multilingual export if your input is not English.
 - Reported accuracy on some held-out tasks (moderation, for example) is close to chance.
 
 None of that makes the model useless — routing and triage worked well in practice — but it does
@@ -160,37 +161,39 @@ mean:
 ```csharp
 builder.Services.AddLocalDecisions(options =>
 {
-    options.Endpoint = new Uri("http://127.0.0.1:8000");
+    options.ModelRepository = "inferenceprince/laya-onnx";
     options.DecisionThreshold = 0.7;
 });
 ```
 
-Then inject `IDecisionClient`. The client is thread-safe and registered as a singleton.
+Then inject `IDecisionClient`. The client is thread-safe and registered as a singleton, because
+loading the model is expensive and the loaded session is safe to share. Registration does not
+touch the network — the model is loaded lazily on the first call.
 
 ## Options
 
 | Option | Default | Notes |
 |---|---|---|
-| `Endpoint` | `http://127.0.0.1:8000` | **Must be loopback.** A remote address is rejected so prompts cannot leave the machine by a config mistake. |
-| `ApiKey` | empty | Only needed when the server was started with `LAYA_API_KEY`. |
-| `Model` | `null` | Leave null to let Laya route per request. An unknown id degrades *silently* to routing, so a typo fails quietly. |
-| `Timeout` | 30s | The first call after startup loads the checkpoint and is slower. |
+| `ModelRepository` | `inferenceprince/laya-onnx` | The HuggingFace repository to download from. Every Laya ONNX export is community-produced; pin one you control. |
+| `ModelPath` | `null` | A local directory holding the model files. When set, nothing is downloaded. |
+| `CacheDirectory` | `%LOCALAPPDATA%\ElBruno\LocalLLMs\decisions` | Where downloads are cached. |
+| `IntraOpNumThreads` | `null` | Threads used within a single ONNX operator. Worth pinning to a small number under concurrency, since the default fills every core for one call. |
 | `DecisionThreshold` | `0.5` | Applied by `ProbabilityResult.IsTrue`. |
 
 ## Testing
 
-Inject a fake transport through the `IJevDecisionClient` constructor overload — no server needed:
+`IDecisionClient` is a plain interface, so unit tests can implement it directly with whatever
+distributions the test needs — no model download and no ONNX session:
 
 ```csharp
-var client = new LayaDecisionClient(myStubJevClient);
+internal sealed class StubDecisionClient : IDecisionClient { /* ... */ }
 ```
-
-The same overload is available on `AddLocalDecisions`.
 
 ## Error handling
 
-`DecisionException` is thrown when the server is unreachable, times out, or answers with a type
-that does not match the question asked. The message names the endpoint and how to start the server.
+`DecisionException` is thrown when the model cannot be downloaded or loaded, when the model
+directory is incomplete, or when a question does not fit the model's token window. The message
+says which of those happened and what to do about it.
 
 ```csharp
 try
@@ -199,7 +202,7 @@ try
 }
 catch (DecisionException ex)
 {
-    // Server down, still loading, or wrong port.
+    // Download failed, model directory incomplete, or too many options to score.
 }
 ```
 
@@ -209,7 +212,8 @@ Measured on CPU with the English checkpoint, 4 questions per request:
 
 | | Latency |
 |---|---|
-| First call (checkpoint load) | several seconds |
+| First ever call (download, ~800 MB) | minutes |
+| First call after that (session load) | a few seconds |
 | Warm, 4 questions, CPU | ~600 ms |
 
 Latency scales with input length far more than with question count, which is why batching is close
@@ -221,14 +225,18 @@ to free.
 prints the routing decision, urgency score and both probabilities for each.
 
 ```bash
-python -m laya.serve                                   # terminal 1
-dotnet run --project src/samples/LocalDecisions        # terminal 2
+dotnet run --project src/samples/LocalDecisions
+
+# or against a model directory you already have, skipping the download
+dotnet run --project src/samples/LocalDecisions -- D:\models\laya
 ```
 
 ## Limitations
 
-- **Requires a running Python server.** There is no in-process ONNX path yet; the model runs in
-  `laya-serve` and is reached over loopback HTTP.
-- **Loopback only, by design.** Point it at a remote host and construction fails.
-- **No model discovery.** Laya does not expose `/v1/models`.
-- **English checkpoint is English-only in practice.** Use `LAYA_MODELS=multilingual` otherwise.
+- **The ONNX export is community-produced.** Laya's authors ship PyTorch weights only. The default
+  export was verified against its own model card, but it is not first-party.
+- **Confidence is not reliably calibrated.** See the section above; this is the real constraint.
+- **English checkpoint is English-only in practice.** It stays confident on non-Latin scripts while
+  being wrong. Point `ModelRepository` at a multilingual export if your input is not English.
+- **The first run downloads about 800 MB.** Pre-populate `ModelPath` in environments where that is
+  not acceptable.

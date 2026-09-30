@@ -1,69 +1,99 @@
 namespace ElBruno.LocalLLMs.Decisions;
 
 /// <summary>
-/// Configuration for a local decision client backed by a <c>laya-serve</c> instance.
+/// Configuration for a local decision client. The model runs in-process through ONNX Runtime,
+/// so there is no server to start and no Python to install.
 /// </summary>
 public sealed class DecisionOptions
 {
     /// <summary>
-    /// Gets or sets the address of the local Laya server. Defaults to <c>http://127.0.0.1:8000</c>,
-    /// which is where <c>python -m laya.serve</c> listens out of the box.
+    /// Gets or sets the HuggingFace repository the model is downloaded from.
+    /// Defaults to an ONNX export of Laya's English checkpoint.
     /// </summary>
     /// <remarks>
-    /// The endpoint must be a loopback address. Plain HTTP is accepted because the traffic never
-    /// leaves the machine; a remote address is rejected so that prompts cannot be sent off-box
-    /// by a configuration mistake.
+    /// Laya's authors publish PyTorch weights only, so every ONNX export of Laya is
+    /// community-produced. The default was verified against the numbers its own model card
+    /// reports, but pin a repository you control for anything you depend on.
     /// </remarks>
-    public Uri Endpoint { get; set; } = new("http://127.0.0.1:8000");
+    public string ModelRepository { get; set; } = "inferenceprince/laya-onnx";
 
     /// <summary>
-    /// Gets or sets the bearer token expected by the server. Leave empty unless the server was
-    /// started with <c>LAYA_API_KEY</c> set.
-    /// </summary>
-    public string ApiKey { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Gets or sets the checkpoint to use. Leave <c>null</c> to let Laya's router pick per request,
-    /// which is the recommended default.
+    /// Gets or sets a local directory holding the model files. When set, nothing is downloaded
+    /// and <see cref="ModelRepository"/> is ignored.
     /// </summary>
     /// <remarks>
-    /// Laya silently falls back to routing when given an unknown identifier, so a typo here
-    /// degrades quietly rather than failing loudly. Prefer <c>null</c>.
+    /// The directory must contain the ONNX graph, the checkpoint config carrying the fitted
+    /// temperatures, and the tokenizer definition.
     /// </remarks>
-    public string? Model { get; set; }
+    public string? ModelPath { get; set; }
 
     /// <summary>
-    /// Gets or sets the per-request timeout. Defaults to 30 seconds, which is generous for CPU
-    /// inference on a warm checkpoint but allows for a cold first call.
+    /// Gets or sets where downloaded models are cached. Defaults to a folder under the user's
+    /// local application data.
     /// </summary>
-    public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(30);
+    public string? CacheDirectory { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of threads ONNX Runtime uses within a single operator.
+    /// Leave <c>null</c> to let the runtime decide.
+    /// </summary>
+    /// <remarks>
+    /// Worth pinning to a small number when many requests are served concurrently, because the
+    /// default fills every core for one call and the batches here are short.
+    /// </remarks>
+    public int? IntraOpNumThreads { get; set; }
 
     /// <summary>
     /// Gets or sets the probability at or above which <see cref="ProbabilityResult.IsTrue"/> reports true.
     /// Defaults to 0.5.
     /// </summary>
     /// <remarks>
-    /// This is a convenience default, not a calibrated boundary. Laya's public checkpoints report
-    /// confidence values that are not reliably calibrated, and some ship temperature settings that
-    /// Laya itself flags as invalid at startup. Fit this threshold against your own labelled
-    /// examples before depending on the boolean.
+    /// This is a convenience default, not a calibrated boundary. Laya's public checkpoints are
+    /// over-confident, and one shipped temperature is invalid enough that this package clamps it.
+    /// Fit this threshold against your own labelled examples before depending on the boolean.
     /// </remarks>
     public double DecisionThreshold { get; set; } = 0.5;
 
+    /// <summary>
+    /// Gets the repository files that must be present for the model to run.
+    /// </summary>
+    internal IReadOnlyList<string> ModelFiles { get; } =
+    [
+        "model.onnx",
+        "rl_agent_config.json",
+        "tokenizer/tokenizer.json",
+    ];
+
+    /// <summary>
+    /// Gets repository files that are downloaded when present. The weights of an externally
+    /// stored graph live here, as do the alternative layouts other exports use.
+    /// </summary>
+    internal IReadOnlyList<string> OptionalModelFiles { get; } =
+    [
+        "model.onnx.data",
+        "model.onnx_data",
+        "config.json",
+        "tokenizer.json",
+        "tokenizer/tokenizer_config.json",
+    ];
+
+    internal string ResolveCacheDirectory() =>
+        CacheDirectory ?? Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "ElBruno", "LocalLLMs", "decisions");
+
     internal void Validate()
     {
-        ArgumentNullException.ThrowIfNull(Endpoint);
-
-        if (!Endpoint.IsLoopback)
+        if (string.IsNullOrWhiteSpace(ModelPath) && string.IsNullOrWhiteSpace(ModelRepository))
         {
             throw new InvalidOperationException(
-                $"DecisionOptions.Endpoint must be a loopback address, but was '{Endpoint}'. " +
-                "This package talks to a Laya server running on the same machine.");
+                "DecisionOptions needs either a ModelRepository to download from or a ModelPath to load from.");
         }
 
-        if (Timeout <= TimeSpan.Zero)
+        if (IntraOpNumThreads is <= 0)
         {
-            throw new InvalidOperationException("DecisionOptions.Timeout must be greater than zero.");
+            throw new InvalidOperationException(
+                $"DecisionOptions.IntraOpNumThreads must be greater than zero, but was {IntraOpNumThreads}.");
         }
 
         if (DecisionThreshold is < 0 or > 1 || double.IsNaN(DecisionThreshold))

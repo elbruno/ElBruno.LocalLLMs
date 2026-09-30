@@ -462,17 +462,15 @@ Unlike every other sample here, this one does not use a chat model. It uses a
 **System One decision model**, which returns a typed answer with probabilities
 in a single forward pass instead of generating text.
 
-Start the model first — it runs locally and is reached over loopback:
-
-```bash
-pip install "laya[serve]"
-python -m laya.serve
-```
-
-Then run the sample:
+The model runs in-process on ONNX Runtime — nothing to install and nothing to
+start. The weights are downloaded from HuggingFace on first run (about 800 MB)
+and cached afterwards:
 
 ```bash
 dotnet run --project src/samples/LocalDecisions
+
+# or against a model directory you already have, skipping the download
+dotnet run --project src/samples/LocalDecisions -- D:\models\laya
 ```
 
 It asks **four questions per ticket in one request** — which team should own it,
@@ -500,7 +498,7 @@ My invoice charged me twice for the same subscription month and I want my m…
   angry   : yes  (p = 0.768)
 
   distribution: billing 98%  sales 1%  technical 1%
-  244 input tokens, 777 ms, model 'laya-rl-agent'
+  244 input tokens, 664 ms, model 'inferenceprince/laya-onnx'
 ```
 
 Note the routing line: the sample calls `team.ChoiceOrNull(0.6)` and falls back

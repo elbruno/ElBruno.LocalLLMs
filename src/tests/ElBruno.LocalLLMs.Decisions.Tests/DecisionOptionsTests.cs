@@ -6,39 +6,38 @@ namespace ElBruno.LocalLLMs.Decisions.Tests;
 public class DecisionOptionsTests
 {
     [Fact]
-    public void Defaults_TargetLocalLayaServer()
+    public void Defaults_RunTheModelLocallyFromAKnownRepository()
     {
         var options = new DecisionOptions();
 
-        Assert.Equal(new Uri("http://127.0.0.1:8000"), options.Endpoint);
-        Assert.Equal(string.Empty, options.ApiKey);
-        Assert.Null(options.Model);
+        Assert.Equal("inferenceprince/laya-onnx", options.ModelRepository);
+        Assert.Null(options.ModelPath);
+        Assert.Null(options.CacheDirectory);
+        Assert.Null(options.IntraOpNumThreads);
         Assert.Equal(0.5, options.DecisionThreshold);
-        Assert.Equal(TimeSpan.FromSeconds(30), options.Timeout);
     }
 
-    [Theory]
-    [InlineData("http://127.0.0.1:8000")]
-    [InlineData("http://localhost:9000")]
-    [InlineData("https://127.0.0.1:8443")]
-    [InlineData("http://[::1]:8000")]
-    public void Validate_AcceptsLoopbackEndpoints(string endpoint)
+    [Fact]
+    public void Validate_AcceptsTheDefaults()
     {
-        var options = new DecisionOptions { Endpoint = new Uri(endpoint) };
+        new DecisionOptions().Validate();
+    }
+
+    [Fact]
+    public void Validate_AcceptsALocalModelPathWithoutARepository()
+    {
+        var options = new DecisionOptions { ModelRepository = string.Empty, ModelPath = @"C:\models\laya" };
 
         options.Validate();
     }
 
-    [Theory]
-    [InlineData("http://laya.example.com")]
-    [InlineData("https://api.typesafe.ai")]
-    [InlineData("http://10.0.0.5:8000")]
-    public void Validate_RejectsRemoteEndpoints(string endpoint)
+    [Fact]
+    public void Validate_RejectsHavingNeitherASourceNorAPath()
     {
-        var options = new DecisionOptions { Endpoint = new Uri(endpoint) };
+        var options = new DecisionOptions { ModelRepository = "  " };
 
-        var ex = Assert.Throws<InvalidOperationException>(options.Validate);
-        Assert.Contains("loopback", ex.Message, StringComparison.OrdinalIgnoreCase);
+        var exception = Assert.Throws<InvalidOperationException>(options.Validate);
+        Assert.Contains("ModelPath", exception.Message, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -52,45 +51,60 @@ public class DecisionOptionsTests
         Assert.Throws<InvalidOperationException>(options.Validate);
     }
 
-    [Fact]
-    public void Validate_RejectsNonPositiveTimeout()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-4)]
+    public void Validate_RejectsNonPositiveThreadCounts(int threads)
     {
-        var options = new DecisionOptions { Timeout = TimeSpan.Zero };
+        var options = new DecisionOptions { IntraOpNumThreads = threads };
 
         Assert.Throws<InvalidOperationException>(options.Validate);
     }
 
     [Fact]
-    public void AddLocalDecisions_RegistersSingletonClient()
+    public void ResolveCacheDirectory_PrefersAnExplicitDirectory()
+    {
+        var options = new DecisionOptions { CacheDirectory = @"D:\cache" };
+
+        Assert.Equal(@"D:\cache", options.ResolveCacheDirectory());
+    }
+
+    [Fact]
+    public void ResolveCacheDirectory_FallsBackToLocalApplicationData()
+    {
+        var resolved = new DecisionOptions().ResolveCacheDirectory();
+
+        Assert.Contains("ElBruno", resolved, StringComparison.Ordinal);
+        Assert.Contains("decisions", resolved, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AddLocalDecisions_RegistersASingletonClient()
     {
         var services = new ServiceCollection();
-        var stub = new StubJevClient(StubJevClient.LayaLike);
 
-        services.AddLocalDecisions(stub, options => options.DecisionThreshold = 0.75);
+        services.AddLocalDecisions(options => options.DecisionThreshold = 0.75);
 
         using ServiceProvider provider = services.BuildServiceProvider();
         var first = provider.GetRequiredService<IDecisionClient>();
         var second = provider.GetRequiredService<IDecisionClient>();
 
         Assert.Same(first, second);
+        Assert.IsType<LayaOnnxDecisionClient>(first);
         Assert.Equal(0.75, provider.GetRequiredService<DecisionOptions>().DecisionThreshold);
     }
 
     [Fact]
-    public async Task AddLocalDecisions_ResolvedClientUsesConfiguredThreshold()
+    public void AddLocalDecisions_DoesNotLoadTheModelDuringRegistration()
     {
+        // Registration must stay cheap: the model is several hundred megabytes and is fetched
+        // lazily on first use, so adding the service cannot block startup or touch the network.
         var services = new ServiceCollection();
-        services.AddLocalDecisions(
-            new StubJevClient(StubJevClient.LayaLike),
-            options => options.DecisionThreshold = 0.9);
+        services.AddLocalDecisions(options => options.ModelPath = @"C:\does\not\exist");
 
         using ServiceProvider provider = services.BuildServiceProvider();
-        var client = provider.GetRequiredService<IDecisionClient>();
 
-        ProbabilityResult result = await client.AskAsync("text", "proposition");
-
-        Assert.Equal(0.9, result.Threshold);
-        Assert.False(result.IsTrue);
+        Assert.NotNull(provider.GetRequiredService<IDecisionClient>());
     }
 
     [Fact]
@@ -99,6 +113,6 @@ public class DecisionOptionsTests
         var services = new ServiceCollection();
 
         Assert.Throws<InvalidOperationException>(() =>
-            services.AddLocalDecisions(options => options.Endpoint = new Uri("https://api.typesafe.ai")));
+            services.AddLocalDecisions(options => options.DecisionThreshold = 2.0));
     }
 }

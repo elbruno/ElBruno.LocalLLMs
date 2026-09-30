@@ -19,16 +19,17 @@ public sealed class DecisionResult
         _answers = answers;
     }
 
-    /// <summary>Gets the model identifier reported by the server.</summary>
+    /// <summary>Gets the model this result came from: the HuggingFace repository it was
+    /// downloaded from, or the local path it was loaded from.</summary>
     public string Model { get; }
 
     /// <summary>
-    /// Gets the number of input tokens consumed by the whole batch, or <c>null</c> when the
-    /// server did not report usage.
+    /// Gets the number of input tokens the whole batch was encoded into, or <c>null</c> when
+    /// that is not known.
     /// </summary>
     public long? InputTokens { get; }
 
-    /// <summary>Gets the wall-clock time taken by the call, including transport.</summary>
+    /// <summary>Gets the wall-clock time taken by the call, including tokenization.</summary>
     public TimeSpan Duration { get; }
 
     /// <summary>Gets the question names present in this result.</summary>
