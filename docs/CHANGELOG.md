@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [0.22.0] - 2026-09-30
 
 ### Changed
 - **BREAKING: .NET 10 is now the only supported target framework.** Every library, test, sample, and benchmark project single-targets `net10.0`; the `net8.0;net10.0` multi-targeting was removed ahead of .NET 8's November 2026 end of support. `global.json` now pins SDK `10.0.0`, and the CI/publish workflows install `10.0.x` only and no longer pass per-framework overrides. Consumers still on .NET 8 must remain on `v0.21.0` or upgrade to .NET 10.

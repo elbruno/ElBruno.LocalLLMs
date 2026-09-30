@@ -60,6 +60,7 @@ jobs:
           dotnet test src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj -c Release -p:Version=${{ steps.version.outputs.version }} --verbosity normal
           dotnet test src/tests/ElBruno.LocalLLMs.BitNet.Tests/ElBruno.LocalLLMs.BitNet.Tests.csproj -c Release -p:Version=${{ steps.version.outputs.version }} --verbosity normal
           dotnet test src/tests/ElBruno.LocalLLMs.Decisions.Tests/ElBruno.LocalLLMs.Decisions.Tests.csproj -c Release -p:Version=${{ steps.version.outputs.version }} --verbosity normal
+          dotnet test src/tests/ElBruno.LocalLLMs.BlazorComponents.Tests/ElBruno.LocalLLMs.BlazorComponents.Tests.csproj -c Release -p:Version=${{ steps.version.outputs.version }} --verbosity normal
 
       - name: Validate README What's New policy
         run: |
