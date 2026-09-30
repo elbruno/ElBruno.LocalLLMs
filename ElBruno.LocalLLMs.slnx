@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj" />
     <Project Path="src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj" />
+    <Project Path="src/ElBruno.LocalLLMs.Decisions/ElBruno.LocalLLMs.Decisions.csproj" />
     <Project Path="src/ElBruno.LocalLLMs.BitNet/ElBruno.LocalLLMs.BitNet.csproj" />
     <Project Path="src/ElBruno.LocalLLMs.BlazorComponents/ElBruno.LocalLLMs.BlazorComponents.csproj" />
   </Folder>
@@ -14,6 +15,7 @@
     <Project Path="src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj" />
     <Project Path="src/tests/ElBruno.LocalLLMs.IntegrationTests/ElBruno.LocalLLMs.IntegrationTests.csproj" />
     <Project Path="src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj" />
+    <Project Path="src/tests/ElBruno.LocalLLMs.Decisions.Tests/ElBruno.LocalLLMs.Decisions.Tests.csproj" />
     <Project Path="src/tests/ElBruno.LocalLLMs.FineTuneEval/ElBruno.LocalLLMs.FineTuneEval.csproj" />
     <Project Path="src/tests/ElBruno.LocalLLMs.BitNet.Tests/ElBruno.LocalLLMs.BitNet.Tests.csproj" />
     <Project Path="src/tests/MagenticUIServer.Agents.Tests/MagenticUIServer.Agents.Tests.csproj" />
@@ -34,6 +36,7 @@
     <Project Path="src/samples/ToolCallingAgent/ToolCallingAgent.csproj" />
     <Project Path="src/samples/FineTunedToolCalling/FineTunedToolCalling.csproj" />
     <Project Path="src/samples/RagChatbot/RagChatbot.csproj" />
+    <Project Path="src/samples/LocalDecisions/LocalDecisions.csproj" />
     <Project Path="src/samples/ZeroCloudRag/ZeroCloudRag.csproj" />
     <Project Path="src/samples/OpenAiServer/OpenAiServer.csproj" />
     <Project Path="src/samples/MagenticBrainAgent/MagenticBrainAgent.csproj" />

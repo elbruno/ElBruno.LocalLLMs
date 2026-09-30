@@ -28,7 +28,8 @@
       Condition="'$(MSBuildProjectName)' == 'ElBruno.LocalLLMs'
         Or '$(MSBuildProjectName)' == 'ElBruno.LocalLLMs.Rag'
         Or '$(MSBuildProjectName)' == 'ElBruno.LocalLLMs.BitNet'
-        Or '$(MSBuildProjectName)' == 'ElBruno.LocalLLMs.BlazorComponents'">true</ManagePublishedSiblingPackageVersion>
+        Or '$(MSBuildProjectName)' == 'ElBruno.LocalLLMs.BlazorComponents'
+        Or '$(MSBuildProjectName)' == 'ElBruno.LocalLLMs.Decisions'">true</ManagePublishedSiblingPackageVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(ManagePublishedSiblingPackageVersion)' == 'true'">

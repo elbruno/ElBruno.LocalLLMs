@@ -456,6 +456,62 @@ API reference and configuration options.
 
 ---
 
+## LocalDecisions — Support-Ticket Triage with a Decision Model
+
+Unlike every other sample here, this one does not use a chat model. It uses a
+**System One decision model**, which returns a typed answer with probabilities
+in a single forward pass instead of generating text.
+
+Start the model first — it runs locally and is reached over loopback:
+
+```bash
+pip install "laya[serve]"
+python -m laya.serve
+```
+
+Then run the sample:
+
+```bash
+dotnet run --project src/samples/LocalDecisions
+```
+
+It asks **four questions per ticket in one request** — which team should own it,
+how urgent it is, whether a refund is being requested, and whether the customer
+is angry:
+
+```csharp
+DecisionResult result = await client.EvaluateAsync(
+    new DecisionRequest(ticket)
+        .Choose("team", teams, "Which team should handle this support ticket?")
+        .Score("urgency", urgencyLevels, "How urgent is this ticket?")
+        .Ask("refund", "The customer is asking for a refund.")
+        .Ask("angry", "The customer is angry or frustrated."));
+```
+
+Output:
+
+```text
+My invoice charged me twice for the same subscription month and I want my m…
+
+  route   : billing        (billing @ 98.4%)
+  urgency : urgent, answer within an hour
+            score 1.67 of 3
+  refund  : yes  (p = 0.940)
+  angry   : yes  (p = 0.768)
+
+  distribution: billing 98%  sales 1%  technical 1%
+  244 input tokens, 777 ms, model 'laya-rl-agent'
+```
+
+Note the routing line: the sample calls `team.ChoiceOrNull(0.6)` and falls back
+to `human-review`, so a ticket the model is unsure about reaches a person rather
+than being confidently misrouted.
+
+See the [Local Decisions Guide](decisions-guide.md) for the question types and,
+importantly, the calibration caveats before you pick a threshold.
+
+---
+
 ## Next Steps
 
 - 📖 [Getting Started](getting-started.md) — full setup guide with GPU configuration
@@ -463,3 +519,4 @@ API reference and configuration options.
 - 📊 [Benchmarks](benchmarks.md) — measure performance on your hardware
 - 🏗️ [Architecture](architecture.md) — understand the internal design
 - 🧩 [Blazor Components](blazor-components.md) — ready-to-use UI components for Blazor apps
+- 🎯 [Local Decisions](decisions-guide.md) — typed decision models for routing and triage
