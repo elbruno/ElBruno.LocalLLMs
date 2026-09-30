@@ -582,7 +582,7 @@ public class MyService(IChatClient chatClient) { ... }
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>ElBruno.LocalLLMs</PackageId>
     <Description>Local LLM chat completions using Microsoft.Extensions.AI and ONNX Runtime GenAI. IChatClient implementation for running LLMs locally.</Description>
@@ -924,4 +924,4 @@ ElBruno.LocalLLMs/
 | **`ModelDefinition` as record** | Immutable, data-first. Adding a model = adding a record to `KnownModels`. |
 | **Chat templates as internal strategy pattern** | Users pick a model; the template is resolved automatically. No template API in public surface. |
 | **`ElBruno.HuggingFace.Downloader` for downloads** | Proven in both reference repos. Consistent download/cache behavior. |
-| **`net8.0;net10.0` multi-targeting** | Matches reference repos. .NET 8 LTS + .NET 10 current. |
+| **`net10.0` single-targeting** | .NET 8 support was dropped ahead of its end of support, so every project targets .NET 10 only. |

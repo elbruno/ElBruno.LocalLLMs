@@ -23,12 +23,13 @@
     <Copyright>Copyright © Bruno Capuano $([System.DateTime]::Now.Year)</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageIcon>nuget_logo.png</PackageIcon>
-    <PublishedSiblingPackageVersion>0.21.0</PublishedSiblingPackageVersion>
+    <PublishedSiblingPackageVersion>0.22.0</PublishedSiblingPackageVersion>
     <ManagePublishedSiblingPackageVersion
       Condition="'$(MSBuildProjectName)' == 'ElBruno.LocalLLMs'
         Or '$(MSBuildProjectName)' == 'ElBruno.LocalLLMs.Rag'
         Or '$(MSBuildProjectName)' == 'ElBruno.LocalLLMs.BitNet'
-        Or '$(MSBuildProjectName)' == 'ElBruno.LocalLLMs.BlazorComponents'">true</ManagePublishedSiblingPackageVersion>
+        Or '$(MSBuildProjectName)' == 'ElBruno.LocalLLMs.BlazorComponents'
+        Or '$(MSBuildProjectName)' == 'ElBruno.LocalLLMs.Decisions'">true</ManagePublishedSiblingPackageVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(ManagePublishedSiblingPackageVersion)' == 'true'">

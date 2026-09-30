@@ -319,6 +319,6 @@ Your app must also call `AddLocalLLMs()` (or `AddLocalVisionLLM()`) to register
 
 ## Target frameworks
 
-`ElBruno.LocalLLMs.BlazorComponents` targets **net8.0** only (Blazor Server and
+`ElBruno.LocalLLMs.BlazorComponents` targets **net10.0** only (Blazor Server and
 Blazor WASM both require ASP.NET Core). It is not compatible with console or
 non-web projects.

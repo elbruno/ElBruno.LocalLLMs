@@ -25,7 +25,7 @@ bash scripts/run-tests.sh
 | `-SkipBuild` / `-NoBuild` | — | Skip `dotnet build` |
 | `-SkipUnitTests` | — | Skip unit test project |
 | `-SkipIntegrationTests` | — | Skip integration tests (build + unit only) |
-| `-Framework` | `net8.0` | Target framework |
+| `-Framework` | `net10.0` | Target framework |
 | `-HfToken <token>` | — | Sets `HF_TOKEN` for private HuggingFace repos |
 | `-Filter <expr>` | — | xUnit `--filter` expression (integration tests only) |
 
@@ -36,7 +36,7 @@ bash scripts/run-tests.sh
 | `--skip-build` / `-B` / `--no-build` | — | Skip build |
 | `--skip-unit-tests` / `-U` | — | Skip unit tests |
 | `--skip-integration-tests` / `-I` | — | Skip integration tests |
-| `--framework <value>` | `net8.0` | Target framework |
+| `--framework <value>` | `net10.0` | Target framework |
 | `--hf-token <value>` | — | Sets `HF_TOKEN` |
 | `--filter <value>` | — | xUnit filter expression |
 

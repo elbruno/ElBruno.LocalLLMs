@@ -4,7 +4,7 @@ Runnable examples demonstrating how to use `ElBruno.LocalLLMs` in different scen
 
 ## Prerequisites
 
-- .NET 8.0+ SDK
+- .NET 10.0 SDK
 - ~2-4 GB free disk space (models are downloaded on first run)
 - CPU is sufficient; GPU (CUDA/DirectML) is optional
 
@@ -456,6 +456,116 @@ API reference and configuration options.
 
 ---
 
+## LocalDecisions — Support-Ticket Triage with a Decision Model
+
+Unlike every other sample here, this one does not use a chat model. It uses a
+**System One decision model**, which returns a typed answer with probabilities
+in a single forward pass instead of generating text.
+
+The model runs in-process on ONNX Runtime — nothing to install and nothing to
+start. The weights are downloaded from HuggingFace on first run (about 800 MB)
+and cached afterwards:
+
+```bash
+dotnet run --project src/samples/LocalDecisions
+
+# or against a model directory you already have, skipping the download
+dotnet run --project src/samples/LocalDecisions -- D:\models\laya
+```
+
+It asks **four questions per ticket in one request** — which team should own it,
+how urgent it is, whether a refund is being requested, and whether the customer
+is angry:
+
+```csharp
+DecisionResult result = await client.EvaluateAsync(
+    new DecisionRequest(ticket)
+        .Choose("team", teams, "Which team should handle this support ticket?")
+        .Score("urgency", urgencyLevels, "How urgent is this ticket?")
+        .Ask("refund", "The customer is asking for a refund.")
+        .Ask("angry", "The customer is angry or frustrated."));
+```
+
+Output:
+
+```text
+My invoice charged me twice for the same subscription month and I want my m…
+
+  route   : billing        (billing @ 98.4%)
+  urgency : urgent, answer within an hour
+            score 1.67 of 3
+  refund  : yes  (p = 0.940)
+  angry   : yes  (p = 0.768)
+
+  distribution: billing 98%  sales 1%  technical 1%
+  244 input tokens, 664 ms, model 'elbruno/laya-onnx'
+```
+
+Note the routing line: the sample calls `team.ChoiceOrNull(0.6)` and falls back
+to `human-review`, so a ticket the model is unsure about reaches a person rather
+than being confidently misrouted.
+
+See the [Local Decisions Guide](decisions-guide.md) for the question types and,
+importantly, the calibration caveats before you pick a threshold.
+
+---
+
+## DecisionCalibration — Seeing the Checkpoint's Two Numerical Caveats
+
+The Laya checkpoint has two behaviours that are easy to trip over and hard to
+notice, because neither one produces an error. This sample makes both visible:
+
+```bash
+dotnet run --project src/samples/DecisionCalibration
+
+# or against a model directory you already have
+dotnet run --project src/samples/DecisionCalibration -- D:\models\laya
+```
+
+**1. A clamped calibration bucket.** Laya fits a temperature per option-count
+bucket, and the English checkpoint ships `choice:11+ = 0.1006` — far below its
+own minimum of `0.5`. The sample routes the same ticket twice, once with 5
+options and once with 12:
+
+```text
+  5 options  (choice:3-5)
+    choice             : billing
+    probability        : 86.9%
+    CalibrationClamped : False
+
+  12 options (choice:11+)
+    choice             : billing
+    probability        : 100.0%
+    CalibrationClamped : True
+```
+
+Both answers are right, and `CalibrationClamped` tells you which one you can
+trust the *number* from. Note that the clamped answer still reports saturated
+confidence: clamping to `0.5` bounds the damage but does not fix the
+calibration, because any temperature below `1.0` still sharpens.
+
+**2. fp16 batch variance.** The same question answered alone and answered inside
+a batch returns slightly different probabilities, because fp16 accumulates in a
+different order:
+
+```text
+  label               alone      batched   delta
+  billing        0.93738423   0.93739642   1.22E-005
+  sales          0.03319702   0.03318152   1.55E-005
+  technical      0.02941875   0.02942205   3.31E-006
+
+  same choice : True (billing)
+  max delta   : 1.55E-005
+```
+
+Far too small to change a decision, but large enough to break an exact-equality
+assertion or a cache keyed on the probability. Compare with a tolerance.
+
+See the [Local Decisions Guide](decisions-guide.md#clamped-calibration-buckets)
+for what to do about both.
+
+---
+
 ## Next Steps
 
 - 📖 [Getting Started](getting-started.md) — full setup guide with GPU configuration
@@ -463,3 +573,4 @@ API reference and configuration options.
 - 📊 [Benchmarks](benchmarks.md) — measure performance on your hardware
 - 🏗️ [Architecture](architecture.md) — understand the internal design
 - 🧩 [Blazor Components](blazor-components.md) — ready-to-use UI components for Blazor apps
+- 🎯 [Local Decisions](decisions-guide.md) — typed decision models for routing and triage

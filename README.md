@@ -5,7 +5,7 @@
 [![Build Status](https://github.com/elbruno/ElBruno.LocalLLMs/actions/workflows/ci.yml/badge.svg)](https://github.com/elbruno/ElBruno.LocalLLMs/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 [![HuggingFace](https://img.shields.io/badge/🤗_HuggingFace-ONNX_Models-orange?style=flat-square)](https://huggingface.co/elbruno)
-[![.NET](https://img.shields.io/badge/.NET-8.0%20|%2010.0-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
+[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
 [![GitHub stars](https://img.shields.io/github/stars/elbruno/ElBruno.LocalLLMs?style=social)](https://github.com/elbruno/ElBruno.LocalLLMs)
 [![Twitter Follow](https://img.shields.io/twitter/follow/elbruno?style=social)](https://twitter.com/elbruno)
 
@@ -17,15 +17,16 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 
 > The last 5 notable additions to the library. Updated with each NuGet release.
 
+- 🎯 **`ElBruno.LocalLLMs.Decisions`** — new package for local **System One** decision models. Typed `choice`, `score` and yes/no answers with full probability distributions in a single forward pass (~600 ms on CPU), running [Laya](https://github.com/NandhaKishorM/laya) **fully in-process on ONNX Runtime** — no server, no Python. Built for routing, triage, moderation and intent detection, where a chat model is slow and overkill. Call `services.AddLocalDecisions()` and inject `IDecisionClient`. See the [Local Decisions Guide](docs/decisions-guide.md) and the [LocalDecisions sample](src/samples/LocalDecisions/).
+- ⬆️ **.NET 10 only** — every project now single-targets `net10.0`. .NET 8 reaches end of support in November 2026, so multi-targeting was dropped ahead of it. **Breaking:** consumers still on .NET 8 must stay on `v0.21.0` or upgrade to .NET 10.
 - 🧩 **`ElBruno.LocalLLMs.BlazorComponents`** — new Razor Class Library with 7 ready-to-use Blazor components: `ModelStatusCard` (download progress bar + actions), `ModelGallery` (filterable grid), `ModelSelector` (two-way-bindable dropdown), `ChatBox` (streaming token display), `EnvironmentDashboard` (CPU/CUDA/DirectML badges), `LocalLLMHealthBadge` (nav-bar status dot), and `RagPlayground`. Call `services.AddLocalLLMsBlazorComponents()` to register. See the [Blazor Components Guide](docs/blazor-components.md) and the [BlazorDemo sample](src/samples/BlazorDemo/).
 - 🧠 **GPT-OSS 20B support** — OpenAI's open-weight MoE model (Apache-2.0) now runs locally via the official `onnxruntime/gpt-oss-20b-onnx` artifacts. Adds the **Harmony** prompt format, channel-aware output filtering (chain-of-thought is stripped, never shown to users), Harmony tool calling, and a `ReasoningEffort` option. Two model IDs: `gpt-oss-20b` (CPU INT4) and `gpt-oss-20b-cuda`. See the [GptOssChat sample](src/samples/GptOssChat/). Also fixes a token-duplication bug that repeated the final token of every generation.
-- 🔁 **`v0.21.0`** — Clean re-publish after `v0.20.12` failed to propagate on NuGet.org; carries forward the issue #49 assembly-version fix and issue #51 vision-probe hardening.
 - 🚀 **`v0.20.12`** — Corrects sibling-package assembly versions, hardens vision token probing against model context limits, and verifies Fara smart image resizing for screenshot workflows.
-- ⬆️ **`v0.20.9`** — Upgraded `onnxruntime-genai` to **0.15.1** and `Microsoft.Extensions.AI.Abstractions` to **10.8.3** across all projects. No API changes.
 
 ## Features
 
 - 🧩 **Blazor components** — `ModelStatusCard`, `ChatBox`, `ModelGallery`, `ModelSelector`, `EnvironmentDashboard`, `LocalLLMHealthBadge`, `RagPlayground` via `ElBruno.LocalLLMs.BlazorComponents` ([guide](docs/blazor-components.md))
+- 🎯 **Local decision models** — typed choice/score/yes-no answers with probabilities in one forward pass via `ElBruno.LocalLLMs.Decisions` ([guide](docs/decisions-guide.md))
 - 🔌 **`IChatClient` implementation** — seamless integration with [Microsoft.Extensions.AI](https://learn.microsoft.com/dotnet/ai/microsoft-extensions-ai)
 - 📦 **Automatic model download** — models are fetched from HuggingFace on first use
 - 🚀 **Zero friction** — works out of the box with sensible defaults (Phi-3.5 mini)
@@ -47,6 +48,7 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 | `ElBruno.LocalLLMs.Rag` | [![NuGet](https://img.shields.io/nuget/v/ElBruno.LocalLLMs.Rag.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs.Rag) | [![Downloads](https://img.shields.io/nuget/dt/ElBruno.LocalLLMs.Rag.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs.Rag) | RAG pipeline — document chunking, indexing, retrieval |
 | `ElBruno.LocalLLMs.BitNet` | [![NuGet](https://img.shields.io/nuget/v/ElBruno.LocalLLMs.BitNet.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs.BitNet) | [![Downloads](https://img.shields.io/nuget/dt/ElBruno.LocalLLMs.BitNet.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs.BitNet) | BitNet 1.58-bit models via bitnet.cpp + IChatClient |
 | `ElBruno.LocalLLMs.BlazorComponents` | [![NuGet](https://img.shields.io/nuget/v/ElBruno.LocalLLMs.BlazorComponents.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs.BlazorComponents) | [![Downloads](https://img.shields.io/nuget/dt/ElBruno.LocalLLMs.BlazorComponents.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs.BlazorComponents) | Blazor components — ModelStatusCard, ChatBox, ModelGallery, and more |
+| `ElBruno.LocalLLMs.Decisions` | [![NuGet](https://img.shields.io/nuget/v/ElBruno.LocalLLMs.Decisions.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs.Decisions) | [![Downloads](https://img.shields.io/nuget/dt/ElBruno.LocalLLMs.Decisions.svg?style=flat-square)](https://www.nuget.org/packages/ElBruno.LocalLLMs.Decisions) | System One decision models — typed choice, score and yes/no answers |
 
 ## Installation
 
@@ -253,6 +255,53 @@ var options = new LocalLLMsOptions
 
 See [docs/observability.md](docs/observability.md) for the lifecycle event contract, metric names, and Aspire wiring notes, and [docs/cancellation.md](docs/cancellation.md) for voice barge-in cancellation behavior.
 
+## Local Decisions
+
+Sometimes you don't need prose — you need a decision. `ElBruno.LocalLLMs.Decisions` runs a
+**System One** model that returns a *typed* answer with its full probability distribution in a
+single forward pass, fast enough to call on every request.
+
+```bash
+dotnet add package ElBruno.LocalLLMs.Decisions
+```
+
+The model runs **in-process on ONNX Runtime** — no server to start and no Python. The weights are
+downloaded from [`elbruno/laya-onnx`](https://huggingface.co/elbruno/laya-onnx) on first use
+(about 800 MB) and cached afterwards.
+
+Ask several questions at once — they share one forward pass, so four cost about what one costs:
+
+```csharp
+using var client = new LayaOnnxDecisionClient();
+
+DecisionResult result = await client.EvaluateAsync(
+    new DecisionRequest("My invoice charged me twice and I want my money back.")
+        .Choose("team", new Dictionary<string, string?>
+        {
+            ["billing"]   = "Payment, invoice and refund problems",
+            ["technical"] = "Bugs, outages and API errors",
+            ["sales"]     = "Pricing, upgrades and new purchases"
+        })
+        .Score("urgency", new[] { "no rush", "normal", "urgent", "critical" })
+        .Ask("refund", "The customer is asking for a refund."));
+
+ChoiceResult team = result.Choice("team");
+
+// Gate on the probability so ambiguous tickets reach a human
+// instead of being confidently misrouted.
+string route = team.ChoiceOrNull(0.6) ?? "human-review";
+
+Console.WriteLine(route);                                  // billing
+Console.WriteLine(result.Score("urgency").Score);          // 1.67 of 3
+Console.WriteLine(result.Probability("refund").IsTrue);    // True
+```
+
+> ⚠️ Laya's public checkpoints report **uncalibrated confidence**. Fit `DecisionThreshold` against
+> your own labelled examples before relying on a boolean verdict. Answers whose temperature bucket
+> the checkpoint got wrong are flagged with `CalibrationClamped` — see the
+> [Local Decisions Guide](docs/decisions-guide.md#clamped-calibration-buckets) and the
+> [DecisionCalibration sample](src/samples/DecisionCalibration/).
+
 ## Cache Management
 
 Inspect and manage the local model cache programmatically:
@@ -380,12 +429,14 @@ See the [Supported Models Guide](docs/supported-models.md) for detailed model ca
 | [GptOssChat](src/samples/GptOssChat) | GPT-OSS 20B chat, streaming, reasoning effort, and tool calling |
 | [MagenticUIServer](src/samples/MagenticUIServer) | ASP.NET Core + SignalR multi-agent server (FileSurfer, WebFetcher, Coder) |
 | [ConsoleAppDemo](src/samples/ConsoleAppDemo) | Interactive console application |
+| [LocalDecisions](src/samples/LocalDecisions) | Support-ticket triage with a local System One decision model |
+| [DecisionCalibration](src/samples/DecisionCalibration) | Calibration clamping and fp16 batch variance, made visible |
 
 > 🌐 **Reference App:** [ElBruno.MagenticUI](https://github.com/elbruno/ElBruno.MagenticUI) — full Blazor Server port of [microsoft/magentic-ui](https://github.com/microsoft/magentic-ui) running locally with this library.
 
 ## Requirements
 
-- .NET 8.0 or .NET 10.0
+- .NET 10.0
 - CPU (default), NVIDIA GPU (CUDA), or Windows GPU (DirectML)
 - ~2-8 GB disk space per model (depending on size and quantization)
 
@@ -396,13 +447,13 @@ git clone https://github.com/elbruno/ElBruno.LocalLLMs.git
 cd ElBruno.LocalLLMs
 dotnet restore ElBruno.LocalLLMs.slnx
 dotnet build ElBruno.LocalLLMs.slnx
-dotnet test ElBruno.LocalLLMs.slnx --framework net8.0
+dotnet test ElBruno.LocalLLMs.slnx
 ```
 
 **Run integration tests** (downloads real models — requires internet):
 
 ```bash
-RUN_INTEGRATION_TESTS=true dotnet test ElBruno.LocalLLMs.slnx --framework net8.0
+RUN_INTEGRATION_TESTS=true dotnet test ElBruno.LocalLLMs.slnx
 ```
 
 Integration tests validate the full lifecycle (download → infer → cache hit → delete) for all 35 supported models. See [docs/tests/README.md](docs/tests/README.md) for details.
@@ -414,6 +465,8 @@ Integration tests validate the full lifecycle (download → infer → cache hit 
 - [BitNet Guide](docs/bitnet-guide.md) — setup and usage of 1.58-bit BitNet models
 - [Cancellation Guide](docs/cancellation.md) — streaming cancellation semantics and voice barge-in usage
 - [Observability](docs/observability.md) — OpenTelemetry, lifecycle events, metrics, Aspire wiring
+- [Blazor Components Guide](docs/blazor-components.md) — the 7 Razor components and how to wire them
+- [Local Decisions Guide](docs/decisions-guide.md) — typed decision models, calibration caveats, thresholds
 - [Architecture](docs/architecture.md) — design decisions and internal structure
 - [Samples Guide](docs/samples.md) — walkthrough of each sample application
 - [Benchmarks](docs/benchmarks.md) — how to run and interpret performance benchmarks

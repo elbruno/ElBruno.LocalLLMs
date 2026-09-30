@@ -23,9 +23,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: |
-            8.0.x
-            10.0.x
+          dotnet-version: 10.0.x
 
       - name: Determine version
         id: version
@@ -54,12 +52,15 @@ jobs:
           dotnet build src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
           dotnet build src/ElBruno.LocalLLMs.BitNet/ElBruno.LocalLLMs.BitNet.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
           dotnet build src/ElBruno.LocalLLMs.BlazorComponents/ElBruno.LocalLLMs.BlazorComponents.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
+          dotnet build src/ElBruno.LocalLLMs.Decisions/ElBruno.LocalLLMs.Decisions.csproj -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
 
       - name: Unit Tests
         run: |
-          dotnet test src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj -c Release --framework net8.0 -p:Version=${{ steps.version.outputs.version }} --verbosity normal
-          dotnet test src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj -c Release --framework net8.0 -p:Version=${{ steps.version.outputs.version }} --verbosity normal
-          dotnet test src/tests/ElBruno.LocalLLMs.BitNet.Tests/ElBruno.LocalLLMs.BitNet.Tests.csproj -c Release --framework net8.0 -p:Version=${{ steps.version.outputs.version }} --verbosity normal
+          dotnet test src/tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj -c Release -p:Version=${{ steps.version.outputs.version }} --verbosity normal
+          dotnet test src/tests/ElBruno.LocalLLMs.Rag.Tests/ElBruno.LocalLLMs.Rag.Tests.csproj -c Release -p:Version=${{ steps.version.outputs.version }} --verbosity normal
+          dotnet test src/tests/ElBruno.LocalLLMs.BitNet.Tests/ElBruno.LocalLLMs.BitNet.Tests.csproj -c Release -p:Version=${{ steps.version.outputs.version }} --verbosity normal
+          dotnet test src/tests/ElBruno.LocalLLMs.Decisions.Tests/ElBruno.LocalLLMs.Decisions.Tests.csproj -c Release -p:Version=${{ steps.version.outputs.version }} --verbosity normal
+          dotnet test src/tests/ElBruno.LocalLLMs.BlazorComponents.Tests/ElBruno.LocalLLMs.BlazorComponents.Tests.csproj -c Release -p:Version=${{ steps.version.outputs.version }} --verbosity normal
 
       - name: Validate README What's New policy
         run: |
@@ -83,6 +84,7 @@ jobs:
           dotnet pack src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
           dotnet pack src/ElBruno.LocalLLMs.BitNet/ElBruno.LocalLLMs.BitNet.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
           dotnet pack src/ElBruno.LocalLLMs.BlazorComponents/ElBruno.LocalLLMs.BlazorComponents.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
+          dotnet pack src/ElBruno.LocalLLMs.Decisions/ElBruno.LocalLLMs.Decisions.csproj -c Release --no-build -p:Version=${{ steps.version.outputs.version }} -o artifacts
       - name: Validate packed assembly versions
         shell: pwsh
         run: ./scripts/Validate-PackageAssemblyVersions.ps1 -PackageDirectory ./artifacts

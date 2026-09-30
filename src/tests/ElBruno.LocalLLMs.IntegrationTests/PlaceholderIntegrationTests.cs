@@ -20,7 +20,7 @@ public class PlaceholderIntegrationTests
             var process = Process.Start(new ProcessStartInfo
             {
                 FileName = "dotnet",
-                Arguments = $"pack \"{csprojPath}\" -c Release -p:TargetFrameworks=net8.0 -o \"{packageOutDir}\"",
+                Arguments = $"pack \"{csprojPath}\" -c Release -o \"{packageOutDir}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false

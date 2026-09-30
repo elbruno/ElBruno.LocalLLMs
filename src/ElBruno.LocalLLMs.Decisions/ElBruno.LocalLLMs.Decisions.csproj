@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>ElBruno.LocalLLMs.Decisions</PackageId>
+    <Description>Local System One decision models for ElBruno.LocalLLMs. Typed choice, score and yes/no decisions with probabilities in a single forward pass, running fully in-process on ONNX Runtime with no server and no Python.</Description>
+    <PackageProjectUrl>https://github.com/elbruno/ElBruno.LocalLLMs</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>decisions;classification;laya;onnx;system-one;local-llm;routing;triage</PackageTags>
+    <IsPackable>true</IsPackable>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ElBruno.HuggingFace.Downloader" Version="1.4.4" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.28.0" />
+    <PackageReference Include="Microsoft.ML.Tokenizers" Version="2.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ElBruno.LocalLLMs.Decisions.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\images\nuget_logo.png" Pack="true" PackagePath="" />
+  </ItemGroup>
+</Project>
