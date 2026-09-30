@@ -5,7 +5,7 @@
 [![Build Status](https://github.com/elbruno/ElBruno.LocalLLMs/actions/workflows/ci.yml/badge.svg)](https://github.com/elbruno/ElBruno.LocalLLMs/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 [![HuggingFace](https://img.shields.io/badge/🤗_HuggingFace-ONNX_Models-orange?style=flat-square)](https://huggingface.co/elbruno)
-[![.NET](https://img.shields.io/badge/.NET-8.0%20|%2010.0-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
+[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
 [![GitHub stars](https://img.shields.io/github/stars/elbruno/ElBruno.LocalLLMs?style=social)](https://github.com/elbruno/ElBruno.LocalLLMs)
 [![Twitter Follow](https://img.shields.io/twitter/follow/elbruno?style=social)](https://twitter.com/elbruno)
 
@@ -17,11 +17,11 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 
 > The last 5 notable additions to the library. Updated with each NuGet release.
 
+- ⬆️ **.NET 10 only** — every project now single-targets `net10.0`. .NET 8 reaches end of support in November 2026, so multi-targeting was dropped ahead of it. **Breaking:** consumers still on .NET 8 must stay on `v0.21.0` or upgrade to .NET 10.
 - 🧩 **`ElBruno.LocalLLMs.BlazorComponents`** — new Razor Class Library with 7 ready-to-use Blazor components: `ModelStatusCard` (download progress bar + actions), `ModelGallery` (filterable grid), `ModelSelector` (two-way-bindable dropdown), `ChatBox` (streaming token display), `EnvironmentDashboard` (CPU/CUDA/DirectML badges), `LocalLLMHealthBadge` (nav-bar status dot), and `RagPlayground`. Call `services.AddLocalLLMsBlazorComponents()` to register. See the [Blazor Components Guide](docs/blazor-components.md) and the [BlazorDemo sample](src/samples/BlazorDemo/).
 - 🧠 **GPT-OSS 20B support** — OpenAI's open-weight MoE model (Apache-2.0) now runs locally via the official `onnxruntime/gpt-oss-20b-onnx` artifacts. Adds the **Harmony** prompt format, channel-aware output filtering (chain-of-thought is stripped, never shown to users), Harmony tool calling, and a `ReasoningEffort` option. Two model IDs: `gpt-oss-20b` (CPU INT4) and `gpt-oss-20b-cuda`. See the [GptOssChat sample](src/samples/GptOssChat/). Also fixes a token-duplication bug that repeated the final token of every generation.
 - 🔁 **`v0.21.0`** — Clean re-publish after `v0.20.12` failed to propagate on NuGet.org; carries forward the issue #49 assembly-version fix and issue #51 vision-probe hardening.
 - 🚀 **`v0.20.12`** — Corrects sibling-package assembly versions, hardens vision token probing against model context limits, and verifies Fara smart image resizing for screenshot workflows.
-- ⬆️ **`v0.20.9`** — Upgraded `onnxruntime-genai` to **0.15.1** and `Microsoft.Extensions.AI.Abstractions` to **10.8.3** across all projects. No API changes.
 
 ## Features
 
@@ -385,7 +385,7 @@ See the [Supported Models Guide](docs/supported-models.md) for detailed model ca
 
 ## Requirements
 
-- .NET 8.0 or .NET 10.0
+- .NET 10.0
 - CPU (default), NVIDIA GPU (CUDA), or Windows GPU (DirectML)
 - ~2-8 GB disk space per model (depending on size and quantization)
 
@@ -396,13 +396,13 @@ git clone https://github.com/elbruno/ElBruno.LocalLLMs.git
 cd ElBruno.LocalLLMs
 dotnet restore ElBruno.LocalLLMs.slnx
 dotnet build ElBruno.LocalLLMs.slnx
-dotnet test ElBruno.LocalLLMs.slnx --framework net8.0
+dotnet test ElBruno.LocalLLMs.slnx
 ```
 
 **Run integration tests** (downloads real models — requires internet):
 
 ```bash
-RUN_INTEGRATION_TESTS=true dotnet test ElBruno.LocalLLMs.slnx --framework net8.0
+RUN_INTEGRATION_TESTS=true dotnet test ElBruno.LocalLLMs.slnx
 ```
 
 Integration tests validate the full lifecycle (download → infer → cache hit → delete) for all 35 supported models. See [docs/tests/README.md](docs/tests/README.md) for details.

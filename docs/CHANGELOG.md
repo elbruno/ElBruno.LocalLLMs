@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **BREAKING: .NET 10 is now the only supported target framework.** Every library, test, sample, and benchmark project single-targets `net10.0`; the `net8.0;net10.0` multi-targeting was removed ahead of .NET 8's November 2026 end of support. `global.json` now pins SDK `10.0.0`, and the CI/publish workflows install `10.0.x` only and no longer pass per-framework overrides. Consumers still on .NET 8 must remain on `v0.21.0` or upgrade to .NET 10.
+
 ### Added
 - **GPT-OSS 20B support** — OpenAI's Apache-2.0 open-weight MoE model (21B total / 3.6B active), using the official `onnxruntime/gpt-oss-20b-onnx` artifacts. Two registry entries: `gpt-oss-20b` (CPU INT4) and `gpt-oss-20b-cuda` (CUDA INT4). Requires no ONNX Runtime GenAI upgrade — gpt-oss support landed in the already-referenced 0.15.x line.
 - **`ChatTemplateFormat.Harmony`** and `HarmonyFormatter` — the OpenAI Harmony prompt format, implemented against the `chat_template.jinja` shipped in the model repository. Renders the caller's system prompt as a `developer` message and tool definitions as a TypeScript-style `namespace functions { ... }` block.

@@ -45,18 +45,18 @@ Integration tests require:
 ```powershell
 # Run all integration tests (downloads models as needed)
 $env:RUN_INTEGRATION_TESTS = "true"
-dotnet test src/tests/ElBruno.LocalLLMs.IntegrationTests --framework net8.0
+dotnet test src/tests/ElBruno.LocalLLMs.IntegrationTests
 
 # Run only lifecycle tests for text models
-dotnet test src/tests/ElBruno.LocalLLMs.IntegrationTests --framework net8.0 `
+dotnet test src/tests/ElBruno.LocalLLMs.IntegrationTests `
     --filter "FullyQualifiedName~ModelLifecycleTests"
 
 # Run only tool-calling lifecycle tests
-dotnet test src/tests/ElBruno.LocalLLMs.IntegrationTests --framework net8.0 `
+dotnet test src/tests/ElBruno.LocalLLMs.IntegrationTests `
     --filter "FullyQualifiedName~ToolCallingLifecycleTests"
 
 # Run only vision lifecycle tests
-dotnet test src/tests/ElBruno.LocalLLMs.IntegrationTests --framework net8.0 `
+dotnet test src/tests/ElBruno.LocalLLMs.IntegrationTests `
     --filter "FullyQualifiedName~VisionLifecycleTests"
 ```
 

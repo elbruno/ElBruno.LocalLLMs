@@ -4,7 +4,7 @@ Runnable examples demonstrating how to use `ElBruno.LocalLLMs` in different scen
 
 ## Prerequisites
 
-- .NET 8.0+ SDK
+- .NET 10.0 SDK
 - ~2-4 GB free disk space (models are downloaded on first run)
 - CPU is sufficient; GPU (CUDA/DirectML) is optional
 

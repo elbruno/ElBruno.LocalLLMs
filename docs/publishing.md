@@ -77,7 +77,7 @@ Before triggering publish:
 1. `<Version>` matches the release you intend to ship.
 2. `docs/CHANGELOG.md` contains the same version.
 3. README and any feature docs reflect the shipped behavior.
-4. `dotnet test ElBruno.LocalLLMs.slnx --framework net8.0` passes locally.
+4. `dotnet test ElBruno.LocalLLMs.slnx` passes locally.
 5. `dotnet pack src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj -c Release` succeeds locally.
 
 ---
@@ -96,7 +96,7 @@ Before triggering publish:
                      │  publish.yml                         │
                      │                                      │
                      │  1. Checkout code                    │
-                     │  2. Setup .NET 8 + 10                │
+                     │  2. Setup .NET 10                    │
                      │  3. Determine version (tag/input/    │
                      │     csproj)                          │
                      │  4. Restore → Build → Test → Pack    │

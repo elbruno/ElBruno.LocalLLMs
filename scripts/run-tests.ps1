@@ -29,7 +29,7 @@
     Skip the integration test project run (useful for fast CI pre-commit checks).
 
 .PARAMETER Framework
-    Target framework passed to dotnet build and dotnet test. Defaults to 'net8.0'.
+    Target framework passed to dotnet build and dotnet test. Defaults to 'net10.0'.
 
 .PARAMETER HfToken
     HuggingFace token for private model repositories. Sets the HF_TOKEN environment variable
@@ -82,7 +82,7 @@ param(
     [switch]$NoBuild,
     [switch]$SkipUnitTests,
     [switch]$SkipIntegrationTests,
-    [string]$Framework = 'net8.0',
+    [string]$Framework = 'net10.0',
     [string]$HfToken,
     [string]$Filter,
     [string]$LogFile   # Optional explicit log path. Auto-generates docs/tests/YYYY-MM-DD-HH-run.log when omitted.

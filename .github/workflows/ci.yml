@@ -18,18 +18,16 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: |
-            8.0.x
-            10.0.x
+          dotnet-version: 10.0.x
 
       - name: Restore
-        run: dotnet restore ElBruno.LocalLLMs.slnx -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0 -p:NoBuild=false
+        run: dotnet restore ElBruno.LocalLLMs.slnx -p:NoBuild=false
 
       - name: Build
-        run: dotnet build ElBruno.LocalLLMs.slnx --no-restore -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0 -p:NoBuild=false
+        run: dotnet build ElBruno.LocalLLMs.slnx --no-restore -p:NoBuild=false
 
       - name: Test
-        run: dotnet test ElBruno.LocalLLMs.slnx --no-build --framework net8.0 --verbosity normal --logger "trx;LogFileName=test-results.trx"
+        run: dotnet test ElBruno.LocalLLMs.slnx --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
 
       - name: Upload test results
         uses: actions/upload-artifact@v4

@@ -74,7 +74,7 @@ dotnet restore src/samples/MagenticUIServer/MagenticUIServer.Agents/MagenticUISe
 dotnet build src/samples/MagenticUIServer/MagenticUIServer.Agents/MagenticUIServer.Agents.csproj
 
 # Run all Phase 3 tests
-dotnet test src/tests/MagenticUIServer.Agents.Tests/MagenticUIServer.Agents.Tests.csproj --framework net8.0
+dotnet test src/tests/MagenticUIServer.Agents.Tests/MagenticUIServer.Agents.Tests.csproj
 
 # Build the web host
 dotnet build src/samples/MagenticUIServer/MagenticUIServer/MagenticUIServer.csproj

@@ -8,7 +8,7 @@ Welcome! This guide will help you set up and run local LLMs in your .NET applica
 
 Before you start, ensure you have:
 
-- **.NET 8.0 or .NET 10.0** — [Download](https://dotnet.microsoft.com/en-us/download)
+- **.NET 10.0** — [Download](https://dotnet.microsoft.com/en-us/download)
 - **~2-8 GB disk space** — to cache downloaded models
 - **A compatible processor** — CPU (default), NVIDIA GPU (CUDA 11.8+), or Windows GPU (DirectML)
 

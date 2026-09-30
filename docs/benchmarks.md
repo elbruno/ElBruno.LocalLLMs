@@ -97,7 +97,7 @@ The benchmarks use these BenchmarkDotNet settings:
 
 - **`[MemoryDiagnoser]`** — Tracks GC and memory allocation
 - **`[SimpleJob(warmupCount: 3, iterationCount: 10)]`** — 3 warmup iterations, 10 measured iterations (fast runs for development)
-- **Target framework:** `net8.0`
+- **Target framework:** `net10.0`
 
 ## Adding New Benchmarks
 

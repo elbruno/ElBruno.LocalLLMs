@@ -8,7 +8,7 @@ Thank you for your interest in contributing! This guide explains how to build, t
 
 ### Prerequisites
 
-- **.NET 8.0 or 10.0** — [Download](https://dotnet.microsoft.com/en-us/download)
+- **.NET 10.0** — [Download](https://dotnet.microsoft.com/en-us/download)
 - **Git** — for version control
 - **Python 3.10+** — only if converting models to ONNX
 

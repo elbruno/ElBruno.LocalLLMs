@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>ElBruno.LocalLLMs.Rag</PackageId>
     <Description>RAG (Retrieval-Augmented Generation) pipeline for ElBruno.LocalLLMs. Provides document chunking, embedding storage, and semantic search.</Description>
