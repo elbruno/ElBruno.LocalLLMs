@@ -1,9 +1,12 @@
 name: Squad CI
-# dotnet project — configure build/test commands below
+
+# Real build and test for the dev-first branches.
+# PRs targeting main are covered by ci.yml, so main is deliberately absent
+# here to avoid running the same suite twice on the same commit.
 
 on:
   pull_request:
-    branches: [dev, preview, main, insider]
+    branches: [dev, preview, insider]
     types: [opened, synchronize, reopened]
   push:
     branches: [dev, insider]
@@ -17,12 +20,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build and test
-        run: |
-          # TODO: Add your dotnet build/test commands here
-          # Go:            go test ./...
-          # Python:        pip install -r requirements.txt && pytest
-          # .NET:          dotnet test
-          # Java (Maven):  mvn test
-          # Java (Gradle): ./gradlew test
-          echo "No build commands configured — update squad-ci.yml"
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # -p:NoBuild=false is required: the BitNet native projects default it to
+      # true, which otherwise makes restore and build silently skip them.
+      - name: Restore
+        run: dotnet restore ElBruno.LocalLLMs.slnx -p:NoBuild=false
+
+      - name: Build
+        run: dotnet build ElBruno.LocalLLMs.slnx --no-restore -p:NoBuild=false
+
+      - name: Test
+        run: dotnet test ElBruno.LocalLLMs.slnx --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: "**/test-results.trx"
