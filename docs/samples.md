@@ -566,6 +566,29 @@ for what to do about both.
 
 ---
 
+## SharedDecisions: Provider-Neutral Decisions and Routing
+
+Uses the local Laya model through the shared `ElBruno.AI.Decisions` `IDecisionClient`, then hands the same client to `DecisionRoutingChatClient` so the decision model picks which `IChatClient` answers a message.
+
+```bash
+dotnet run --project src/samples/SharedDecisions
+
+# or against a model directory you already have
+dotnet run --project src/samples/SharedDecisions -- D:\models\laya
+```
+
+Expected output (probabilities vary slightly by CPU):
+
+```text
+Team: billing (confidence 98.3%)
+Frustrated: 85.3%
+[billing agent] I'll look into the duplicate charge.
+```
+
+See the [Local Decisions Guide](decisions-guide.md#using-with-elbrunoaidecisions).
+
+---
+
 ## Next Steps
 
 - 📖 [Getting Started](getting-started.md) — full setup guide with GPU configuration

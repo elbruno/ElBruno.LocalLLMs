@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace ElBruno.LocalLLMs.Decisions;
 
@@ -8,8 +9,8 @@ namespace ElBruno.LocalLLMs.Decisions;
 public static class DecisionServiceExtensions
 {
     /// <summary>
-    /// Registers an <see cref="IDecisionClient"/> that runs a Laya decision model in-process
-    /// through ONNX Runtime.
+    /// Registers a Laya decision model that runs in-process through ONNX Runtime, as the shared
+    /// <see cref="IDecisionClient"/> provider and as <see cref="ILayaDecisionClient"/>.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="configureOptions">Optional action to configure the model source and threshold.</param>
@@ -18,6 +19,8 @@ public static class DecisionServiceExtensions
     /// The client is registered as a singleton because loading the model is expensive and the
     /// loaded session is safe to share. The model is downloaded lazily on first use, so
     /// registration does not block startup.
+    /// The shared <see cref="IDecisionClient"/> uses <c>TryAdd</c>, like the other ElBruno.AI.Decisions providers,
+    /// so the first provider registered keeps that slot; <see cref="ILayaDecisionClient"/> is always available.
     /// </remarks>
     /// <example>
     /// <code>
@@ -39,7 +42,9 @@ public static class DecisionServiceExtensions
         options.Validate();
 
         services.AddSingleton(options);
-        services.AddSingleton<IDecisionClient>(_ => new LayaOnnxDecisionClient(options));
+        services.AddSingleton(_ => new LayaOnnxDecisionClient(options));
+        services.AddSingleton<ILayaDecisionClient>(provider => provider.GetRequiredService<LayaOnnxDecisionClient>());
+        services.TryAddSingleton<IDecisionClient>(provider => provider.GetRequiredService<LayaOnnxDecisionClient>());
 
         return services;
     }

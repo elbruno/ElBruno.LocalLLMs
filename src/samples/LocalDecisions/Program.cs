@@ -1,3 +1,4 @@
+using ElBruno.AI.Decisions;
 using ElBruno.LocalLLMs.Decisions;
 
 // Triages a support ticket with a local System One decision model.
