@@ -4,7 +4,7 @@ using ElBruno.LocalLLMs.Decisions.Internal;
 namespace ElBruno.LocalLLMs.Decisions;
 
 /// <summary>
-/// An <see cref="IDecisionClient"/> that runs a Laya decision model in-process through ONNX Runtime.
+/// An <see cref="IDecisionClient"/> provider that runs a Laya decision model in-process through ONNX Runtime.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -16,7 +16,7 @@ namespace ElBruno.LocalLLMs.Decisions;
 /// A single instance is safe to share and expensive to create, so register it as a singleton.
 /// </para>
 /// </remarks>
-public sealed class LayaOnnxDecisionClient : IDecisionClient, IDisposable
+public sealed class LayaOnnxDecisionClient : ILayaDecisionClient, IDisposable
 {
     private readonly DecisionOptions _options;
     private readonly SemaphoreSlim _initializationLock = new(1, 1);
@@ -73,6 +73,41 @@ public sealed class LayaOnnxDecisionClient : IDecisionClient, IDisposable
             cancellationToken).ConfigureAwait(false);
 
         return result.Probability("ask");
+    }
+
+    /// <inheritdoc />
+    async Task<ChoiceDecision> IDecisionClient.ChooseAsync(
+        string input,
+        string instructions,
+        IReadOnlyDictionary<string, string?> options,
+        CancellationToken cancellationToken)
+    {
+        DecisionRequestValidation.Choice(input, instructions, options);
+        var result = await ChooseAsync(input, options, instructions, cancellationToken).ConfigureAwait(false);
+        return NeutralDecisionMapper.ToDecision(result);
+    }
+
+    /// <inheritdoc />
+    async Task<ScoreDecision> IDecisionClient.ScoreAsync(
+        string input,
+        string instructions,
+        IReadOnlyList<string> rubric,
+        CancellationToken cancellationToken)
+    {
+        DecisionRequestValidation.Score(input, instructions, rubric);
+        var result = await ScoreAsync(input, rubric, instructions, cancellationToken).ConfigureAwait(false);
+        return NeutralDecisionMapper.ToDecision(result);
+    }
+
+    /// <inheritdoc />
+    async Task<AssessmentDecision> IDecisionClient.AssessAsync(
+        string input,
+        string proposition,
+        CancellationToken cancellationToken)
+    {
+        DecisionRequestValidation.Assess(input, proposition);
+        var result = await AskAsync(input, proposition, cancellationToken).ConfigureAwait(false);
+        return NeutralDecisionMapper.ToDecision(result);
     }
 
     /// <inheritdoc />

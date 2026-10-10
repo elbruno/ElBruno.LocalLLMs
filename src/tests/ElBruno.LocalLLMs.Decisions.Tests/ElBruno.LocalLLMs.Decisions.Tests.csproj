@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Using Include="ElBruno.AI.Decisions" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\ElBruno.LocalLLMs.Decisions\ElBruno.LocalLLMs.Decisions.csproj" />
   </ItemGroup>
 

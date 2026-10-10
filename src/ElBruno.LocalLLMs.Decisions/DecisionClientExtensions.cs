@@ -1,7 +1,7 @@
 namespace ElBruno.LocalLLMs.Decisions;
 
 /// <summary>
-/// Convenience overloads for <see cref="IDecisionClient"/>.
+/// Convenience overloads for <see cref="ILayaDecisionClient"/>.
 /// </summary>
 public static class DecisionClientExtensions
 {
@@ -20,7 +20,7 @@ public static class DecisionClientExtensions
     /// <c>"payment, invoice and refund problems"</c>. Prefer the dictionary overload when accuracy matters.
     /// </remarks>
     public static Task<ChoiceResult> ChooseAsync(
-        this IDecisionClient client,
+        this ILayaDecisionClient client,
         string state,
         IEnumerable<string> options,
         string? instructions = null,
@@ -43,10 +43,10 @@ public static class DecisionClientExtensions
     /// <returns><see langword="true"/> when the probability meets the configured threshold.</returns>
     /// <remarks>
     /// Discarding the probability discards the information you need to tune the threshold later.
-    /// Prefer <see cref="IDecisionClient.AskAsync"/> unless you are certain a boolean is enough.
+    /// Prefer <see cref="ILayaDecisionClient.AskAsync"/> unless you are certain a boolean is enough.
     /// </remarks>
     public static async Task<bool> IsTrueAsync(
-        this IDecisionClient client,
+        this ILayaDecisionClient client,
         string state,
         string proposition,
         CancellationToken cancellationToken = default)

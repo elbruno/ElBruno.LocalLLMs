@@ -28,7 +28,7 @@ await ShowBatchVarianceAsync(client);
 // the logits by it sharpens the distribution roughly tenfold, which would report a
 // genuinely uncertain answer as near-certain. The client clamps it back to 0.5 and sets
 // CalibrationClamped so you can tell the difference.
-static async Task ShowCalibrationClampAsync(IDecisionClient client)
+static async Task ShowCalibrationClampAsync(ILayaDecisionClient client)
 {
     Console.WriteLine("=== 1. Calibration clamp (choice:11+) ===\n");
 
@@ -95,7 +95,7 @@ static async Task ShowCalibrationClampAsync(IDecisionClient client)
 // matrix multiplications accumulate in a different order. The difference is around 1e-4:
 // far too small to flip a routing decision, but large enough to break an exact-equality
 // assertion or a cache keyed on the probability value.
-static async Task ShowBatchVarianceAsync(IDecisionClient client)
+static async Task ShowBatchVarianceAsync(ILayaDecisionClient client)
 {
     Console.WriteLine("=== 2. fp16 batch variance ===\n");
 

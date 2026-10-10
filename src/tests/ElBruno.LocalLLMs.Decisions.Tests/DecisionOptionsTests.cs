@@ -86,8 +86,8 @@ public class DecisionOptionsTests
         services.AddLocalDecisions(options => options.DecisionThreshold = 0.75);
 
         using ServiceProvider provider = services.BuildServiceProvider();
-        var first = provider.GetRequiredService<IDecisionClient>();
-        var second = provider.GetRequiredService<IDecisionClient>();
+        var first = provider.GetRequiredService<ILayaDecisionClient>();
+        var second = provider.GetRequiredService<ILayaDecisionClient>();
 
         Assert.Same(first, second);
         Assert.IsType<LayaOnnxDecisionClient>(first);

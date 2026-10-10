@@ -9,7 +9,7 @@ which is exactly where a chat model is the wrong tool.
 
 ## Decision model vs. chat model
 
-| | Chat model (`IChatClient`) | Decision model (`IDecisionClient`) |
+| | Chat model (`IChatClient`) | Decision model (`ILayaDecisionClient`) |
 |---|---|---|
 | Output | free text, token by token | one typed answer + probabilities |
 | Passes | autoregressive, one token at a time | a single forward pass |
@@ -225,6 +225,35 @@ It is far too small to flip a routing decision, but large enough to matter if yo
 Batching is still the right default: four questions in one pass cost about what one costs. Just
 treat the probabilities as approximate, which the calibration caveats above already require.
 
+## Using with ElBruno.AI.Decisions
+
+`LayaOnnxDecisionClient` is a provider for the shared [`ElBruno.AI.Decisions`](https://www.nuget.org/packages/ElBruno.AI.Decisions) abstractions, alongside its Foundry, Ollama and Jev providers. It is the in-process ONNX one: no server and no network call at inference time.
+
+```csharp
+using ElBruno.AI.Decisions;
+
+builder.Services.AddLocalDecisions();
+
+// Provider-neutral: swap the registration to change providers, nothing else changes.
+IDecisionClient decisions = provider.GetRequiredService<IDecisionClient>();
+
+ChoiceDecision team = await decisions.ChooseAsync(ticket, "Which team should handle this?", teams);
+AssessmentDecision angry = await decisions.AssessAsync(ticket, "The customer is frustrated.");
+```
+
+The same client also plugs into `DecisionRoutingChatClient`, which picks the `IChatClient` that answers each message.
+
+Two interfaces are registered, both resolving to the same singleton:
+
+| Inject | When |
+|---|---|
+| `ElBruno.AI.Decisions.IDecisionClient` | You want to stay provider-neutral. Registered with `TryAdd`, so the first provider registered keeps this slot. |
+| `ILayaDecisionClient` | You want Laya extras: `EvaluateAsync` batching into one forward pass, `CalibrationClamped`, `ProbabilityResult.IsTrue`. It extends `IDecisionClient`. |
+
+The neutral results clamp every probability into `[0, 1]`, because the shared types reject values a few ulps outside that range. `CalibrationClamped` is only available on the rich results.
+
+`DecisionException` now comes from `ElBruno.AI.Decisions`. The shared package is early access (0.6.x), so expect its surface to move.
+
 ## Dependency injection
 
 ```csharp
@@ -235,7 +264,7 @@ builder.Services.AddLocalDecisions(options =>
 });
 ```
 
-Then inject `IDecisionClient`. The client is thread-safe and registered as a singleton, because
+Then inject `ILayaDecisionClient` (or the provider-neutral `IDecisionClient`). The client is thread-safe and registered as a singleton, because
 loading the model is expensive and the loaded session is safe to share. Registration does not
 touch the network — the model is loaded lazily on the first call.
 
@@ -251,11 +280,11 @@ touch the network — the model is loaded lazily on the first call.
 
 ## Testing
 
-`IDecisionClient` is a plain interface, so unit tests can implement it directly with whatever
+`IDecisionClient` and `ILayaDecisionClient` are plain interfaces, so unit tests can implement them directly with whatever
 distributions the test needs — no model download and no ONNX session:
 
 ```csharp
-internal sealed class StubDecisionClient : IDecisionClient { /* ... */ }
+internal sealed class StubDecisionClient : ILayaDecisionClient { /* ... */ }
 ```
 
 ## Error handling

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.23.0] - 2026-10-09
+
+### Changed
+- **BREAKING: `ElBruno.LocalLLMs.Decisions` is now a provider for the shared [`ElBruno.AI.Decisions`](https://www.nuget.org/packages/ElBruno.AI.Decisions) abstractions.** `LayaOnnxDecisionClient` implements `ElBruno.AI.Decisions.IDecisionClient` (`ChooseAsync`, `ScoreAsync`, `AssessAsync`), so it can replace or sit next to the Foundry, Ollama and Jev providers and plug into `DecisionRoutingChatClient`. The v0.22.0 `ElBruno.LocalLLMs.Decisions.IDecisionClient` is renamed `ILayaDecisionClient` and now extends the shared interface; it keeps `EvaluateAsync` batching and the `CalibrationClamped` results. `DecisionException` is now the shared type from `ElBruno.AI.Decisions`. Migration: inject `ILayaDecisionClient` instead of the old `IDecisionClient`, or inject `ElBruno.AI.Decisions.IDecisionClient` to stay provider-neutral.
+- `AddLocalDecisions()` registers `ILayaDecisionClient` and the concrete client, and registers the shared `IDecisionClient` with `TryAdd` so an existing provider is not displaced.
+- Neutral results clamp probabilities into `[0, 1]`, since the shared result types reject values slightly outside that range.
+
+### Added
+- **`SharedDecisions` sample** — provider-neutral decisions plus `DecisionRoutingChatClient` routing.
+- Dependency on `ElBruno.AI.Decisions` 0.6.2 (early access).
+
+---
+
 ## [0.22.0] - 2026-09-30
 
 ### Changed

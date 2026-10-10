@@ -1,7 +1,8 @@
 namespace ElBruno.LocalLLMs.Decisions;
 
 /// <summary>
-/// Makes typed decisions about text using a local System One model.
+/// The in-process Laya decision client: the provider-neutral <see cref="IDecisionClient"/> from
+/// <c>ElBruno.AI.Decisions</c> plus the extras that only a local model can offer.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -13,8 +14,12 @@ namespace ElBruno.LocalLLMs.Decisions;
 /// Use it for routing, triage, moderation gates, intent detection and similar classification work,
 /// and hand the result to a generative model when you actually need prose.
 /// </para>
+/// <para>
+/// Depend on <see cref="IDecisionClient"/> when you want to swap providers (Foundry, Ollama, Jev).
+/// Depend on this interface when you want request batching and <c>CalibrationClamped</c>.
+/// </para>
 /// </remarks>
-public interface IDecisionClient
+public interface ILayaDecisionClient : IDecisionClient
 {
     /// <summary>
     /// Selects one of <paramref name="options"/> for the supplied text.
