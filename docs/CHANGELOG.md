@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.1] - 2026-10-22
+
+### Added
+- Parameterless Kev client and DI registration with automatic first-use download of the public preconverted Kev 0.8B export, pinned to an immutable Hugging Face revision.
+- KevDecisionOptions for model source/revision, local path, cache, CPU threads and download progress.
+- Manifest SHA-256 verification, complete-cache receipts, atomic/resumable transfers, concurrent acquisition coordination and actionable acquisition errors.
+- Offline acquisition coverage and an opt-in public-download test verifying all three shared operations and a fresh client reusing cache with HTTP blocked.
+
+### Changed
+- SharedDecisions accepts `--kev` for automatic acquisition and keeps `--kev <directory>` for local-only inference.
+- Consumers no longer need to run the converter. Existing explicit-path signatures and Laya defaults are unchanged.
+
 ## [0.24.0] - 2026-10-22
 
 ### Added

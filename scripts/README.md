@@ -9,6 +9,8 @@ including its trained pointer head, to native CPU ONNX. It does not use Ollama.
 Use the isolated dependencies in `requirements-kev.txt`; the converter must pass
 official PyTorch reference-parity gates before producing a usable export.
 See the [executed conversion recipe and .NET usage](../docs/kev-guide.md).
+Normal consumers do not run this converter: `AddLocalKevDecisions()` downloads
+the public preconverted export and reuses its cache automatically from v0.24.1.
 
 ---
 

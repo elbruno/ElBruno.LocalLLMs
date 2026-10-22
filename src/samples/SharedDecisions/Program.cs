@@ -9,14 +9,16 @@ using Microsoft.Extensions.DependencyInjection;
 // Ollama or Jev provider and nothing else changes. The same client also drives a
 // DecisionRoutingChatClient that picks which IChatClient answers each message.
 //
-// Pass a local Laya directory to skip the download, or --kev <export-directory> for Kev.
+// Use --kev for automatic Kev acquisition, or --kev <export-directory> for local-only Kev.
+// Pass a local Laya directory to skip its download.
 
 var services = new ServiceCollection();
 if (args.Length > 0 && args[0] == "--kev")
 {
-    if (args.Length != 2)
-        throw new ArgumentException("Usage: SharedDecisions --kev <directory-produced-by-convert_kev.py>");
-    services.AddLocalKevDecisions(args[1]);
+    if (args.Length > 2)
+        throw new ArgumentException("Usage: SharedDecisions --kev [local-export-directory]");
+    if (args.Length == 2) services.AddLocalKevDecisions(args[1]);
+    else services.AddLocalKevDecisions();
 }
 else
 {
