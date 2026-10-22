@@ -23,20 +23,47 @@ public class NeutralDecisionMapperTests
     }
 
     [Fact]
-    public void Score_OrdersLevelsAndClamps()
+    public void Score_PreservesZeroBasedRubricOrderAndExpectedValue()
     {
         var rich = new ScoreResult(
-            1.5,
-            new Dictionary<int, double> { [2] = 0.5, [1] = 0.5000000001 + 0.5, [3] = -1e-13 },
+            1.25,
+            new Dictionary<int, double> { [2] = 0.5, [0] = 0.25, [1] = 0.25 },
             new[] { "low", "mid", "high" },
             0.9);
 
         ScoreDecision decision = NeutralDecisionMapper.ToDecision(rich);
 
         Assert.Equal(3, decision.LevelProbabilities.Count);
+        Assert.Equal(0.25, decision.LevelProbabilities[0]);
+        Assert.Equal(0.25, decision.LevelProbabilities[1]);
+        Assert.Equal(0.5, decision.LevelProbabilities[2]);
+        Assert.Equal(rich.Score, decision.Score);
+    }
+
+    [Fact]
+    public void Score_ClampsProbabilitiesOutsideUnitInterval()
+    {
+        var rich = new ScoreResult(
+            0,
+            new Dictionary<int, double> { [0] = 1.0000000002, [1] = -1e-13 },
+            new[] { "low", "high" },
+            1);
+
+        ScoreDecision decision = NeutralDecisionMapper.ToDecision(rich);
+
         Assert.Equal(1.0, decision.LevelProbabilities[0]);
-        Assert.Equal(0.5, decision.LevelProbabilities[1]);
-        Assert.Equal(0.0, decision.LevelProbabilities[2]);
+        Assert.Equal(0.0, decision.LevelProbabilities[1]);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(0.125)]
+    [InlineData(1)]
+    public void Assessment_PreservesProbabilityOfTrueRatherThanItsComplement(double probability)
+    {
+        AssessmentDecision decision = NeutralDecisionMapper.ToDecision(new ProbabilityResult(probability, 0.5));
+
+        Assert.Equal(probability, decision.Probability);
     }
 
     [Fact]

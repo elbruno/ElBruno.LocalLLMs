@@ -22,6 +22,12 @@ chat model when you actually need prose.
 
 ## Running the model
 
+Laya is the default. For the original Kev 0.8B checkpoint, use the separate
+[`KevOnnxDecisionClient` / `AddLocalKevDecisions()` backend](kev-guide.md).
+It also implements the shared `ElBruno.AI.Decisions.IDecisionClient`, but has its
+own reproducible conversion and local-artifact requirements. Neither provider
+requires Ollama. The rich APIs and examples below are Laya-specific.
+
 There is nothing to install and nothing to start. The package runs
 [Laya](https://github.com/NandhaKishorM/laya) (Apache-2.0) **in-process on ONNX Runtime** — no
 Python, no server, no network call at inference time.
@@ -279,6 +285,12 @@ touch the network — the model is loaded lazily on the first call.
 | `DecisionThreshold` | `0.5` | Applied by `ProbabilityResult.IsTrue`. |
 
 ## Testing
+
+For the live shared-interface smoke evaluation, reproduction commands, exact
+checkpoint hashes, a measured negation failure and the Tev1/Ollama candidate
+assessment, see [Local decision inference validation](decision-model-validation.md).
+The opt-in test uses an acquired `LAYA_MODEL_PATH` and rejects HTTP requests
+during model loading and inference. It never downloads weights implicitly.
 
 `IDecisionClient` and `ILayaDecisionClient` are plain interfaces, so unit tests can implement them directly with whatever
 distributions the test needs — no model download and no ONNX session:

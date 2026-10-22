@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+## [0.24.0] - 2026-10-22
+
+### Added
+- Native Kev 0.8B CPU FP32 inference through `KevOnnxDecisionClient` and `AddLocalKevDecisions()`, implementing shared Choice, Score and Assessment without a server or Python at runtime.
+- Pinned original-checkpoint conversion with the trained pointer head, original temperature, licenses/provenance, and mandatory full-distribution PyTorch reference parity.
+- Exact Qwen tokenization, delimiter sanitization, explicit local acquisition, cancellation, serialized ownership and strict context limits.
+- Opt-in real Laya/Kev inference tests, complete probability/semantic mapping checks, contrastive cases and catalog feasibility findings.
+
+### Changed
+- Decisions now requires ONNX Runtime 1.31.0 for the Kev linear-attention operator. Laya remains the default provider and its existing APIs are unchanged.
+- SharedDecisions demonstrates Score and selects a converted Kev backend with `--kev <export-directory>`.
+
 ## [0.23.0] - 2026-10-09
 
 ### Changed
