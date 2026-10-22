@@ -17,11 +17,11 @@ Run local LLMs in .NET through `IChatClient` — the same interface you'd use fo
 
 > The last 5 notable additions to the library. Updated with each NuGet release.
 
+- **`v0.24.1`: automatic Kev download and offline cache.** `AddLocalKevDecisions()` now acquires the pinned preconverted [Kev 0.8B ONNX export](https://huggingface.co/elbruno/kev-0.8b-onnx) on first use, with integrity checks, cancellation and cache reuse. No local conversion or Python installation is needed. See the [Kev guide](docs/kev-guide.md).
 - **`v0.24.0`: native Kev 0.8B decisions.** Convert the original Apache-2.0 checkpoint to CPU ONNX, then use `AddLocalKevDecisions()` with the shared `IDecisionClient`, without Ollama or Python at runtime. Includes reference-parity gates and real Laya/Kev inference coverage. See the [Kev guide](docs/kev-guide.md).
 - 🔌 **`ElBruno.AI.Decisions` provider** — `ElBruno.LocalLLMs.Decisions` now implements the shared [`ElBruno.AI.Decisions`](https://www.nuget.org/packages/ElBruno.AI.Decisions) `IDecisionClient`, so the in-process ONNX Laya model drops in next to the Foundry, Ollama and Jev providers and into `DecisionRoutingChatClient`. The rich API moved to `ILayaDecisionClient`. **Breaking** for code that injected the v0.22.0 `IDecisionClient`. See the [SharedDecisions sample](src/samples/SharedDecisions/).
 - 🎯 **`ElBruno.LocalLLMs.Decisions`** — new package for local **System One** decision models. Typed `choice`, `score` and yes/no answers with full probability distributions in a single forward pass (~600 ms on CPU), running [Laya](https://github.com/NandhaKishorM/laya) **fully in-process on ONNX Runtime** — no server, no Python. Built for routing, triage, moderation and intent detection, where a chat model is slow and overkill. Call `services.AddLocalDecisions()` and inject `ILayaDecisionClient`. See the [Local Decisions Guide](docs/decisions-guide.md) and the [LocalDecisions sample](src/samples/LocalDecisions/).
 - ⬆️ **.NET 10 only** — every project now single-targets `net10.0`. .NET 8 reaches end of support in November 2026, so multi-targeting was dropped ahead of it. **Breaking:** consumers still on .NET 8 must stay on `v0.21.0` or upgrade to .NET 10.
-- 🧩 **`ElBruno.LocalLLMs.BlazorComponents`** — new Razor Class Library with 7 ready-to-use Blazor components: `ModelStatusCard` (download progress bar + actions), `ModelGallery` (filterable grid), `ModelSelector` (two-way-bindable dropdown), `ChatBox` (streaming token display), `EnvironmentDashboard` (CPU/CUDA/DirectML badges), `LocalLLMHealthBadge` (nav-bar status dot), and `RagPlayground`. Call `services.AddLocalLLMsBlazorComponents()` to register. See the [Blazor Components Guide](docs/blazor-components.md) and the [BlazorDemo sample](src/samples/BlazorDemo/).
 
 ## Features
 
@@ -268,6 +268,14 @@ dotnet add package ElBruno.LocalLLMs.Decisions
 The model runs **in-process on ONNX Runtime** — no server to start and no Python. The weights are
 downloaded from [`elbruno/laya-onnx`](https://huggingface.co/elbruno/laya-onnx) on first use
 (about 800 MB) and cached afterwards.
+
+For **Kev 0.8B**, register `services.AddLocalKevDecisions()` or construct
+`new KevOnnxDecisionClient()`. From v0.24.1, this downloads the pinned
+[preconverted ONNX export](https://huggingface.co/elbruno/kev-0.8b-onnx)
+(about 3.1 GB) on first use and reuses the validated cache offline afterwards.
+Both models implement the shared `ElBruno.AI.Decisions.IDecisionClient`.
+No local conversion is needed. See the [Kev guide](docs/kev-guide.md).
+The batching example below is Laya-specific.
 
 Ask several questions at once — they share one forward pass, so four cost about what one costs:
 

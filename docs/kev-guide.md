@@ -11,7 +11,72 @@ guess. Its original Apache-2.0 LoRA adapter and pointer head are merged/exported
 with the Apache-2.0 Qwen3.5 0.8B base. The exact checkpoint temperature
 `2.3510958125672174` is embedded in the graph.
 
-## Convert once
+## Automatic download and cache
+
+Starting with **v0.24.1**, no conversion or local path is needed:
+
+```csharp
+services.AddLocalKevDecisions();
+// Or, without DI:
+using var client = new KevOnnxDecisionClient();
+```
+
+The first decision call downloads the preconverted CPU FP32 export from
+[`elbruno/kev-0.8b-onnx`](https://huggingface.co/elbruno/kev-0.8b-onnx),
+pinned to commit `deec2b78a30db0c4d00ee36386e87be5382dafd7`.
+It needs internet access and about **3.1 GB** of disk space. Construction and
+DI registration are lazy and do not touch the network.
+
+Files are cached below
+`%LOCALAPPDATA%\ElBruno\LocalLLMs\decisions\kev-<source-and-revision-hash>`
+on Windows, or the equivalent .NET local application data directory on other
+platforms. A new client reuses a complete cache without HTTP requests.
+The source and export revision get distinct cache identities.
+
+Acquisition verifies required files against manifest SHA-256 hashes, including
+external weights and tokenizer, and retains licenses/provenance. A completion
+receipt is written only after successful validation. Later loads compare file
+sizes and modification timestamps to that receipt rather than rehashing 3 GB
+on every startup. Missing/changed cache files are revalidated and, if needed,
+downloaded again. This detects incomplete/modified files, not all possible
+disk corruption that preserves both size and timestamp.
+
+Cancellation and interrupted transfers do not mark the cache complete. Transfers
+use the downloader's atomic-write/resume support; clients/processes sharing a
+cache coordinate acquisition. Errors remain explicit, with no conversion,
+alternate model, or Ollama fallback.
+
+```csharp
+services.AddLocalKevDecisions(options =>
+{
+    options.CacheDirectory = @"D:\model-cache";
+    options.IntraOpNumThreads = 4;
+    options.DownloadProgress = new Progress<ElBruno.HuggingFace.DownloadProgress>(
+        progress => Console.WriteLine($"{progress.CurrentFile}: {progress.PercentComplete:F1}%"));
+});
+```
+
+`KevDecisionOptions.ModelRepository` and `ModelRevision` can select another
+compatible published export; revision must be its full immutable 40-character
+commit SHA, not `main` or the original PyTorch checkpoint's revision.
+The exported graph still has to satisfy the pinned Kev 0.8B runtime contract.
+
+For explicitly offline/local-only operation, the existing API is unchanged:
+
+```csharp
+services.AddLocalKevDecisions(@"D:\models\kev-0.8b");
+// Or configure options.ModelPath, or construct:
+using var local = new KevOnnxDecisionClient(@"D:\models\kev-0.8b");
+```
+
+An explicit `ModelPath` always disables acquisition and cache repair. Missing
+files fail with an actionable error instead of silently downloading.
+Version 0.24.0 supports only this explicit-path mode.
+
+## Advanced: convert your own export
+
+**Normal consumers skip this section.** Conversion is for publishing a new
+compatible export or preparing original weights yourself.
 
 Use an isolated Python environment. This recipe was executed on Windows x64
 with Python 3.14.4, CPU PyTorch, and the pinned packages in
@@ -70,7 +135,7 @@ using ElBruno.LocalLLMs.Decisions;
 using Microsoft.Extensions.DependencyInjection;
 
 var services = new ServiceCollection();
-services.AddLocalKevDecisions(@"D:\models\kev-0.8b");
+services.AddLocalKevDecisions();
 using var provider = services.BuildServiceProvider();
 var client = provider.GetRequiredService<IDecisionClient>();
 
@@ -87,10 +152,11 @@ Console.WriteLine(decision.Choice);
 Console.WriteLine(decision.Probabilities["billing"]);
 ```
 
-For direct ownership, construct `new KevOnnxDecisionClient(modelPath)` and dispose
-it when finished. The optional second argument sets CPU intra-op threads,
-default four. Loading is lazy, requests are serialized, native inference is
-cancellable, and disposal waits for the active call.
+For direct ownership, construct `new KevOnnxDecisionClient()` or pass a
+`KevDecisionOptions` instance and dispose it when finished. The local-path
+constructor's optional second argument still sets CPU intra-op threads,
+default four. Loading is lazy, requests are serialized, acquisition and native
+inference are cancellable, and disposal waits for the active call.
 
 `AddLocalKevDecisions()` registers the concrete client and shared
 `IDecisionClient` against the same singleton. As with Laya, the first registered
@@ -115,9 +181,26 @@ The shared contract's own request validation also applies.
 
 Keep `decision.onnx`, `model.onnx.data`, `tokenizer.json`, and `kev_config.json`
 together. Retain both license files and provenance when distributing converted
-weights. The client checks the export contract and pinned revisions but does
-not authenticate the manifest or rehash multi-GB weights on every load.
-Use trusted exports; the manifest hashes support separate integrity checking.
+weights. For an explicit local path, the client checks required files, export
+contract and original revisions, but does not hash or authenticate local
+weights. Use trusted local exports. Automatic acquisition additionally verifies
+the manifest hashes and pins the published export revision as described above.
+
+## Reproduce automatic acquisition and offline reuse
+
+```powershell
+dotnet run --project src\samples\SharedDecisions -c Release -- --kev
+$env:RUN_KEV_DOWNLOAD_TESTS = 'true'
+$env:KEV_DOWNLOAD_CACHE = 'D:\scratch\kev-empty-cache'
+dotnet test src\tests\ElBruno.LocalLLMs.Decisions.Tests -c Release --filter FullyQualifiedName~KevDownloadTests --logger 'console;verbosity=detailed'
+```
+
+The opt-in download test requires a fresh cache. It downloads the public pinned
+export, checks all six reference cases through Choice/Score/Assessment, disposes
+the client and opens a new one with HTTP blocked. The second client must produce
+the same probabilities without additional HTTP attempts. The guard validates
+the .NET HTTP path, not OS-level isolation of arbitrary native sockets.
+This test is skipped by default to avoid implicit large downloads in unit/CI runs.
 
 ## Reproduce the native reference comparison
 

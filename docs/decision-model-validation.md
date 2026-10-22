@@ -173,7 +173,12 @@ solution built with its existing CI override `-p:NoBuild=false` (required by the
 native packaging projects).
 
 Only Kev **0.8B, text, CPU, FP32** is supported by this export contract.
-There is no implicit acquisition, Ollama fallback, GPU validation,
+Version 0.24.0 required explicit local acquisition. From **0.24.1**,
+`AddLocalKevDecisions()` downloads the preconverted export from
+[`elbruno/kev-0.8b-onnx`](https://huggingface.co/elbruno/kev-0.8b-onnx),
+pinned to `deec2b78a30db0c4d00ee36386e87be5382dafd7`, on first use and reuses a
+validated cache afterwards. Explicit paths still disable downloads.
+There is no Ollama fallback, GPU validation,
 quantization-drift claim, or support claim for the larger Kev sizes.
 The backend limits each question to 8192 total tokens and 255 options, rejects
 overflow rather than truncating, and also applies shared request validation.
@@ -318,3 +323,20 @@ The original issue's Tev1 acceptance permits a reproducible documented blocker;
 this work does not claim to resolve its weight license or implement Tev1.
 The observed Laya negation error remains documented, not hidden by an adapter
 change or an unsupported accuracy claim.
+
+### Automatic acquisition follow-up in 0.24.1
+
+The validated export was published publicly with its original licenses,
+model card, provenance and file hashes. The repository revision above was
+independently readable anonymously. The .NET downloader now acquires this
+preconverted export, not original PyTorch files, and checks all required
+artifact hashes before recording completion. Source/revision-specific caches,
+atomic/resumable writes, cancellation and serialized acquisition preserve
+the local-only runtime contract.
+
+A live test began with an empty cache, downloaded the public artifacts and
+ran all six original probability comparisons. Acquisition, initialization and
+six calls took 24.15 seconds in that run. A new client then repeated all six
+cases with HTTP blocked in 3.26 seconds, with no additional HTTP attempts.
+These single-run figures are not download-speed or latency guarantees.
+Laya remains the default and local-path construction remains supported.

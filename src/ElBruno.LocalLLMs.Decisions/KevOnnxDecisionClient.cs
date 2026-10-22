@@ -9,28 +9,46 @@ namespace ElBruno.LocalLLMs.Decisions;
 /// Runs the pinned Kev 0.8B ONNX export in-process, using its trained pointer head.
 /// </summary>
 /// <remarks>
-/// Acquire and convert the checkpoint with <c>scripts/convert_kev.py</c> before use.
-/// This client never downloads models, starts a server, generates text, or requires Python at runtime.
+/// The preconverted model is downloaded and cached on first use unless a local path is supplied.
+/// This client never starts a server, generates text, or requires Python at runtime.
 /// Calls are serialized, and the native session is loaded lazily.
 /// </remarks>
 public sealed class KevOnnxDecisionClient : IDecisionClient, IDisposable
 {
-    private readonly string _modelPath;
+    private readonly KevDecisionOptions _options;
+    private string _modelPath;
     private readonly int _threads;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private InferenceSession? _session;
     private KevTokenizer? _tokenizer;
     private int _disposed;
 
+    /// <summary>Creates a client that downloads the pinned preconverted model on first use.</summary>
+    public KevOnnxDecisionClient() : this(new KevDecisionOptions()) { }
+
+    /// <summary>Creates a client with configurable acquisition and CPU settings, without loading the model.</summary>
+    /// <param name="options">The local path or pinned repository and cache settings.</param>
+    public KevOnnxDecisionClient(KevDecisionOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        _options = options.Snapshot();
+        _options.Validate();
+        _modelPath = _options.ResolveModelDirectory();
+        _threads = _options.IntraOpNumThreads;
+    }
+
     /// <summary>Creates a client over a local export directory, without loading the model.</summary>
     /// <param name="modelPath">Directory produced by <c>convert_kev.py</c>.</param>
     /// <param name="intraOpNumThreads">CPU threads within each native operator.</param>
     public KevOnnxDecisionClient(string modelPath, int intraOpNumThreads = 4)
+        : this(new KevDecisionOptions { ModelPath = ValidatePath(modelPath), IntraOpNumThreads = intraOpNumThreads })
+    {
+    }
+
+    private static string ValidatePath(string modelPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(modelPath);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(intraOpNumThreads);
-        _modelPath = Path.GetFullPath(modelPath);
-        _threads = intraOpNumThreads;
+        return modelPath;
     }
 
     /// <inheritdoc />
@@ -74,6 +92,8 @@ public sealed class KevOnnxDecisionClient : IDecisionClient, IDisposable
         try
         {
             ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+            if (_session is null)
+                _modelPath = await KevModelFiles.EnsureAsync(_options, cancellationToken).ConfigureAwait(false);
             return await Task.Run(() =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -93,13 +113,7 @@ public sealed class KevOnnxDecisionClient : IDecisionClient, IDisposable
         if (_session is not null) return;
         try
         {
-            using var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(_modelPath, "kev_config.json")));
-            var config = manifest.RootElement;
-            if (config.GetProperty("format").GetString() != "kev-0.8b-prefill-v1" ||
-                config.GetProperty("checkpoint_revision").GetString() != "bf75a6a8848ea6960ff2ed108d9ed44c2941174f" ||
-                config.GetProperty("base_revision").GetString() != "dc7cdfe2ee4154fa7e30f5b51ca41bfa40174e68" ||
-                config.GetProperty("max_tokens").GetInt32() != 8192)
-                throw new DecisionException("Unsupported Kev export. Run scripts/convert_kev.py for the pinned 0.8B checkpoint.");
+            using var manifest = KevModelFiles.ReadManifest(Path.Combine(_modelPath, "kev_config.json"));
             var tokenizer = KevTokenizer.Load(Path.Combine(_modelPath, "tokenizer.json"));
             using var sessionOptions = new SessionOptions { IntraOpNumThreads = _threads };
             var session = new InferenceSession(Path.Combine(_modelPath, "decision.onnx"), sessionOptions);

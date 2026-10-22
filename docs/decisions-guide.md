@@ -24,9 +24,11 @@ chat model when you actually need prose.
 
 Laya is the default. For the original Kev 0.8B checkpoint, use the separate
 [`KevOnnxDecisionClient` / `AddLocalKevDecisions()` backend](kev-guide.md).
-It also implements the shared `ElBruno.AI.Decisions.IDecisionClient`, but has its
-own reproducible conversion and local-artifact requirements. Neither provider
-requires Ollama. The rich APIs and examples below are Laya-specific.
+It also implements the shared `ElBruno.AI.Decisions.IDecisionClient`. From
+v0.24.1, `AddLocalKevDecisions()` downloads the preconverted pinned export on
+first use and reuses the local cache, with no conversion or Python required.
+An explicit local path still disables downloading. Neither provider requires
+Ollama. The rich APIs and examples below are Laya-specific.
 
 There is nothing to install and nothing to start. The package runs
 [Laya](https://github.com/NandhaKishorM/laya) (Apache-2.0) **in-process on ONNX Runtime** — no

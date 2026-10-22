@@ -8,6 +8,24 @@ namespace ElBruno.LocalLLMs.Decisions;
 /// </summary>
 public static class DecisionServiceExtensions
 {
+    /// <summary>Registers Kev with automatic first-use acquisition and offline cache reuse.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configureOptions">Optional model source, cache, local path and CPU settings.</param>
+    /// <returns>The service collection for chaining.</returns>
+    /// <remarks>Registration never downloads or loads weights. The first shared provider keeps its slot.</remarks>
+    public static IServiceCollection AddLocalKevDecisions(
+        this IServiceCollection services, Action<KevDecisionOptions>? configureOptions = null)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        var options = new KevDecisionOptions();
+        configureOptions?.Invoke(options);
+        options.Validate();
+        services.AddSingleton(options);
+        services.AddSingleton(_ => new KevOnnxDecisionClient(options));
+        services.TryAddSingleton<IDecisionClient>(provider => provider.GetRequiredService<KevOnnxDecisionClient>());
+        return services;
+    }
+
     /// <summary>Registers a local Kev 0.8B ONNX export as the shared decision provider.</summary>
     /// <param name="services">The service collection.</param>
     /// <param name="modelPath">Directory produced by <c>scripts/convert_kev.py</c>. No model is downloaded.</param>
