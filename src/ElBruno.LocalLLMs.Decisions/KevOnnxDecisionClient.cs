@@ -33,6 +33,8 @@ public sealed class KevOnnxDecisionClient : IDecisionClient, IDisposable
         ArgumentNullException.ThrowIfNull(options);
         _options = options.Snapshot();
         _options.Validate();
+        if (_options.ModelPath is not null) _options.ModelPath = Path.GetFullPath(_options.ModelPath);
+        if (_options.CacheDirectory is not null) _options.CacheDirectory = Path.GetFullPath(_options.CacheDirectory);
         _modelPath = _options.ResolveModelDirectory();
         _threads = _options.IntraOpNumThreads;
     }
