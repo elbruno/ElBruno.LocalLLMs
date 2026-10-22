@@ -34,6 +34,48 @@ internal static class SyntheticTokenizer
         return LayaTokenizer.Load(path);
     }
 
+    internal static string WriteKev(string directory)
+    {
+        var root = JsonNode.Parse(BuildJson())!;
+        root["normalizer"] = new JsonObject { ["type"] = "NFC" };
+        root["pre_tokenizer"] = new JsonObject
+        {
+            ["type"] = "Sequence",
+            ["pretokenizers"] = new JsonArray
+            {
+                new JsonObject
+                {
+                    ["type"] = "Split",
+                    ["pattern"] = new JsonObject { ["Regex"] = KevTokenizer.SplitExpression },
+                    ["behavior"] = "Isolated",
+                    ["invert"] = false,
+                },
+                new JsonObject { ["type"] = "ByteLevel", ["use_regex"] = false, ["add_prefix_space"] = false },
+            },
+        };
+        var model = root["model"]!;
+        model["byte_fallback"] = false;
+        model["ignore_merges"] = false;
+        model["dropout"] = null;
+        model["unk_token"] = null;
+        model["continuing_subword_prefix"] = "";
+        model["end_of_word_suffix"] = "";
+        var added = new JsonArray();
+        string[] tokens = ["<|fim_prefix|>", "<|fim_middle|>", "<|box_start|>", "<|box_end|>", "<|fim_suffix|>", "<think>", "</think>"];
+        for (var index = 0; index < tokens.Length; index++)
+        {
+            added.Add(new JsonObject
+            {
+                ["id"] = 300 + index, ["content"] = tokens[index],
+                ["lstrip"] = false, ["rstrip"] = false, ["single_word"] = false, ["normalized"] = false,
+            });
+        }
+        root["added_tokens"] = added;
+        var path = Path.Combine(directory, $"kev-tokenizer-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, root.ToJsonString(), new UTF8Encoding(false));
+        return path;
+    }
+
     private static string BuildJson()
     {
         var vocabulary = new JsonObject();

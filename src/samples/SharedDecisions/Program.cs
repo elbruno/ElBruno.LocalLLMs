@@ -9,10 +9,19 @@ using Microsoft.Extensions.DependencyInjection;
 // Ollama or Jev provider and nothing else changes. The same client also drives a
 // DecisionRoutingChatClient that picks which IChatClient answers each message.
 //
-// Pass a local model directory as the first argument to skip the download.
+// Pass a local Laya directory to skip the download, or --kev <export-directory> for Kev.
 
 var services = new ServiceCollection();
-services.AddLocalDecisions(options => options.ModelPath = args.Length > 0 ? args[0] : null);
+if (args.Length > 0 && args[0] == "--kev")
+{
+    if (args.Length != 2)
+        throw new ArgumentException("Usage: SharedDecisions --kev <directory-produced-by-convert_kev.py>");
+    services.AddLocalKevDecisions(args[1]);
+}
+else
+{
+    services.AddLocalDecisions(options => options.ModelPath = args.Length > 0 ? args[0] : null);
+}
 using var provider = services.BuildServiceProvider();
 
 IDecisionClient decisions = provider.GetRequiredService<IDecisionClient>();
@@ -31,6 +40,13 @@ Console.WriteLine($"Team: {team.Choice} (confidence {team.Confidence:P1})");
 
 AssessmentDecision angry = await decisions.AssessAsync(ticket, "The customer is frustrated.");
 Console.WriteLine($"Frustrated: {angry.Probability:P1}");
+
+ScoreDecision urgency = await decisions.ScoreAsync(
+    ticket,
+    "How urgent is this support ticket?",
+    ["Routine, no deadline", "Needs attention soon", "Critical outage requiring immediate action"]);
+Console.WriteLine($"Urgency: {urgency.Score:F2} / 2");
+Console.WriteLine($"Rubric probabilities: {string.Join(", ", urgency.LevelProbabilities.Select(p => p.ToString("P1")))}");
 
 // Routing: the decision model picks the chat client, so only one generative model is invoked.
 var routes = new Dictionary<string, IChatClient>

@@ -2,6 +2,14 @@
 
 Helper scripts for testing, model management, and ONNX conversion.
 
+## Kev decision checkpoint conversion
+
+`convert_kev.py` merges and exports the pinned original Kev 0.8B checkpoint,
+including its trained pointer head, to native CPU ONNX. It does not use Ollama.
+Use the isolated dependencies in `requirements-kev.txt`; the converter must pass
+official PyTorch reference-parity gates before producing a usable export.
+See the [executed conversion recipe and .NET usage](../docs/kev-guide.md).
+
 ---
 
 ## Test Runner
