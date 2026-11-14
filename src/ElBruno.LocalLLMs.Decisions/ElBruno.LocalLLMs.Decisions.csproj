@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>ElBruno.LocalLLMs.Decisions</PackageId>
     <Description>Local System One decision models for ElBruno.LocalLLMs. Typed choice, score and yes/no decisions with probabilities in a single forward pass, running fully in-process on ONNX Runtime with no server and no Python.</Description>
@@ -16,7 +16,7 @@
   <ItemGroup>
     <Using Include="ElBruno.AI.Decisions" />
     <PackageReference Include="ElBruno.AI.Decisions" Version="0.6.2" />
-    <PackageReference Include="ElBruno.HuggingFace.Downloader" Version="1.4.4" />
+    <PackageReference Include="ElBruno.HuggingFace.Downloader" Version="1.6.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.31.0" />
     <PackageReference Include="Microsoft.ML.Tokenizers" Version="2.0.0" />

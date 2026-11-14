@@ -582,7 +582,7 @@ public class MyService(IChatClient chatClient) { ... }
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>ElBruno.LocalLLMs</PackageId>
     <Description>Local LLM chat completions using Microsoft.Extensions.AI and ONNX Runtime GenAI. IChatClient implementation for running LLMs locally.</Description>
@@ -618,7 +618,7 @@ public class MyService(IChatClient chatClient) { ... }
 
 - **Pre-release:** `0.x.y` during initial development
 - **First stable:** `1.0.0` when IChatClient contract is proven with ≥3 models
-- Version is in the .csproj `<Version>` element, matching the reference repos
+- The five published packages share `<PublishedSiblingPackageVersion>` in `Directory.Build.props`.
 - CI publishes preview packages on PR merge, stable on GitHub Release tag
 
 ---
@@ -695,7 +695,7 @@ Pre-converted models can be uploaded to HuggingFace under the `elbruno/` org for
 <!-- tests/ElBruno.LocalLLMs.Tests/ElBruno.LocalLLMs.Tests.csproj -->
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
@@ -924,4 +924,4 @@ ElBruno.LocalLLMs/
 | **`ModelDefinition` as record** | Immutable, data-first. Adding a model = adding a record to `KnownModels`. |
 | **Chat templates as internal strategy pattern** | Users pick a model; the template is resolved automatically. No template API in public surface. |
 | **`ElBruno.HuggingFace.Downloader` for downloads** | Proven in both reference repos. Consistent download/cache behavior. |
-| **`net10.0` single-targeting** | .NET 8 support was dropped ahead of its end of support, so every project targets .NET 10 only. |
+| **`net10.0` and `net11.0` multi-targeting** | Published libraries and their test projects target both supported frameworks, preserving .NET 10 compatibility while adding .NET 11. |

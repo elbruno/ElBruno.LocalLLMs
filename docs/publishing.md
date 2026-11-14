@@ -1,12 +1,16 @@
 # Publishing ElBruno.LocalLLMs to NuGet
 
-This guide covers how the `ElBruno.LocalLLMs` NuGet package is published using **OIDC Trusted Publishing** — no long-lived API keys required.
+This guide covers how the published ElBruno.LocalLLMs packages are published using **OIDC Trusted Publishing** — no long-lived API keys required.
 
 ## Package
 
 | Package | Project | NuGet |
 |---------|---------|-------|
 | `ElBruno.LocalLLMs` | `src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj` | [nuget.org/packages/ElBruno.LocalLLMs](https://www.nuget.org/packages/ElBruno.LocalLLMs) |
+| `ElBruno.LocalLLMs.Rag` | `src/ElBruno.LocalLLMs.Rag/ElBruno.LocalLLMs.Rag.csproj` | [nuget.org/packages/ElBruno.LocalLLMs.Rag](https://www.nuget.org/packages/ElBruno.LocalLLMs.Rag) |
+| `ElBruno.LocalLLMs.BitNet` | `src/ElBruno.LocalLLMs.BitNet/ElBruno.LocalLLMs.BitNet.csproj` | [nuget.org/packages/ElBruno.LocalLLMs.BitNet](https://www.nuget.org/packages/ElBruno.LocalLLMs.BitNet) |
+| `ElBruno.LocalLLMs.BlazorComponents` | `src/ElBruno.LocalLLMs.BlazorComponents/ElBruno.LocalLLMs.BlazorComponents.csproj` | [nuget.org/packages/ElBruno.LocalLLMs.BlazorComponents](https://www.nuget.org/packages/ElBruno.LocalLLMs.BlazorComponents) |
+| `ElBruno.LocalLLMs.Decisions` | `src/ElBruno.LocalLLMs.Decisions/ElBruno.LocalLLMs.Decisions.csproj` | [nuget.org/packages/ElBruno.LocalLLMs.Decisions](https://www.nuget.org/packages/ElBruno.LocalLLMs.Decisions) |
 
 ---
 
@@ -53,12 +57,11 @@ This guide covers how the `ElBruno.LocalLLMs` NuGet package is published using *
 
 The automated flow:
 
-1. Update `<Version>` in `src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj`
-2. Update `docs/CHANGELOG.md` with a `## [X.Y.Z]` entry
-3. Update the user-facing docs for the release surface (`README.md` plus any feature-specific guide such as `docs/observability.md`)
-4. Push to `main`
-5. `squad-release.yml` automatically creates a GitHub Release with tag `vX.Y.Z`
-6. The release event triggers `publish.yml` → package is built and pushed to NuGet.org
+1. Use `scripts/Set-ReleaseVersion.ps1` to update the shared `<PublishedSiblingPackageVersion>` in `Directory.Build.props`, the README highlights, and `docs/CHANGELOG.md`.
+2. Update the user-facing docs for the release surface (`README.md` plus any feature-specific guide such as `docs/observability.md`)
+3. Push to `main`
+4. `squad-release.yml` automatically creates a GitHub Release with tag `vX.Y.Z`
+5. The release event triggers `publish.yml` → all five packages are built and pushed to NuGet.org at the same version
 
 ### Option B: Manual Dispatch
 
@@ -66,7 +69,7 @@ For ad-hoc or pre-release publishes:
 
 1. Go to **Actions → Publish to NuGet → Run workflow**
 2. Optionally enter a version (e.g., `1.2.0-beta.1`)
-3. If left empty, the version from the `.csproj` is used
+3. If left empty, the shared version from `Directory.Build.props` is used
 
 > **Local machine note:** this repository's normal publish path is GitHub Actions OIDC. A local `dotnet pack` can validate the package contents, but a local `dotnet nuget push` still requires a maintainer-provided NuGet API key. Without that key, publish from the workflow instead of the terminal.
 
@@ -74,11 +77,11 @@ For ad-hoc or pre-release publishes:
 
 Before triggering publish:
 
-1. `<Version>` matches the release you intend to ship.
+1. `Directory.Build.props` matches the release version intended for all five packages.
 2. `docs/CHANGELOG.md` contains the same version.
 3. README and any feature docs reflect the shipped behavior.
-4. `dotnet test ElBruno.LocalLLMs.slnx` passes locally.
-5. `dotnet pack src/ElBruno.LocalLLMs/ElBruno.LocalLLMs.csproj -c Release` succeeds locally.
+4. `dotnet test ElBruno.LocalLLMs.slnx` passes locally for `net10.0` and `net11.0`.
+5. The publish workflow successfully packs all five packages for both target frameworks.
 
 ---
 
@@ -96,7 +99,7 @@ Before triggering publish:
                      │  publish.yml                         │
                      │                                      │
                      │  1. Checkout code                    │
-                     │  2. Setup .NET 10                    │
+                     │  2. Setup .NET 11                    │
                      │  3. Determine version (tag/input/    │
                      │     csproj)                          │
                      │  4. Restore → Build → Test → Pack    │

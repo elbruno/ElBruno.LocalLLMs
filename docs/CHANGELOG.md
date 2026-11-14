@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.2] - 2026-11-14
+### Added
+- Multi-target all published libraries for `net10.0` and `net11.0`.
+- Update the SDK, CI, packaging, and documentation for .NET 11 while preserving .NET 10 support.
+- Update model downloads to `ElBruno.HuggingFace.Downloader` 1.6.2.
+
 ## [0.24.1] - 2026-10-22
 
 ### Added

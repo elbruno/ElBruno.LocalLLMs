@@ -41,7 +41,7 @@ These instructions define the conventions for ElBruno's .NET NuGet library repos
 ## Project Conventions
 
 ### Library Projects
-- Target `net10.0` only (single target). .NET 8 support was dropped ahead of its end of support.
+- Target `net10.0` and `net11.0` (multi-target) for published libraries, retaining .NET 10 support.
 - Package naming: `{Owner}.{ProjectName}.{Feature}` (e.g., `ElBruno.QRCodeGenerator.Svg`)
 - Each packable project must include the NuGet icon:
   ```xml
@@ -52,7 +52,7 @@ These instructions define the conventions for ElBruno's .NET NuGet library repos
 - Enable deterministic CI builds: `<ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>`
 
 ### Test Projects
-- Target `net10.0` only (single target)
+- Target `net10.0` and `net11.0` for test projects that validate library targets
 - Framework: xUnit with coverlet.collector
 - Naming: `{LibraryProject}.Tests`
 - Location: `src/tests/{LibraryProject}.Tests/`
@@ -154,9 +154,9 @@ Thumbs.db
 
 - **Triggers:** push to `main`, PR to `main`
 - **Runner:** `ubuntu-latest`
-- **SDK:** `dotnet-version: 10.0.x`
+- **SDK:** `dotnet-version: 11.0.x`
 - **Commands use solution-level operations** (not per-project)
-- Projects single-target `net10.0`, so no per-framework overrides are needed
+- Library and test projects target `net10.0;net11.0`
 
 ```yaml
 name: CI Build
@@ -175,7 +175,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: 11.0.x
       - name: Restore
         run: dotnet restore {ProjectName}.slnx
       - name: Build
@@ -224,7 +224,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: 11.0.x
       - name: Determine version
         id: version
         run: |
@@ -291,7 +291,7 @@ Follow this exact order:
 - Test project naming: `{LibraryProject}.Tests`
 - Tests live in `src/tests/{TestProject}/`
 - All tests must pass before publishing (enforced in both CI and publish workflows)
-- Test projects target `net10.0` only
+- Test projects target `net10.0` and `net11.0`
 
 ---
 
