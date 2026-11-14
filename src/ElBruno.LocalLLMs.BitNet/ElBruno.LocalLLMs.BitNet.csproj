@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>ElBruno.LocalLLMs.BitNet</PackageId>
     <Description>BitNet 1.58-bit LLM inference using bitnet.cpp. IChatClient implementation for Microsoft.Extensions.AI.</Description>

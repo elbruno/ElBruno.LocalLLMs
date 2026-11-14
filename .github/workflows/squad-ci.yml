@@ -23,7 +23,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: 11.0.x
 
       # -p:NoBuild=false is required: the BitNet native projects default it to
       # true, which otherwise makes restore and build silently skip them.

@@ -38,7 +38,7 @@ fi
 SKIP_BUILD=false
 SKIP_UNIT=false
 SKIP_INTEGRATION=false
-FRAMEWORK="net10.0"
+FRAMEWORK="net11.0"
 HF_TOKEN_VALUE=""
 FILTER=""
 
@@ -54,7 +54,7 @@ Options:
   --no-build                    Alias for --skip-build
   --skip-unit-tests, -U         Skip unit tests
   --skip-integration-tests, -I  Skip integration tests
-  --framework <value>           Target framework (default: net10.0)
+  --framework <value>           Target framework (default: net11.0)
   --hf-token <value>            Set HF_TOKEN for private HuggingFace repos
   --filter <value>              xUnit filter string for integration tests
   --help, -h                    Show this help message
