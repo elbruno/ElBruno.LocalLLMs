@@ -16,6 +16,6 @@
       <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI.DirectML" Version="0.15.1" />
     -->
     <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI" Version="0.15.1" />
-    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.28.0" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.32.0" />
   </ItemGroup>
 </Project>

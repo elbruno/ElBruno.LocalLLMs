@@ -14,6 +14,6 @@
   </ItemGroup>
   <ItemGroup>
     <!-- SignalR is included in Microsoft.AspNetCore.App, no extra package needed -->
-    <PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="8.0.*" />
+    <PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="10.0.15" />
   </ItemGroup>
 </Project>
