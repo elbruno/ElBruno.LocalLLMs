@@ -7,6 +7,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\ElBruno.LocalLLMs.Decisions\ElBruno.LocalLLMs.Decisions.csproj" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.15" />
   </ItemGroup>
 </Project>

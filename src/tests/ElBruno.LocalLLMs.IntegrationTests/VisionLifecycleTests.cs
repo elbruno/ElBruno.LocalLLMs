@@ -174,7 +174,7 @@ public class VisionLifecycleTests
         else
         {
             foreach (var m in source)
-                data.Add((ModelDefinition)m[0]);
+                data.Add(m);
         }
         return data;
     }

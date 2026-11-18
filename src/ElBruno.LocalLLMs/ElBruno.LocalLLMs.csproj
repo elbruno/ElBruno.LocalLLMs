@@ -15,10 +15,10 @@
 
   <ItemGroup>
     <PackageReference Include="ElBruno.HuggingFace.Downloader" Version="1.6.2" />
-    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.8.3" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" Version="10.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.11.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.15" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" Version="10.0.15" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.15" />
     <!--
     Base managed package for compilation. Native runtime binaries are intentionally
     NOT exported to consumers (PrivateAssets="native") to prevent conflicts between
